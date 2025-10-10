@@ -14,12 +14,10 @@ DIY parental control system for parents who code. If you know what 'pip install'
 - **⏱️ Daily usage limits** - Set maximum screen time
 - **💬 Send messages** - Display warnings or reminders
 - **🏠 Auto-discovery** - Finds all PCs on your network
-- **👨‍👩‍👧‍👦 Family-friendly** - No tech knowledge required
 
 ## 📸 Screenshots
 
-![Web Interface](screenshots/web-interface.png)
-*Control multiple PCs from your phone*
+![Web Interface](screenshots/screenshot_1.png)
 
 ## 🚀 Quick Start
 
@@ -29,8 +27,8 @@ This is NOT a one-click solution. You'll need to:
 - Install Python
 - Use command prompt
 - Understand IP addresses  
-- Configure Windows Firewall
-- Set up scheduled tasks
+- Configure Windows Firewall (technically you would simply allow the process to run - once)
+- Set up scheduled task
 
 If these terms scare you, consider commercial alternatives like:
 - Qustodio
@@ -56,6 +54,8 @@ pip install -r requirements.txt
 # Run the control script (as administrator)
 python scripts/install.py
 ```
+* side note - if your kid is "good" with computers, I would recommend copying pc_monitor.py
+ some place where it would be hard to find ;)
 
 2. **On your phone/computer:**
 ```bash
@@ -63,7 +63,7 @@ python scripts/install.py
 cd src
 python web_panel.py
 
-# Open in browser
+# Open in your fav browser (PC or Phone)
 http://YOUR-PC-IP:5000
 ```
 
