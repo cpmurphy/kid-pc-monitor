@@ -596,10 +596,10 @@ CONTROL_TEMPLATE = '''
 import os
 os.makedirs('templates', exist_ok=True)
 
-with open('templates/index.html', 'w') as f:
+with open('templates/index.html', 'w', encoding='utf-8') as f:
     f.write(INDEX_TEMPLATE)
 
-with open('templates/control.html', 'w') as f:
+with open('templates/control.html', 'w', encoding='utf-8') as f:
     f.write(CONTROL_TEMPLATE)
 
 if __name__ == '__main__':
