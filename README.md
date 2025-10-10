@@ -54,7 +54,7 @@ pip install -r requirements.txt
 # Run the control script (as administrator)
 python scripts/install.py
 ```
-* side note - if your code is "good" with computers, I would recommend copying pc_monitor.py
+* side note - if your kid is "good" with computers, I would recommend copying pc_monitor.py
  some place where it would be hard to find ;)
 
 2. **On your phone/computer:**
