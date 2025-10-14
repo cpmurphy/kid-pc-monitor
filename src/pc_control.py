@@ -16,7 +16,8 @@ from pathlib import Path
 
 # Set up logging
 log_file = 'pc_control.log'
-os.unlink(log_file) #remove previous log
+if os.path.exists(log_file):
+    os.unlink(log_file) #remove previous log
 
 logging.basicConfig(
     filename=str(log_file),
