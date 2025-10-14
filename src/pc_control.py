@@ -10,9 +10,29 @@ from tkinter import messagebox
 from datetime import datetime, time as dtime
 import subprocess
 from ctypes import wintypes
+import getpass
+import json
 
 import logging
 from pathlib import Path
+
+# ============================================
+# CONFIGURATION
+# ============================================
+
+# List of Windows usernames to monitor (leave empty to monitor all users)
+# Example: MONITORED_USERS = ['Tommy', 'Sarah', 'kid1']
+MONITORED_USERS = []
+
+# List of Windows usernames to EXEMPT from monitoring (parents/admins)
+# Example: EXEMPT_USERS = ['pavel', 'Mom', 'Dad', 'Administrator']
+EXEMPT_USERS = []
+
+# If both lists are empty, ALL users will be monitored
+# If MONITORED_USERS has entries, ONLY those users are monitored
+# If EXEMPT_USERS has entries, everyone EXCEPT those users is monitored
+
+# ============================================
 
 # Set up logging
 log_file = 'pc_control.log'
@@ -33,21 +53,81 @@ class PCTimeControl:
         self.start_time = datetime.now()
         self.is_locked = False
         self.last_activity = datetime.now()
+        self.current_user = getpass.getuser()
+        self.state_file = 'pc_control_state.json'
+        self.logger = logging.getLogger('PCTimeControl')
+        self.warnings_sent = set()  # Track which warnings have been sent
+        self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
+
+        # Log which user we're running as
+        if self.should_monitor_user():
+            self.logger.info(f"Monitoring enabled for user: {self.current_user}")
+            print(f"[{datetime.now():%H:%M:%S}] Monitoring user: {self.current_user}")
+        else:
+            self.logger.info(f"User {self.current_user} is EXEMPT from monitoring")
+            print(f"[{datetime.now():%H:%M:%S}] User {self.current_user} is EXEMPT - no restrictions will apply")
+
+        # Load previous state if exists
+        self.load_state()
 
         # Start monitoring thread
         self.monitor_thread = threading.Thread(target=self.monitor_activity, daemon=True)
         self.monitor_thread.start()
 
-    def _enum_callback(self, hwnd, lParam):
-        # build a list of visible, titled windows
-        if ctypes.windll.user32.IsWindowVisible(hwnd):
-            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
-            if length > 0:
-                self.visible_windows.append(hwnd)
+    def should_monitor_user(self):
+        """Check if current user should be monitored based on configuration"""
+        # If MONITORED_USERS is specified, only monitor those users
+        if MONITORED_USERS:
+            return self.current_user in MONITORED_USERS
+
+        # If EXEMPT_USERS is specified, monitor everyone except those users
+        if EXEMPT_USERS:
+            return self.current_user not in EXEMPT_USERS
+
+        # If both lists are empty, monitor all users
         return True
 
-    def _check_if_locked(self):
-        return self.is_locked
+    def load_state(self):
+        """Load saved state from JSON file"""
+        try:
+            if os.path.exists(self.state_file):
+                with open(self.state_file, 'r') as f:
+                    state = json.load(f)
+
+                # Restore lock times
+                if 'lock_times' in state:
+                    self.lock_times = [dtime(*map(int, t.split(':'))) for t in state['lock_times']]
+
+                # Restore usage limit
+                if 'usage_limit' in state:
+                    self.usage_limit = state['usage_limit']
+
+                # Restore start time (for usage tracking)
+                if 'start_time' in state:
+                    self.start_time = datetime.fromisoformat(state['start_time'])
+
+                self.logger.info(f"State loaded: {len(self.lock_times)} lock times, usage limit: {self.usage_limit}")
+                print(f"[{datetime.now():%H:%M:%S}] Loaded previous settings from {self.state_file}")
+        except Exception as e:
+            self.logger.error(f"Error loading state: {e}")
+            print(f"[{datetime.now():%H:%M:%S}] Could not load previous state: {e}")
+
+    def save_state(self):
+        """Save current state to JSON file"""
+        try:
+            state = {
+                'lock_times': [f"{lt.hour}:{lt.minute}" for lt in self.lock_times],
+                'usage_limit': self.usage_limit,
+                'start_time': self.start_time.isoformat(),
+                'current_user': self.current_user
+            }
+
+            with open(self.state_file, 'w') as f:
+                json.dump(state, f, indent=2)
+
+            self.logger.info("State saved successfully")
+        except Exception as e:
+            self.logger.error(f"Error saving state: {e}")
 
     def check_if_locked(self):
         """
@@ -84,30 +164,6 @@ class PCTimeControl:
 
             time.sleep(3)  # Check every 3 seconds
 
-    def is_workstation_locked(self):
-        """Check if the workstation is currently locked"""
-        # Simple method: check if we can get the foreground window title
-        try:
-            user32 = ctypes.windll.user32
-            h_wnd = user32.GetForegroundWindow()
-
-            # If no foreground window, likely locked
-            if h_wnd == 0:
-                return True
-
-            # Try to get window title length
-            length = user32.GetWindowTextLengthW(h_wnd)
-
-            # If we can't get window info, likely locked
-            if length == 0:
-                # Could be locked or just an app with no title
-                # For now, assume not locked unless we're sure
-                return False
-
-            return False
-        except:
-            return False
-
     def add_scheduled_lock(self, hour, minute):
         """Add a time when the PC should be locked"""
         self.lock_times.append(dtime(hour, minute))
@@ -119,30 +175,114 @@ class PCTimeControl:
     def show_message(self, message, title="PC Time Control"):
         """Display a message using tkinter"""
         def display():
-            root = tk.Tk()
-            root.withdraw()  # Hide the main window
-            root.attributes('-topmost', True)  # Make it appear on top
-            messagebox.showwarning(title, message)
-            root.destroy()
+            root = None
+            try:
+                root = tk.Tk()
+                root.withdraw()  # Hide the main window
+                root.attributes('-topmost', True)  # Make it appear on top
+
+                # Auto-close after 60 seconds to prevent hanging
+                root.after(60000, root.destroy)
+
+                messagebox.showwarning(title, message)
+            except Exception as e:
+                self.logger.error(f"Error showing message: {e}")
+                print(f"[{datetime.now():%H:%M:%S}] Error showing message: {e}")
+            finally:
+                if root:
+                    try:
+                        root.quit()
+                        root.destroy()
+                    except Exception:
+                        pass  # Already destroyed
 
         # Run in a separate thread to avoid blocking
         threading.Thread(target=display, daemon=True).start()
 
     def lock_pc(self):
         """Lock the Windows PC"""
-        self.is_locked = True
-        ctypes.windll.user32.LockWorkStation()
+        try:
+            self.is_locked = True
+            ctypes.windll.user32.LockWorkStation()
+            self.logger.info("PC locked successfully")
+        except Exception as e:
+            self.logger.error(f"Error locking PC: {e}")
+            print(f"[{datetime.now():%H:%M:%S}] Error locking PC: {e}")
 
     def shutdown_pc(self, seconds=60):
         """Shutdown PC with warning"""
-        os.system(f'shutdown /s /t {seconds} /c "Computer will shutdown in {seconds} seconds"')
+        try:
+            os.system(f'shutdown /s /t {seconds} /c "Computer will shutdown in {seconds} seconds"')
+            self.logger.info(f"Shutdown initiated ({seconds}s)")
+        except Exception as e:
+            self.logger.error(f"Error initiating shutdown: {e}")
+            print(f"[{datetime.now():%H:%M:%S}] Error shutting down: {e}")
 
     def cancel_shutdown(self):
         """Cancel pending shutdown"""
         os.system('shutdown /a')
 
+    def get_time_remaining(self):
+        """Calculate minutes remaining until lock. Returns None if no limit set."""
+        if not self.should_monitor_user():
+            return None
+
+        current_time = datetime.now()
+        min_remaining = None
+
+        # Check scheduled lock times
+        for lock_time in self.lock_times:
+            lock_datetime = current_time.replace(hour=lock_time.hour, minute=lock_time.minute, second=0, microsecond=0)
+
+            # If lock time is earlier today, it's for tomorrow
+            if lock_datetime <= current_time:
+                lock_datetime = lock_datetime.replace(day=lock_datetime.day + 1)
+
+            minutes_until_lock = (lock_datetime - current_time).total_seconds() / 60
+
+            if min_remaining is None or minutes_until_lock < min_remaining:
+                min_remaining = minutes_until_lock
+
+        # Check usage limit
+        if self.usage_limit:
+            usage_minutes = (current_time - self.start_time).total_seconds() / 60
+            minutes_until_limit = self.usage_limit - usage_minutes
+
+            if min_remaining is None or minutes_until_limit < min_remaining:
+                min_remaining = minutes_until_limit
+
+        return min_remaining
+
+    def check_and_send_warnings(self):
+        """Check if warnings should be sent and send them"""
+        time_remaining = self.get_time_remaining()
+
+        if time_remaining is None:
+            return
+
+        # Check each warning interval
+        for warning_mins in self.warning_intervals:
+            warning_key = f"{warning_mins}min"
+
+            # If we're within the warning window and haven't sent this warning yet
+            if time_remaining <= warning_mins and warning_key not in self.warnings_sent:
+                self.warnings_sent.add(warning_key)
+
+                if warning_mins == 1:
+                    msg = "⚠️ Computer will lock in 1 minute!"
+                else:
+                    msg = f"⚠️ Computer will lock in {warning_mins} minutes!"
+
+                self.show_message(msg, "Warning")
+                self.logger.info(f"Warning sent: {warning_mins} minutes remaining")
+                print(f"[{datetime.now():%H:%M:%S}] Warning: {warning_mins} minutes until lock")
+
     def check_time_limits(self):
         """Check if any time limits have been reached"""
+        # Skip all checks if user is exempt from monitoring
+        if not self.should_monitor_user():
+            return False, ""
+
         current_time = datetime.now()
 
         # Check scheduled lock times
@@ -154,7 +294,7 @@ class PCTimeControl:
 
         # Check usage limit
         if self.usage_limit:
-            usage_minutes = (current_time - self.start_time).seconds / 60
+            usage_minutes = (current_time - self.start_time).total_seconds() / 60
             if usage_minutes >= self.usage_limit:
                 return True, f"Usage limit of {self.usage_limit} minutes reached"
 
@@ -164,12 +304,13 @@ class PCTimeControl:
         """Main monitoring loop"""
         print("PC Time Control is running...")
         while True:
+            # Check and send warnings if approaching time limit
+            self.check_and_send_warnings()
+
+            # Check if time limit reached
             should_lock, reason = self.check_time_limits()
             if should_lock:
                 print(f"Locking PC: {reason}")
-                # Give 1 minute warning
-                self.show_message("Computer will lock in 1 minute!", "Warning")
-                time.sleep(60)
                 self.lock_pc()
                 break
             time.sleep(1)
@@ -285,7 +426,27 @@ class RemoteControlServer:
             elif command == "GET_NAME":
                 import platform
                 return platform.node()
-                
+
+            elif command == "GET_CURRENT_USER":
+                return self.pc_control.current_user
+
+            elif command == "GET_USAGE_LIMIT":
+                if self.pc_control.usage_limit:
+                    return str(self.pc_control.usage_limit)
+                return "None"
+
+            elif command == "GET_LOCK_TIMES":
+                if self.pc_control.lock_times:
+                    times = [f"{lt.hour}:{lt.minute:02d}" for lt in self.pc_control.lock_times]
+                    return ",".join(times)
+                return "None"
+
+            elif command == "GET_TIME_REMAINING":
+                remaining = self.pc_control.get_time_remaining()
+                if remaining is not None:
+                    return f"{int(remaining)} minutes"
+                return "No limits set"
+
             elif command == "GET_STATUS":
                 actual_locked = self.pc_control.check_if_locked()
                 if actual_locked != self.pc_control.is_locked:
@@ -302,15 +463,17 @@ class RemoteControlServer:
                 try:
                     minutes = int(command.split(":", 1)[1])
                     self.pc_control.set_usage_limit(minutes)
+                    self.pc_control.save_state()  # Save state after setting limit
                     return f"Usage limit set to {minutes} minutes"
                 except ValueError:
                     return "Invalid limit value"
-                    
+
             elif command.startswith("ADD_LOCK_TIME:"):
                 try:
                     time_str = command.split(":", 1)[1]
                     hour, minute = map(int, time_str.split(":"))
                     self.pc_control.add_scheduled_lock(hour, minute)
+                    self.pc_control.save_state()  # Save state after adding lock time
                     return f"Lock time added: {hour:02d}:{minute:02d}"
                 except ValueError:
                     return "Invalid time format (use HH:MM)"
@@ -320,6 +483,7 @@ class RemoteControlServer:
                     minutes = int(command.split(":", 1)[1])
                     if self.pc_control.usage_limit:
                         self.pc_control.usage_limit += minutes
+                        self.pc_control.save_state()  # Save state after extending time
                         return f"Extended time by {minutes} minutes"
                     return "No time limit set to extend"
                 except ValueError:
@@ -331,7 +495,11 @@ class RemoteControlServer:
                     "LOCK - Lock the PC\n"
                     "SHUTDOWN - Shutdown the PC\n"
                     "GET_NAME - Get PC name\n"
+                    "GET_CURRENT_USER - Get current Windows username\n"
                     "GET_STATUS - Check if PC is locked\n"
+                    "GET_USAGE_LIMIT - Get current usage limit\n"
+                    "GET_LOCK_TIMES - Get scheduled lock times\n"
+                    "GET_TIME_REMAINING - Get time until next lock\n"
                     "MESSAGE:<text> - Show popup message\n"
                     "SET_LIMIT:<minutes> - Set usage limit\n"
                     "ADD_LOCK_TIME:HH:MM - Add scheduled lock\n"
@@ -353,16 +521,16 @@ class RemoteControlServer:
         for client_id, client_info in list(self.clients.items()):
             try:
                 client_info['socket'].close()
-            except:
-                pass
+            except Exception as e:
+                self.logger.error(f"Error closing client socket {client_id}: {e}")
             del self.clients[client_id]
-        
+
         # Close server socket
         if self.server_socket:
             try:
                 self.server_socket.close()
-            except:
-                pass
+            except Exception as e:
+                self.logger.error(f"Error closing server socket: {e}")
             self.server_socket = None
 
     def __del__(self):

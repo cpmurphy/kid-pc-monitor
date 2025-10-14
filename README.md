@@ -14,6 +14,10 @@ DIY parental control system for parents who code. If you know what 'pip install'
 - **⏱️ Daily usage limits** - Set maximum screen time
 - **💬 Send messages** - Display warnings or reminders
 - **🏠 Auto-discovery** - Finds all PCs on your network
+- **⏰ Grace period warnings** - 15, 5, and 1-minute warnings before locks
+- **💾 Persistent settings** - Limits survive PC restarts
+- **👤 User-specific restrictions** - Monitor only specific Windows accounts
+- **📊 Real-time status** - See current limits and time remaining
 
 ## 📸 Screenshots
 
@@ -98,6 +102,33 @@ CUSTOM_PC_NAMES = {
 }
 ```
 
+### User-Specific Monitoring
+Monitor only specific Windows user accounts. Edit `src/pc_control.py`:
+
+```python
+# Option 1: Monitor ONLY these specific users
+MONITORED_USERS = ['Tommy', 'Sarah']  # Only these kids are restricted
+EXEMPT_USERS = []
+
+# Option 2: Monitor everyone EXCEPT these users
+MONITORED_USERS = []
+EXEMPT_USERS = ['pavel', 'Mom', 'Dad']  # Parents are exempt
+
+# Option 3: Monitor ALL users (default)
+MONITORED_USERS = []
+EXEMPT_USERS = []
+```
+
+**Use Case:** If multiple family members share one PC, you can restrict only the children's accounts while leaving parent accounts unrestricted.
+
+### Persistent State
+Settings are automatically saved to `pc_control_state.json` including:
+- Daily usage limits
+- Scheduled lock times
+- Start time for usage tracking
+
+This means restrictions **survive PC restarts** - kids can't bypass by rebooting!
+
 
 ## 🔧 Troubleshooting
 
@@ -130,12 +161,22 @@ Parents and developers welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
-### Ideas for Contributions
+### Recent Improvements (v2.0)
+- ✅ Grace period warnings (15, 5, 1 minute before lock)
+- ✅ Persistent state storage (settings survive restarts)
+- ✅ User-specific restrictions (monitor only certain accounts)
+- ✅ Fixed usage time calculation bug
+- ✅ Improved error handling and logging
+- ✅ Web UI shows current limits and time remaining
+- ✅ Better resource management
+
+### Ideas for Future Contributions
 - macOS/Linux support
 - Mobile app
 - Usage statistics/reports
 - Reward system integration
 - Application-specific time limits
+- Authentication/password protection
 
 ## 📄 License
 

@@ -44,6 +44,62 @@ def check_pc_status(ip, port=9999):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Error checking {ip}: {e}")
         return "UNKNOWN"
 
+def get_current_user(ip, port=9999):
+    """Get the current Windows username logged in"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect((ip, port))
+        s.send(b"GET_CURRENT_USER")
+        username = s.recv(1024).decode().strip()
+        s.close()
+        return username
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting user from {ip}: {e}")
+        return None
+
+def get_usage_limit(ip, port=9999):
+    """Get the current usage limit in minutes"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect((ip, port))
+        s.send(b"GET_USAGE_LIMIT")
+        limit = s.recv(1024).decode().strip()
+        s.close()
+        return None if limit == "None" else int(limit)
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting limit from {ip}: {e}")
+        return None
+
+def get_lock_times(ip, port=9999):
+    """Get scheduled lock times"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect((ip, port))
+        s.send(b"GET_LOCK_TIMES")
+        times = s.recv(1024).decode().strip()
+        s.close()
+        return None if times == "None" else times.split(',')
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting lock times from {ip}: {e}")
+        return None
+
+def get_time_remaining(ip, port=9999):
+    """Get time remaining until next lock"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect((ip, port))
+        s.send(b"GET_TIME_REMAINING")
+        remaining = s.recv(1024).decode().strip()
+        s.close()
+        return remaining
+    except Exception as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting time remaining from {ip}: {e}")
+        return None
+
 def scan_for_servers(port=9999):
     """Scan the local network for PCs running the control server"""
     global discovered_pcs, last_scan_time
@@ -116,13 +172,18 @@ def send_command(host, command, port=9999):
 @app.route('/')
 def index():
     """Main page showing all discovered PCs"""
-    # Update lock status for all PCs
+    # Update lock status and current user for all PCs
     for ip in discovered_pcs:
         status = check_pc_status(ip)
         discovered_pcs[ip]['locked'] = (status == "LOCKED")
-    
-    return render_template('index.html', 
-                         pcs=discovered_pcs, 
+
+        # Get current user
+        username = get_current_user(ip)
+        if username:
+            discovered_pcs[ip]['current_user'] = username
+
+    return render_template('index.html',
+                         pcs=discovered_pcs,
                          last_scan=last_scan_time)
 
 @app.route('/scan')
@@ -138,7 +199,25 @@ def control(ip):
     # Check current lock status
     status = check_pc_status(ip)
     pc_info['locked'] = (status == "LOCKED")
-    
+
+    # Get current user
+    username = get_current_user(ip)
+    if username:
+        pc_info['current_user'] = username
+
+    # Get current limits and time remaining
+    usage_limit = get_usage_limit(ip)
+    if usage_limit:
+        pc_info['usage_limit'] = usage_limit
+
+    lock_times = get_lock_times(ip)
+    if lock_times:
+        pc_info['lock_times'] = lock_times
+
+    time_remaining = get_time_remaining(ip)
+    if time_remaining:
+        pc_info['time_remaining'] = time_remaining
+
     return render_template('control.html', ip=ip, pc_info=pc_info)
 
 @app.route('/action', methods=['POST'])
@@ -274,6 +353,9 @@ INDEX_TEMPLATE = '''
             <div class="pc-card" onclick="location.href='/control/{{ ip }}'">
                 <div class="pc-name">💻 {{ info.hostname }}</div>
                 <div class="pc-ip">{{ ip }}</div>
+                {% if info.get('current_user') %}
+                <div class="pc-ip">👤 User: {{ info.current_user }}</div>
+                {% endif %}
                 {% if info.locked %}
                 <span class="status locked">🔒 LOCKED</span>
                 {% else %}
@@ -422,10 +504,29 @@ CONTROL_TEMPLATE = '''
 <body>
     <div class="container">
         <a href="/" class="back-btn">← Back to PCs</a>
-        
+
         <h1>💻 {{ pc_info.hostname }}</h1>
         <p style="text-align: center; color: #666;">{{ ip }}</p>
-        
+        {% if pc_info.get('current_user') %}
+        <p style="text-align: center; color: #666;">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
+        {% endif %}
+
+        <!-- Display Current Settings -->
+        {% if pc_info.get('usage_limit') or pc_info.get('lock_times') %}
+        <div class="action-group">
+            <div class="action-title">📊 Current Settings</div>
+            {% if pc_info.get('usage_limit') %}
+            <p>⏱️ <strong>Daily Limit:</strong> {{ pc_info.usage_limit }} minutes ({{ (pc_info.usage_limit / 60)|round(1) }} hours)</p>
+            {% endif %}
+            {% if pc_info.get('time_remaining') %}
+            <p>⏳ <strong>Time Remaining:</strong> {{ pc_info.time_remaining }}</p>
+            {% endif %}
+            {% if pc_info.get('lock_times') %}
+            <p>🕐 <strong>Scheduled Locks:</strong> {{ pc_info.lock_times|join(', ') }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
         {% if pc_info.locked %}
         <div class="status-message" style="display: block; background-color: #fff3cd; color: #856404;">
             🔒 This computer is currently LOCKED
