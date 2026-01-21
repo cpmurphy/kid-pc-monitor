@@ -48,30 +48,58 @@ If these terms scare you, consider commercial alternatives like:
 
 ### Installation
 
+There are two ways to set up Kid PC Monitor:
+
+#### Option A: Separate Parent PC (Recommended)
+
+Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
+
 1. **On each kid's PC:**
 ```bash
-# Download the control script
 git clone https://github.com/rookie7799/kid-pc-monitor.git
 cd kid-pc-monitor
-
-# Install requirements
 pip install -r requirements.txt
 
-# Run the control script (as administrator)
+# Run installer as administrator
 python scripts/install.py
 ```
-* side note - if your kid is "good" with computers, I would recommend copying pc_monitor.py
- some place where it would be hard to find ;)
 
-2. **On your phone/computer:**
+2. **On your PC:**
 ```bash
-# Run the web interface
-cd src
+git clone https://github.com/rookie7799/kid-pc-monitor.git
+cd kid-pc-monitor/src
+pip install -r ../requirements.txt
 python web_panel.py
 
-# Open in your fav browser (PC or Phone)
-http://YOUR-PC-IP:5000
+# Open in browser: http://YOUR-PC-IP:5000
 ```
+
+#### Option B: Single PC Setup
+
+Run everything on the kid's PC and access the admin panel from your phone. Convenient if you don't have a separate PC always running.
+
+1. **On the kid's PC (as administrator):**
+```bash
+git clone https://github.com/rookie7799/kid-pc-monitor.git
+cd kid-pc-monitor
+pip install -r requirements.txt
+
+# Install both services
+python scripts/install.py           # Installs pc_control
+python scripts/install_web_panel.py # Installs web panel
+```
+
+2. **On your phone:**
+   - Open browser and go to `http://KIDS-PC-IP:5000`
+   - Bookmark it for easy access
+
+Both services run invisibly in the background using `pythonw.exe`.
+
+**Note:** With this setup, a tech-savvy child could potentially discover the web panel at `localhost:5000`. Option A is more secure.
+
+---
+
+*Side note: if your kid is "good" with computers, consider copying the scripts somewhere less obvious.*
 
 ## 📖 Usage Guide
 
@@ -150,9 +178,9 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Ensure PCs are on same network
 
 ### "Can't connect from phone"
-- Check firewall allows port 5000
+- Check firewall allows port 5000 (web panel) and port 9999 (pc_control)
 - Use PC's IP address, not localhost
-- Ensure web_control_panel.py is running
+- Ensure web_panel.py is running
 
 ### "Lock status not updating"
 - Restart pc_control.py
