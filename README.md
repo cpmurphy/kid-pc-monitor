@@ -93,6 +93,17 @@ Then open `http://YOUR-LINUX-IP:5000` from your phone or browser. Allow inbound 
 
 **systemd / service note:** `web_panel.py` writes `templates/` under the process **current working directory** when it is imported. If you run it from a unit file, set `WorkingDirectory=` to the directory you use for `cd` (for example the repo's `src` folder if you start the app from there).
 
+**Install as a user service (survives reboot when user lingering is enabled):** from the repo root, after `pip install -r requirements.txt`:
+
+```bash
+chmod +x scripts/install_web_panel_linux.sh
+./scripts/install_web_panel_linux.sh install   # writes ~/.config/systemd/user/kid-pc-monitor-web-panel.service
+./scripts/install_web_panel_linux.sh status
+# ./scripts/install_web_panel_linux.sh uninstall   # when you want it gone
+```
+
+Use `./scripts/install_web_panel_linux.sh cat-unit` to preview the unit. Override the interpreter with `PYTHON=/path/to/python3 ./scripts/install_web_panel_linux.sh install` if you do not use a repo-root `.venv`. For the service to start at boot **before anyone logs in graphically**, run once: `sudo loginctl enable-linger "$USER"`.
+
 #### Option B: Single PC Setup
 
 Run everything on the kid's PC and access the admin panel from your phone. Convenient if you don't have a separate PC always running.
