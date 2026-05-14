@@ -45,7 +45,7 @@ def check_pc_status(ip, port=9999):
         return "UNKNOWN"
 
 def get_current_user(ip, port=9999):
-    """Get the current Windows username logged in"""
+    """Get the current username logged in on the kid PC (as reported by the agent)."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(2)

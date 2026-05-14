@@ -4,7 +4,8 @@ DIY parental control system for parents who code. If you know what 'pip install'
 
 ![Python](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
+![Kids PC](https://img.shields.io/badge/kids_PC-Windows-lightgrey.svg)
+![Web panel](https://img.shields.io/badge/web_panel-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)
 
 ## 🎯 Features
 
@@ -31,10 +32,10 @@ DIY parental control system for parents who code. If you know what 'pip install'
 
 This is NOT a one-click solution. You'll need to:
 - Install Python
-- Use command prompt
-- Understand IP addresses  
-- Configure Windows Firewall (technically you would simply allow the process to run - once)
-- Set up scheduled task
+- Use a terminal / command prompt
+- Understand IP addresses
+- Open firewall ports where needed (Windows on kid PCs; on Linux parents, e.g. `ufw` or your distro's firewall)
+- On kid PCs: set up a Windows scheduled task (the installer does this)
 
 If these terms scare you, consider commercial alternatives like:
 - Qustodio
@@ -42,9 +43,11 @@ If these terms scare you, consider commercial alternatives like:
 - Windows Family Safety
 
 ### Prerequisites
-- Windows 10/11 PCs (for the kids)
-- Python 3.7+ installed
-- All PCs on the same network
+- **Kid PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
+- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only)
+- **Network:** Kid PCs must accept inbound TCP **9999** from the machine running the web panel (usually the same LAN; cross-subnet works if routed and allowed by firewalls). The web panel listens on TCP **5000** for your browser or phone.
+
+Auto-discovery scans the `/24` subnet containing the parent machine's primary IPv4 address (see `scan_for_servers` in `src/web_panel.py`). If discovery misses a PC, you can still use it once the agent is reachable at its IP.
 
 ### Installation
 
@@ -64,7 +67,7 @@ pip install -r requirements.txt
 python scripts/install.py
 ```
 
-2. **On your PC:**
+2. **On your PC (Windows or macOS; for Linux, see the Linux parent steps below):**
 ```bash
 git clone https://github.com/rookie7799/kid-pc-monitor.git
 cd kid-pc-monitor/src
@@ -73,6 +76,22 @@ python web_panel.py
 
 # Open in browser: http://YOUR-PC-IP:5000
 ```
+
+**Linux parent machine:** The web panel does not require `pywin32`; `requirements.txt` installs it only on Windows. From the repo root:
+
+```bash
+git clone https://github.com/rookie7799/kid-pc-monitor.git
+cd kid-pc-monitor
+python3 -m venv .venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+cd src
+python3 web_panel.py
+```
+
+Then open `http://YOUR-LINUX-IP:5000` from your phone or browser. Allow inbound TCP **5000** on the Linux host (example with UFW: `sudo ufw allow 5000/tcp`).
+
+**systemd / service note:** `web_panel.py` writes `templates/` under the process **current working directory** when it is imported. If you run it from a unit file, set `WorkingDirectory=` to the directory you use for `cd` (for example the repo's `src` folder if you start the app from there).
 
 #### Option B: Single PC Setup
 
@@ -178,9 +197,10 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Ensure PCs are on same network
 
 ### "Can't connect from phone"
-- Check firewall allows port 5000 (web panel) and port 9999 (pc_control)
-- Use PC's IP address, not localhost
-- Ensure web_panel.py is running
+- Check firewall allows port 5000 (web panel host) and port 9999 (each kid PC running the agent)
+- On Linux parents, ensure the host firewall allows inbound **5000/tcp** (e.g. `ufw allow 5000/tcp`)
+- Use the web panel machine's IP address, not localhost
+- Ensure `web_panel.py` is running
 
 ### "Lock status not updating"
 - Restart pc_control.py
@@ -211,7 +231,7 @@ Parents and developers welcome! Please:
 - ✅ Better resource management
 
 ### Ideas for Future Contributions
-- macOS/Linux support
+- Linux/macOS **agent** (kid-side monitoring; the web panel already runs on Linux/macOS/Windows)
 - Mobile app
 - Usage statistics/reports
 - Reward system integration
