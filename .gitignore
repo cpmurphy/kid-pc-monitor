@@ -26,5 +26,6 @@ Thumbs.db
 
 # App specific
 pc_control_state.json
+web_panel_auth.json
 *.log
 config_local.py

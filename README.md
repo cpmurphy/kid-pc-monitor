@@ -221,7 +221,7 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 ## 🛡️ Security Notes
 
 - Only works on local network (not internet)
-- No passwords stored
+- Optional **parent web panel** password: use **Add password protection** on the home page. Only a secure hash is stored in `web_panel_auth.json` next to the app (not the plain password). Until you set one, anyone on the LAN can use the panel—the same as before this feature.
 - Can't bypass Windows lock screen
 - Kids can close if they have admin rights
 

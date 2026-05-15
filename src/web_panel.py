@@ -1,11 +1,68 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+import json
+import os
+import secrets
 import socket
 import threading
 import ipaddress
 import time
 from datetime import datetime
+from pathlib import Path
+
+from werkzeug.security import check_password_hash, generate_password_hash
 
 app = Flask(__name__)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+AUTH_FILE = Path(__file__).resolve().parent / "web_panel_auth.json"
+SESSION_AUTH_KEY = "panel_auth"
+
+
+def read_auth_file():
+    if not AUTH_FILE.is_file():
+        return {}
+    try:
+        return json.loads(AUTH_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def write_auth_file(data):
+    AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = AUTH_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    os.replace(tmp, AUTH_FILE)
+
+
+def get_stored_password_hash():
+    h = read_auth_file().get("password_hash")
+    return h if isinstance(h, str) and h else None
+
+
+def password_is_configured():
+    return get_stored_password_hash() is not None
+
+
+def sync_secret_key_from_disk():
+    data = read_auth_file()
+    sk = data.get("secret_key")
+    if isinstance(sk, str) and len(sk) >= 16:
+        app.secret_key = sk
+    else:
+        app.secret_key = secrets.token_hex(32)
+
+
+sync_secret_key_from_disk()
+
+
+def safe_next_path(next_param):
+    if not next_param or not isinstance(next_param, str):
+        return url_for("index")
+    n = next_param.strip()
+    if not n.startswith("/") or n.startswith("//"):
+        return url_for("index")
+    return n
 
 # Store discovered PCs
 discovered_pcs = {}
@@ -169,6 +226,76 @@ def send_command(host, command, port=9999):
     except Exception as e:
         return False, str(e)
 
+
+@app.before_request
+def require_panel_password():
+    if request.endpoint == "static" or request.endpoint is None:
+        return None
+    if not password_is_configured():
+        return None
+    if session.get(SESSION_AUTH_KEY):
+        return None
+    if request.endpoint == "login":
+        return None
+    return redirect(url_for("login", next=request.path))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not password_is_configured():
+        return redirect(url_for("index"))
+    if session.get(SESSION_AUTH_KEY):
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        pwd = request.form.get("password", "")
+        ph = get_stored_password_hash()
+        if ph and check_password_hash(ph, pwd):
+            session.clear()
+            session[SESSION_AUTH_KEY] = True
+            return redirect(safe_next_path(request.form.get("next")))
+        flash("Incorrect password.", "error")
+    next_path = safe_next_path(request.form.get("next") or request.args.get("next"))
+    return render_template("login.html", next=next_path)
+
+
+@app.route("/logout")
+def logout():
+    session.pop(SESSION_AUTH_KEY, None)
+    if password_is_configured():
+        return redirect(url_for("login"))
+    return redirect(url_for("index"))
+
+
+@app.route("/set-password", methods=["GET", "POST"])
+def set_password():
+    if password_is_configured() and not session.get(SESSION_AUTH_KEY):
+        return redirect(url_for("login", next=request.path))
+
+    if request.method == "POST":
+        p1 = request.form.get("password", "")
+        p2 = request.form.get("password_confirm", "")
+        if len(p1) < 8:
+            flash("Password must be at least 8 characters.", "error")
+        elif p1 != p2:
+            flash("Passwords do not match.", "error")
+        else:
+            data = read_auth_file()
+            secret_key = data.get("secret_key")
+            if not isinstance(secret_key, str) or len(secret_key) < 16:
+                secret_key = secrets.token_hex(32)
+            data["secret_key"] = secret_key
+            data["password_hash"] = generate_password_hash(p1)
+            write_auth_file(data)
+            app.secret_key = secret_key
+            session.clear()
+            session[SESSION_AUTH_KEY] = True
+            flash("Password saved. Use it to sign in on other devices or browsers.", "success")
+            return redirect(url_for("index"))
+
+    changing = password_is_configured()
+    return render_template("set_password.html", changing=changing)
+
+
 @app.route('/')
 def index():
     """Main page showing all discovered PCs"""
@@ -184,7 +311,9 @@ def index():
 
     return render_template('index.html',
                          pcs=discovered_pcs,
-                         last_scan=last_scan_time)
+                         last_scan=last_scan_time,
+                         password_protected=password_is_configured(),
+                         panel_auth=bool(session.get(SESSION_AUTH_KEY)))
 
 @app.route('/scan')
 def scan():
@@ -215,7 +344,9 @@ def control(ip):
     time_remaining = get_time_remaining(ip)
     pc_info['time_remaining'] = time_remaining  # Update even if None
 
-    return render_template('control.html', ip=ip, pc_info=pc_info)
+    return render_template('control.html', ip=ip, pc_info=pc_info,
+                           password_protected=password_is_configured(),
+                           panel_auth=bool(session.get(SESSION_AUTH_KEY)))
 
 @app.route('/action', methods=['POST'])
 def action():
@@ -254,6 +385,95 @@ def action():
     return jsonify({'success': success, 'response': response})
 
 # HTML Templates
+LOGIN_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in — Kids PC Control Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
+        .box { max-width: 400px; margin: 40px auto; background: white; padding: 24px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 20px; color: #333; text-align: center; margin-top: 0; }
+        label { display: block; margin-top: 12px; color: #444; font-size: 14px; }
+        input[type="password"] { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; margin-top: 20px; padding: 14px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .err { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 12px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>Sign in</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              {% if category == 'error' %}<div class="err">{{ message }}</div>{% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="post" action="{{ url_for('login') }}" autocomplete="on">
+            <input type="hidden" name="next" value="{{ next }}">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required minlength="1" maxlength="128"
+                   autocomplete="current-password" inputmode="text">
+            <button type="submit">Continue</button>
+        </form>
+        <p class="hint">No username — your browser can save this password.</p>
+    </div>
+</body>
+</html>
+'''
+
+SET_PASSWORD_TEMPLATE = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if changing %}Change password{% else %}Add password{% endif %} — Kids PC Control Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
+        .box { max-width: 440px; margin: 30px auto; background: white; padding: 24px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 20px; color: #333; text-align: center; margin-top: 0; }
+        label { display: block; margin-top: 14px; color: #444; font-size: 14px; }
+        input[type="password"] { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; margin-top: 20px; padding: 14px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #0b7dda; }
+        .err { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 12px; font-size: 14px; }
+        .ok { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 12px; font-size: 14px; }
+        .hint { font-size: 13px; color: #666; margin-top: 14px; line-height: 1.4; }
+        a.back { display: inline-block; margin-bottom: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <a class="back" href="{{ url_for('index') }}">← Back</a>
+        <h1>{% if changing %}Change password{% else %}Add password protection{% endif %}</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              {% if category == 'error' %}<div class="err">{{ message }}</div>{% endif %}
+              {% if category == 'success' %}<div class="ok">{{ message }}</div>{% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="post" action="{{ url_for('set_password') }}" autocomplete="on">
+            <label for="password">New password (at least 8 characters)</label>
+            <input type="password" id="password" name="password" required minlength="8" maxlength="128"
+                   autocomplete="new-password" inputmode="text">
+            <label for="password_confirm">Confirm password</label>
+            <input type="password" id="password_confirm" name="password_confirm" required minlength="8" maxlength="128"
+                   autocomplete="new-password" inputmode="text">
+            <button type="submit">{% if changing %}Update password{% else %}Save password{% endif %}</button>
+        </form>
+        <p class="hint">The password is optional.</p>
+    </div>
+</body>
+</html>
+'''
+
 INDEX_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -345,6 +565,26 @@ INDEX_TEMPLATE = '''
 <body>
     <div class="container">
         <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              {% if category == 'success' %}
+              <p style="background:#d4edda;color:#155724;padding:10px;border-radius:8px;text-align:center;">{{ message }}</p>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <p style="text-align:center;font-size:14px;margin:0 0 10px 0;">
+            {% if not password_protected %}
+            <a href="{{ url_for('set_password') }}">Add password protection</a> (optional)
+            {% elif panel_auth %}
+            <a href="{{ url_for('logout') }}">Log out</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('set_password') }}">Change password</a>
+            {% endif %}
+        </p>
         
         <button onclick="location.href='/scan'" class="scan-btn">
             🔍 Scan for PCs
@@ -507,6 +747,15 @@ CONTROL_TEMPLATE = '''
 <body>
     <div class="container">
         <a href="/" class="back-btn">← Back to PCs</a>
+        <p style="text-align:right;font-size:13px;margin:0 0 10px 0;">
+            {% if not password_protected %}
+            <a href="{{ url_for('set_password') }}">Add password protection</a>
+            {% elif panel_auth %}
+            <a href="{{ url_for('logout') }}">Log out</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('set_password') }}">Change password</a>
+            {% endif %}
+        </p>
 
         <h1>💻 {{ pc_info.hostname }}</h1>
         <p style="text-align: center; color: #666;">{{ ip }}</p>
@@ -766,7 +1015,6 @@ CONTROL_TEMPLATE = '''
 '''
 
 # Create template files
-import os
 os.makedirs('templates', exist_ok=True)
 
 with open('templates/index.html', 'w', encoding='utf-8') as f:
@@ -774,6 +1022,12 @@ with open('templates/index.html', 'w', encoding='utf-8') as f:
 
 with open('templates/control.html', 'w', encoding='utf-8') as f:
     f.write(CONTROL_TEMPLATE)
+
+with open('templates/login.html', 'w', encoding='utf-8') as f:
+    f.write(LOGIN_TEMPLATE)
+
+with open('templates/set_password.html', 'w', encoding='utf-8') as f:
+    f.write(SET_PASSWORD_TEMPLATE)
 
 if __name__ == '__main__':
     # Do initial scan
