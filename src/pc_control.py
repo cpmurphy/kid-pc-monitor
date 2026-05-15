@@ -34,10 +34,16 @@ EXEMPT_USERS = []
 
 # ============================================
 
-# Set up logging
-log_file = 'pc_control.log'
-if os.path.exists(log_file):
-    os.unlink(log_file) #remove previous log
+# Set up per-user data directory for log + state.
+# Lives under the running user's profile so the agent can write even when
+# installed system-wide (e.g. C:\ProgramData\KidPCMonitor) from an admin
+# account while running in a non-admin child's session.
+data_dir = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'KidPCMonitor'
+data_dir.mkdir(parents=True, exist_ok=True)
+
+log_file = data_dir / 'pc_control.log'
+if log_file.exists():
+    log_file.unlink() #remove previous log
 
 logging.basicConfig(
     filename=str(log_file),
@@ -54,7 +60,7 @@ class PCTimeControl:
         self.is_locked = False
         self.last_activity = datetime.now()
         self.current_user = getpass.getuser()
-        self.state_file = 'pc_control_state.json'
+        self.state_file = str(data_dir / 'pc_control_state.json')
         self.logger = logging.getLogger('PCTimeControl')
         self.warnings_sent = set()  # Track which warnings have been sent
         self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock

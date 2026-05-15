@@ -67,6 +67,14 @@ pip install -r requirements.txt
 python scripts/install.py
 ```
 
+The installer asks whether to install for **this account** (the simple path — works when the kid's account is the only one on the PC, even if it has admin rights) or for **a different user account** (cross-user install: a parent/admin runs the installer and provides the child's username; the agent then launches in the child's session at their logon).
+
+For the cross-user mode:
+- Files install to `C:\ProgramData\KidPCMonitor` and the child account is granted read+execute.
+- Python must be installed **for all users** (not the per-user `%LOCALAPPDATA%\Programs\Python\…` install) so the child's task can launch `pythonw.exe`. The installer refuses with a clear message if only a per-user Python is found.
+- The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid).
+- The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile.
+
 2. **On your PC (Windows or macOS; for Linux, see the Linux parent steps below):**
 ```bash
 git clone https://github.com/rookie7799/kid-pc-monitor.git
@@ -223,7 +231,7 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Only works on local network (not internet)
 - No passwords stored
 - Can't bypass Windows lock screen
-- Kids can close if they have admin rights
+- Kids can close the agent if their account has admin rights. If you install in cross-user mode (admin installs, non-admin child runs), the child cannot stop or delete the scheduled task or its files.
 
 ## 🤝 Contributing
 
