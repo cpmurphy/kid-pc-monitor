@@ -153,8 +153,10 @@ Both services run invisibly in the background using `pythonw.exe`.
 1. Select a PC
 2. Scroll to "Set Lock Time"
 3. Choose bedtime (e.g., 9:00 PM)
-4. PC will lock automatically at that time
+4. PC will lock automatically at that time and stay locked for the rest of the day — if the child signs back in after the bedtime minute, the agent re-locks immediately. The window resets at local midnight.
 5. See the scheduled lock in "Current Settings"
+
+Note: when a usage limit or bedtime is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password.
 
 ### Clearing/Removing Limits
 1. View the "📊 Current Settings" section
