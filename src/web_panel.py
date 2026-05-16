@@ -10,6 +10,7 @@ app = Flask(__name__)
 # Store discovered PCs
 discovered_pcs = {}
 last_scan_time = None
+last_scan_network = None
 
 # Custom PC names (optional) - Add your kids' PC names here
 CUSTOM_PC_NAMES = {
@@ -27,6 +28,47 @@ def get_local_ip():
         return ip
     except:
         return "127.0.0.1"
+
+def get_default_scan_network():
+    """Return the /24 subnet containing this machine's primary IPv4 address."""
+    local_ip = get_local_ip()
+    return ipaddress.ip_network(f"{local_ip}/24", strict=False)
+
+def parse_scan_subnet(subnet_arg):
+    """
+    Parse a user-supplied subnet into an ip_network.
+
+    Accepts CIDR (192.168.123.0/24), three octets (192.168.123),
+    or a host IP on a /24 (192.168.123.50). Empty means default LAN.
+    """
+    if subnet_arg is None or not str(subnet_arg).strip():
+        network = get_default_scan_network()
+        return network, str(network)
+
+    raw = str(subnet_arg).strip()
+    normalized = raw
+
+    if '/' not in normalized:
+        parts = normalized.split('.')
+        if len(parts) == 3:
+            normalized = f"{normalized}.0/24"
+        elif len(parts) == 4:
+            normalized = f"{'.'.join(parts[:3])}.0/24"
+        else:
+            raise ValueError(
+                f"Invalid network '{raw}'. Use CIDR (192.168.123.0/24), "
+                "three octets (192.168.123), or a host IP (192.168.123.50)."
+            )
+
+    try:
+        network = ipaddress.ip_network(normalized, strict=False)
+    except ValueError as exc:
+        raise ValueError(f"Invalid network '{raw}': {exc}") from exc
+
+    if network.version != 4:
+        raise ValueError("Only IPv4 networks are supported.")
+
+    return network, str(network)
 
 def check_pc_status(ip, port=9999):
     """Check if a PC is locked"""
@@ -100,11 +142,10 @@ def get_time_remaining(ip, port=9999):
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting time remaining from {ip}: {e}")
         return None
 
-def scan_for_servers(port=9999):
-    """Scan the local network for PCs running the control server"""
-    global discovered_pcs, last_scan_time
-    local_ip = get_local_ip()
-    network = ipaddress.ip_network(f"{local_ip}/24", strict=False)
+def scan_for_servers(port=9999, subnet=None):
+    """Scan a network for PCs running the control server."""
+    global discovered_pcs, last_scan_time, last_scan_network
+    network, network_label = parse_scan_subnet(subnet)
     discovered_pcs = {}
     
     def check_host(ip):
@@ -154,6 +195,7 @@ def scan_for_servers(port=9999):
         t.join()
     
     last_scan_time = datetime.now()
+    last_scan_network = network_label
     return discovered_pcs
 
 def send_command(host, command, port=9999):
@@ -184,13 +226,21 @@ def index():
 
     return render_template('index.html',
                          pcs=discovered_pcs,
-                         last_scan=last_scan_time)
+                         last_scan=last_scan_time,
+                         last_scan_network=last_scan_network,
+                         default_subnet=str(get_default_scan_network()),
+                         scan_subnet=request.args.get('subnet', ''),
+                         scan_error=request.args.get('error'))
 
-@app.route('/scan')
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
     """Scan for PCs and redirect to main page"""
-    scan_for_servers()
-    return redirect(url_for('index'))
+    subnet = request.args.get('subnet') or request.form.get('subnet')
+    try:
+        scan_for_servers(subnet=subnet)
+    except ValueError as exc:
+        return redirect(url_for('index', error=str(exc), subnet=subnet or ''))
+    return redirect(url_for('index', subnet=subnet or ''))
 
 @app.route('/control/<ip>')
 def control(ip):
@@ -291,6 +341,40 @@ INDEX_TEMPLATE = '''
         .scan-btn:hover {
             background-color: #45a049;
         }
+        .scan-form {
+            background: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .scan-form label {
+            display: block;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .scan-form input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .scan-hint {
+            color: #666;
+            font-size: 13px;
+            margin: 8px 0 12px;
+        }
+        .scan-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
         .pc-card {
             background: white;
             padding: 20px;
@@ -345,10 +429,24 @@ INDEX_TEMPLATE = '''
 <body>
     <div class="container">
         <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
-        
-        <button onclick="location.href='/scan'" class="scan-btn">
-            🔍 Scan for PCs
-        </button>
+
+        <form class="scan-form" method="get" action="/scan">
+            {% if scan_error %}
+            <div class="scan-error">{{ scan_error }}</div>
+            {% endif %}
+            <label for="subnet">Network to scan</label>
+            <input type="text" id="subnet" name="subnet"
+                   placeholder="Leave blank for default ({{ default_subnet }})"
+                   value="{{ scan_subnet }}">
+            <p class="scan-hint">
+                Default LAN: {{ default_subnet }}.
+                For a VM on another subnet, try <strong>192.168.123</strong> or
+                <strong>192.168.123.0/24</strong>.
+            </p>
+            <button type="submit" class="scan-btn">
+                🔍 Scan for PCs
+            </button>
+        </form>
         
         {% if pcs %}
             <h2>Available PCs:</h2>
@@ -375,6 +473,9 @@ INDEX_TEMPLATE = '''
         {% if last_scan %}
         <div class="last-scan">
             Last scan: {{ last_scan.strftime('%I:%M %p') }}
+            {% if last_scan_network %}
+            on {{ last_scan_network }}
+            {% endif %}
         </div>
         {% endif %}
     </div>
