@@ -28,3 +28,4 @@ Thumbs.db
 pc_control_state.json
 *.log
 config_local.py
+src/web_panel_auth.json
