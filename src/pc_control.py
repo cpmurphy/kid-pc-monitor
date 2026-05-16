@@ -42,15 +42,22 @@ data_dir = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'KidPCMonito
 data_dir.mkdir(parents=True, exist_ok=True)
 
 log_file = data_dir / 'pc_control.log'
-if log_file.exists():
-    log_file.unlink() #remove previous log
 
-logging.basicConfig(
-    filename=str(log_file),
-    level=logging.INFO,
-    format='[%(asctime)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+def _configure_logging():
+    """Append to the per-user log (do not truncate — empty logs make debugging hard)."""
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+    handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    handler.setFormatter(logging.Formatter(
+        '[%(asctime)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    ))
+    root.addHandler(handler)
+
+_configure_logging()
+logger = logging.getLogger('kid_pc_monitor')
 
 class PCTimeControl:
     def __init__(self):
@@ -601,10 +608,8 @@ class RemoteControlServer:
 
 # Main
 if __name__ == "__main__":
-    # Create control instance
-    control = PCTimeControl()
-    
-    # Add network connectivity check
+    script_path = os.path.abspath(__file__)
+
     def check_port_availability(port):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -612,15 +617,26 @@ if __name__ == "__main__":
             return True
         except socket.error:
             return False
-    
+
+    logger.info(
+        "Agent process starting (pid=%s, user=%s, script=%s)",
+        os.getpid(), getpass.getuser(), script_path,
+    )
+
     if not check_port_availability(9999):
-        control.show_message(
-            f"Port 9999 is already in use or blocked!\n"
-            f"Check your firewall or other running applications.",
-            "Network Error"
+        logger.error(
+            "Port 9999 already in use — another KidPCMonitor instance is probably "
+            "already running. Exiting duplicate startup."
         )
         sys.exit(1)
+
+    # Create control instance
+    control = PCTimeControl()
     
+    # Enforce usage limits, bedtimes, and warnings (separate from the TCP server)
+    enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
+    enforcement_thread.start()
+
     # Start remote control server
     remote = RemoteControlServer()
     server_thread = threading.Thread(target=remote.start_server, args=(control,))
@@ -630,13 +646,15 @@ if __name__ == "__main__":
     # Verify server started
     time.sleep(1)  # Give server time to start
     if not remote.running:
+        logger.error("Remote control server failed to start on port 9999")
         control.show_message(
             "Failed to start network server!\n"
             "Check firewall settings and try again.",
             "Server Error"
         )
         sys.exit(1)
-    
+
+    logger.info("Agent running (enforcement loop + TCP server on port 9999)")
     print("Server is running. Press Ctrl+C to stop.")
     
     try:
