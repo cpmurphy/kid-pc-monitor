@@ -25,10 +25,6 @@ Commands:
 Environment (optional):
   PYTHON      Full path to python interpreter (default: .venv, venv, or python3)
 
-The service runs with WorkingDirectory set to the repo's src/ directory so
-Flask templates are written next to web_panel.py, matching manual runs from
-that directory.
-
 Optional — start at boot without an interactive login:
   sudo loginctl enable-linger "$USER"
 EOF

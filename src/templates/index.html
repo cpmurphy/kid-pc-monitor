@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kids PC Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .scan-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .scan-btn:hover {
+            background-color: #45a049;
+        }
+        .pc-card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .pc-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .pc-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .pc-ip {
+            color: #666;
+            font-size: 14px;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .status.online {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status.locked {
+            background-color: #ff9800;
+            color: white;
+        }
+        .last-scan {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              {% if category == 'success' %}
+              <p style="background:#d4edda;color:#155724;padding:10px;border-radius:8px;text-align:center;">{{ message }}</p>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <p style="text-align:center;font-size:14px;margin:0 0 10px 0;">
+            {% if not password_protected %}
+            <a href="{{ url_for('set_password') }}">Add password protection</a> (optional)
+            {% elif panel_auth %}
+            <a href="{{ url_for('logout') }}">Log out</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('set_password') }}">Change password</a>
+            {% endif %}
+        </p>
+        
+        <form class="scan-form" method="get" action="/scan">
+            <button type="submit" class="scan-btn">
+                🔍 Scan for PCs
+            </button>
+        </form>
+        
+        {% if pcs %}
+            <h2>Available PCs:</h2>
+            {% for ip, info in pcs.items() %}
+            <div class="pc-card" onclick="location.href='/control/{{ ip }}'">
+                <div class="pc-name">💻 {{ info.hostname }}</div>
+                <div class="pc-ip">{{ ip }}</div>
+                {% if info.get('current_user') %}
+                <div class="pc-ip">👤 User: {{ info.current_user }}</div>
+                {% endif %}
+                {% if info.locked %}
+                <span class="status locked">🔒 LOCKED</span>
+                {% else %}
+                <span class="status online">● ONLINE</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="text-align: center; color: #666;">
+                No PCs found. Click "Scan for PCs" to search.
+            </p>
+        {% endif %}
+        
+        {% if last_scan %}
+        <div class="last-scan">
+            Last scan: {{ last_scan.strftime('%I:%M %p') }}
+            {% if last_scan_network %}
+            on {{ last_scan_network }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -12,7 +12,7 @@ ENV/
 # Flask
 instance/
 .webassets-cache
-templates/
+/templates/
 
 # IDE
 .vscode/
