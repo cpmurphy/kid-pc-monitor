@@ -7,6 +7,9 @@ from pathlib import Path
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
+AGENT_PORT = 9999
+FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
+FIREWALL_RULE_GROUP = "Kid PC Monitor"
 
 
 def get_script_path():
@@ -407,6 +410,96 @@ def check_admin():
         return False
 
 
+def _escape_ps_single_quoted(value):
+    """Escape a string for use inside a PowerShell single-quoted literal."""
+    return value.replace("'", "''")
+
+
+def add_agent_firewall_rule(python_path):
+    """
+    Allow inbound TCP only on AGENT_PORT for the specific pythonw.exe used by the task.
+
+    Restrictions: one program path, one local port, TCP only, Private+Domain profiles
+    (not Public). Does not grant outbound or other ports for this executable.
+    """
+    python_path = os.path.normpath(os.path.abspath(python_path))
+    if not os.path.isfile(python_path):
+        print(f"\n⚠️  Firewall rule skipped: Python not found at {python_path}")
+        return False
+
+    ps_python = _escape_ps_single_quoted(python_path)
+    ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
+    ps_group = _escape_ps_single_quoted(FIREWALL_RULE_GROUP)
+
+    ps_script = f"""
+    $ErrorActionPreference = 'Stop'
+    $ruleName = '{ps_name}'
+    $python = '{ps_python}'
+    $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
+    if ($existing) {{
+        $existing | Remove-NetFirewallRule -ErrorAction SilentlyContinue
+    }}
+    New-NetFirewallRule `
+        -DisplayName $ruleName `
+        -Group '{ps_group}' `
+        -Description 'Kid PC Monitor agent: allow remote control only on TCP {AGENT_PORT} for the scheduled pythonw.exe' `
+        -Direction Inbound `
+        -Action Allow `
+        -Enabled True `
+        -Profile Private,Domain `
+        -Program $python `
+        -Protocol TCP `
+        -LocalPort {AGENT_PORT}
+    Write-Host "SUCCESS: Firewall rule added for $python on TCP {AGENT_PORT} (Private, Domain profiles)"
+    exit 0
+    """
+
+    try:
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            capture_output=True,
+            text=True,
+        )
+        print("\n=== Firewall ===")
+        print(result.stdout.strip() or "(no output)")
+        if result.stderr.strip():
+            print(result.stderr.strip())
+        if result.returncode == 0:
+            return True
+        print("\n⚠️  Could not add Windows Firewall rule (agent may prompt on first run).")
+        return False
+    except Exception as exc:
+        print(f"\n⚠️  Firewall setup error: {exc}")
+        return False
+
+
+def remove_agent_firewall_rule():
+    """Remove the inbound agent rule created by add_agent_firewall_rule."""
+    ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
+    ps_script = f"""
+    $rules = Get-NetFirewallRule -DisplayName '{ps_name}' -ErrorAction SilentlyContinue
+    if (-not $rules) {{
+        Write-Host 'INFO: No firewall rule to remove'
+        exit 0
+    }}
+    $rules | Remove-NetFirewallRule
+    Write-Host 'SUCCESS: Firewall rule removed'
+    exit 0
+    """
+    try:
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            capture_output=True,
+            text=True,
+        )
+        if result.stdout.strip():
+            print(result.stdout.strip())
+        return result.returncode == 0
+    except Exception as exc:
+        print(f"⚠️  Could not remove firewall rule: {exc}")
+        return False
+
+
 def remove_task():
     """Remove existing task"""
     task_name = TASK_NAME
@@ -423,6 +516,9 @@ def remove_task():
         print("✅ Task removed successfully!")
     else:
         print("ℹ️  Task not found or already removed.")
+
+    print("\nRemoving Windows Firewall rule...")
+    remove_agent_firewall_rule()
 
 
 def run_install_flow():
@@ -464,11 +560,13 @@ def run_install_flow():
             return False
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
+        add_agent_firewall_rule(python_path)
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
     if create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
+        add_agent_firewall_rule(python_path)
         print("\n✅ Setup complete using XML method!")
         return True
 
