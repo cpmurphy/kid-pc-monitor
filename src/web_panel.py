@@ -6,17 +6,21 @@ import socket
 import threading
 import ipaddress
 import time
+from pathlib import Path
+
 from datetime import datetime
 from pathlib import Path
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-app = Flask(__name__, template_folder=_TEMPLATE_DIR)
+_APP_DIR = Path(__file__).resolve().parent
+_TEMPLATE_DIR = _APP_DIR / "templates"
+
+app = Flask(__name__, template_folder=str(_TEMPLATE_DIR))
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-AUTH_FILE = Path(__file__).resolve().parent / "web_panel_auth.json"
+AUTH_FILE = _APP_DIR / "web_panel_auth.json"
 SESSION_AUTH_KEY = "panel_auth"
 PANEL_LOGIN_USERNAME = "Kids PC Control Panel"
 
@@ -66,167 +70,35 @@ def safe_next_path(next_param):
         return url_for("index")
     return n
 
+from remote_client import (
+    check_pc_status,
+    get_current_user,
+    get_default_scan_network,
+    get_local_ip,
+    get_lock_times,
+    get_time_remaining,
+    get_usage_limit,
+    parse_scan_subnet,
+    scan_for_servers as discover_servers,
+    send_command,
+)
+
 # Store discovered PCs
 discovered_pcs = {}
 last_scan_time = None
+last_scan_network = None
 
-# Custom PC names (optional) - Add your kids' PC names here
-CUSTOM_PC_NAMES = {
-    # Example: '192.168.1.105': 'Tommy\'s Laptop',
-    # Example: '192.168.1.112': 'Sarah\'s Desktop',
-}
 
-def get_local_ip():
-    """Get the local IP address of this machine"""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except:
-        return "127.0.0.1"
+def scan_for_servers(port=9999, subnet=None):
+    """Scan a network for PCs running the control server."""
+    global discovered_pcs, last_scan_time, last_scan_network
 
-def check_pc_status(ip, port=9999):
-    """Check if a PC is locked"""
-    try:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Checking status of {ip}")
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        s.send(b"GET_STATUS")
-        status = s.recv(1024).decode().strip()
-        s.close()
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Status of {ip}: {status}")
-        return status
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error checking {ip}: {e}")
-        return "UNKNOWN"
-
-def get_current_user(ip, port=9999):
-    """Get the current username logged in on the kid PC (as reported by the agent)."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        s.send(b"GET_CURRENT_USER")
-        username = s.recv(1024).decode().strip()
-        s.close()
-        return username
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting user from {ip}: {e}")
-        return None
-
-def get_usage_limit(ip, port=9999):
-    """Get the current usage limit in minutes"""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        s.send(b"GET_USAGE_LIMIT")
-        limit = s.recv(1024).decode().strip()
-        s.close()
-        return None if limit == "None" else int(limit)
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting limit from {ip}: {e}")
-        return None
-
-def get_lock_times(ip, port=9999):
-    """Get scheduled lock times"""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        s.send(b"GET_LOCK_TIMES")
-        times = s.recv(1024).decode().strip()
-        s.close()
-        return None if times == "None" else times.split(',')
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting lock times from {ip}: {e}")
-        return None
-
-def get_time_remaining(ip, port=9999):
-    """Get time remaining until next lock"""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect((ip, port))
-        s.send(b"GET_TIME_REMAINING")
-        remaining = s.recv(1024).decode().strip()
-        s.close()
-        return remaining
-    except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error getting time remaining from {ip}: {e}")
-        return None
-
-def scan_for_servers(port=9999):
-    """Scan the local network for PCs running the control server"""
-    global discovered_pcs, last_scan_time
-    local_ip = get_local_ip()
-    network = ipaddress.ip_network(f"{local_ip}/24", strict=False)
-    discovered_pcs = {}
-    
-    def check_host(ip):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
-            result = s.connect_ex((str(ip), port))
-            s.close()
-            if result == 0:
-                # Try to get hostname from the PC directly
-                hostname = CUSTOM_PC_NAMES.get(str(ip), None)
-                if not hostname:
-                    try:
-                        # First try to get name from the control server
-                        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        s2.settimeout(1)
-                        s2.connect((str(ip), port))
-                        s2.send(b"GET_NAME")
-                        hostname = s2.recv(1024).decode().strip()
-                        s2.close()
-                        if not hostname:
-                            raise Exception("Empty name")
-                    except:
-                        try:
-                            # Fallback to system hostname resolution
-                            hostname = socket.gethostbyaddr(str(ip))[0]
-                            hostname = hostname.split('.')[0].upper()
-                        except:
-                            hostname = f"PC at {ip}"
-                
-                discovered_pcs[str(ip)] = {
-                    'hostname': hostname,
-                    'status': 'online',
-                    'locked': False,  # Will update in separate check
-                    'last_seen': datetime.now()
-                }
-        except:
-            pass
-    
-    threads = []
-    for ip in network.hosts():
-        t = threading.Thread(target=check_host, args=(ip,))
-        t.start()
-        threads.append(t)
-    
-    for t in threads:
-        t.join()
-    
+    _network, network_label = parse_scan_subnet(subnet)
+    discovered_pcs = discover_servers(port=port, subnet=subnet)
     last_scan_time = datetime.now()
+    last_scan_network = network_label
     return discovered_pcs
 
-def send_command(host, command, port=9999):
-    """Send a command to the remote PC"""
-    try:
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.settimeout(5)
-        client.connect((host, port))
-        client.send(command.encode())
-        response = client.recv(1024)
-        client.close()
-        return True, response.decode()
-    except Exception as e:
-        return False, str(e)
 
 
 @app.before_request
@@ -309,54 +181,62 @@ def set_password():
 @app.route('/')
 def index():
     """Main page showing all discovered PCs"""
-    # Update lock status and current user for all PCs
     for ip in discovered_pcs:
         status = check_pc_status(ip)
         discovered_pcs[ip]['locked'] = (status == "LOCKED")
 
-        # Get current user
         username = get_current_user(ip)
         if username:
             discovered_pcs[ip]['current_user'] = username
 
-    return render_template('index.html',
-                         pcs=discovered_pcs,
-                         last_scan=last_scan_time,
-                         password_protected=password_is_configured(),
-                         panel_auth=bool(session.get(SESSION_AUTH_KEY)))
+    return render_template(
+        'index.html',
+        pcs=discovered_pcs,
+        last_scan=last_scan_time,
+        last_scan_network=last_scan_network,
+        default_subnet=str(get_default_scan_network()),
+        scan_subnet=request.args.get('subnet', ''),
+        scan_error=request.args.get('error'),
+        password_protected=password_is_configured(),
+        panel_auth=bool(session.get(SESSION_AUTH_KEY))
+    )
 
-@app.route('/scan')
+
+@app.route('/scan', methods=['GET', 'POST'])
 def scan():
     """Scan for PCs and redirect to main page"""
-    scan_for_servers()
-    return redirect(url_for('index'))
+    subnet = request.args.get('subnet') or request.form.get('subnet')
+    try:
+        scan_for_servers(subnet=subnet)
+    except ValueError as exc:
+        return redirect(url_for('index', error=str(exc), subnet=subnet or ''))
+    return redirect(url_for('index', subnet=subnet or ''))
+
 
 @app.route('/control/<ip>')
 def control(ip):
     """Control page for a specific PC"""
     pc_info = discovered_pcs.get(ip, {'hostname': 'Unknown', 'status': 'unknown'})
-    # Check current lock status
     status = check_pc_status(ip)
     pc_info['locked'] = (status == "LOCKED")
 
-    # Get current user
     username = get_current_user(ip)
     if username:
         pc_info['current_user'] = username
 
-    # Get current limits and time remaining (always update, even if None)
     usage_limit = get_usage_limit(ip)
-    pc_info['usage_limit'] = usage_limit  # Update even if None to clear old values
+    pc_info['usage_limit'] = usage_limit
 
     lock_times = get_lock_times(ip)
-    pc_info['lock_times'] = lock_times  # Update even if None to clear old values
+    pc_info['lock_times'] = lock_times
 
     time_remaining = get_time_remaining(ip)
-    pc_info['time_remaining'] = time_remaining  # Update even if None
+    pc_info['time_remaining'] = time_remaining
 
     return render_template('control.html', ip=ip, pc_info=pc_info,
                            password_protected=password_is_configured(),
                            panel_auth=bool(session.get(SESSION_AUTH_KEY)))
+
 
 @app.route('/action', methods=['POST'])
 def action():
@@ -364,12 +244,11 @@ def action():
     data = request.json
     ip = data.get('ip')
     action_type = data.get('action')
-    
+
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Action request: {action_type} for {ip}")
-    
+
     if action_type == 'lock':
         success, response = send_command(ip, "LOCK")
-        # Update our local status immediately
         if success and ip in discovered_pcs:
             discovered_pcs[ip]['locked'] = True
     elif action_type == 'shutdown':
@@ -395,13 +274,11 @@ def action():
     return jsonify({'success': success, 'response': response})
 
 if __name__ == '__main__':
-    # Do initial scan
     print("Performing initial scan...")
     scan_for_servers()
-    
-    # Start the web server
-    print(f"\nWeb Control Panel starting...")
+
+    print("\nWeb Control Panel starting...")
     print(f"Access from your phone at: http://{get_local_ip()}:5000")
-    print(f"Or from this PC at: http://localhost:5000")
-    
+    print("Or from this PC at: http://localhost:5000")
+
     app.run(host='0.0.0.0', port=5000, debug=False)

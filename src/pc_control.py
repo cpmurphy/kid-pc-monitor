@@ -34,17 +34,30 @@ EXEMPT_USERS = []
 
 # ============================================
 
-# Set up logging
-log_file = 'pc_control.log'
-if os.path.exists(log_file):
-    os.unlink(log_file) #remove previous log
+# Set up per-user data directory for log + state.
+# Lives under the running user's profile so the agent can write even when
+# installed system-wide (e.g. C:\ProgramData\KidPCMonitor) from an admin
+# account while running in a non-admin child's session.
+data_dir = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'KidPCMonitor'
+data_dir.mkdir(parents=True, exist_ok=True)
 
-logging.basicConfig(
-    filename=str(log_file),
-    level=logging.INFO,
-    format='[%(asctime)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+log_file = data_dir / 'pc_control.log'
+
+def _configure_logging():
+    """Append to the per-user log (do not truncate — empty logs make debugging hard)."""
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    for handler in root.handlers[:]:
+        root.removeHandler(handler)
+    handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    handler.setFormatter(logging.Formatter(
+        '[%(asctime)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    ))
+    root.addHandler(handler)
+
+_configure_logging()
+logger = logging.getLogger('kid_pc_monitor')
 
 class PCTimeControl:
     def __init__(self):
@@ -54,10 +67,11 @@ class PCTimeControl:
         self.is_locked = False
         self.last_activity = datetime.now()
         self.current_user = getpass.getuser()
-        self.state_file = 'pc_control_state.json'
+        self.state_file = str(data_dir / 'pc_control_state.json')
         self.logger = logging.getLogger('PCTimeControl')
         self.warnings_sent = set()  # Track which warnings have been sent
         self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
+        self.warnings_date = datetime.now().date()  # Reset warnings_sent at midnight rollover
 
         # Log which user we're running as
         if self.should_monitor_user():
@@ -265,6 +279,14 @@ class PCTimeControl:
 
     def check_and_send_warnings(self):
         """Check if warnings should be sent and send them"""
+        # Clear sent-warning memory at local midnight so the 15/5/1-minute
+        # warnings fire again for the next day if the agent has been running
+        # continuously across the rollover.
+        today = datetime.now().date()
+        if today != self.warnings_date:
+            self.warnings_sent.clear()
+            self.warnings_date = today
+
         time_remaining = self.get_time_remaining()
 
         if time_remaining is None:
@@ -287,22 +309,25 @@ class PCTimeControl:
                 self.logger.info(f"Warning sent: {warning_mins} minutes remaining")
                 print(f"[{datetime.now():%H:%M:%S}] Warning: {warning_mins} minutes until lock")
 
-    def check_time_limits(self):
-        """Check if any time limits have been reached"""
-        # Skip all checks if user is exempt from monitoring
+    def currently_in_lock_window(self):
+        """
+        Return (locked, reason) for whether the agent should currently be
+        enforcing a lock. Treats each scheduled lock_time as the start of a
+        window that runs until midnight of the same local day, so a child who
+        signs in after the bedtime minute still gets locked out. Usage-limit
+        enforcement is a simple "minutes-used >= limit" check.
+        """
         if not self.should_monitor_user():
             return False, ""
 
         current_time = datetime.now()
 
-        # Check scheduled lock times
+        # Scheduled bedtime: locked from lock_time through end of today.
         for lock_time in self.lock_times:
-            if (current_time.hour == lock_time.hour and
-                current_time.minute == lock_time.minute and
-                current_time.second < 1):
-                return True, "Scheduled lock time reached"
+            if (current_time.hour, current_time.minute) >= (lock_time.hour, lock_time.minute):
+                return True, f"Past scheduled lock time {lock_time.hour:02d}:{lock_time.minute:02d}"
 
-        # Check usage limit
+        # Daily usage limit.
         if self.usage_limit:
             usage_minutes = (current_time - self.start_time).total_seconds() / 60
             if usage_minutes >= self.usage_limit:
@@ -311,18 +336,26 @@ class PCTimeControl:
         return False, ""
 
     def run_monitor(self):
-        """Main monitoring loop"""
+        """
+        Main monitoring loop. Continuously re-issues LockWorkStation while a
+        lock window is active so a child who unlocks the screen with their
+        password is immediately re-locked.
+        """
         print("PC Time Control is running...")
+        last_logged_reason = None
         while True:
-            # Check and send warnings if approaching time limit
             self.check_and_send_warnings()
 
-            # Check if time limit reached
-            should_lock, reason = self.check_time_limits()
-            if should_lock:
-                print(f"Locking PC: {reason}")
+            locked, reason = self.currently_in_lock_window()
+            if locked and not self.check_if_locked():
+                if reason != last_logged_reason:
+                    self.logger.info(f"Locking PC: {reason}")
+                    print(f"[{datetime.now():%H:%M:%S}] Locking PC: {reason}")
+                    last_logged_reason = reason
                 self.lock_pc()
-                break
+            elif not locked:
+                last_logged_reason = None
+
             time.sleep(1)
 
 # Simple Remote Control Server
@@ -575,10 +608,8 @@ class RemoteControlServer:
 
 # Main
 if __name__ == "__main__":
-    # Create control instance
-    control = PCTimeControl()
-    
-    # Add network connectivity check
+    script_path = os.path.abspath(__file__)
+
     def check_port_availability(port):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -586,15 +617,26 @@ if __name__ == "__main__":
             return True
         except socket.error:
             return False
-    
+
+    logger.info(
+        "Agent process starting (pid=%s, user=%s, script=%s)",
+        os.getpid(), getpass.getuser(), script_path,
+    )
+
     if not check_port_availability(9999):
-        control.show_message(
-            f"Port 9999 is already in use or blocked!\n"
-            f"Check your firewall or other running applications.",
-            "Network Error"
+        logger.error(
+            "Port 9999 already in use — another KidPCMonitor instance is probably "
+            "already running. Exiting duplicate startup."
         )
         sys.exit(1)
+
+    # Create control instance
+    control = PCTimeControl()
     
+    # Enforce usage limits, bedtimes, and warnings (separate from the TCP server)
+    enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
+    enforcement_thread.start()
+
     # Start remote control server
     remote = RemoteControlServer()
     server_thread = threading.Thread(target=remote.start_server, args=(control,))
@@ -604,13 +646,15 @@ if __name__ == "__main__":
     # Verify server started
     time.sleep(1)  # Give server time to start
     if not remote.running:
+        logger.error("Remote control server failed to start on port 9999")
         control.show_message(
             "Failed to start network server!\n"
             "Check firewall settings and try again.",
             "Server Error"
         )
         sys.exit(1)
-    
+
+    logger.info("Agent running (enforcement loop + TCP server on port 9999)")
     print("Server is running. Press Ctrl+C to stop.")
     
     try:

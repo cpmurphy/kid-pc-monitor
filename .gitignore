@@ -29,3 +29,4 @@ pc_control_state.json
 web_panel_auth.json
 *.log
 config_local.py
+src/web_panel_auth.json

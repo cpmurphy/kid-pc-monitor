@@ -53,6 +53,12 @@ Auto-discovery scans the `/24` subnet containing the parent machine's primary IP
 
 There are two ways to set up Kid PC Monitor:
 
+#### Windows agent firewall (kid PCs)
+
+When you run `scripts/install.py` as administrator, it creates a Windows Firewall inbound rule for TCP **9999** scoped to the scheduled `pythonw.exe`. By default the rule applies only on **Private** and **Domain** networks—not **Public**—so strangers on open Wi‑Fi cannot reach the agent.
+
+After the scheduled task is created, the installer asks whether to allow **Public** networks too. Say **yes** if you use a laptop and a child might disconnect and reconnect Wi‑Fi; Windows can then treat your home network as Public and block remote control until you fix the network profile or re-run the installer. Desktop PCs on a trusted home LAN usually keep the default (**no**). Only enable Public if you accept the extra exposure on genuinely untrusted networks.
+
 #### Option A: Separate Parent PC (Recommended)
 
 Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
@@ -66,6 +72,14 @@ pip install -r requirements.txt
 # Run installer as administrator
 python scripts/install.py
 ```
+
+The installer asks whether to install for **this account** (the simple path — works when the kid's account is the only one on the PC, even if it has admin rights) or for **a different user account** (cross-user install: a parent/admin runs the installer and provides the child's username; the agent then launches in the child's session at their logon).
+
+For the cross-user mode:
+- Files install to `C:\ProgramData\KidPCMonitor` and the child account is granted read+execute.
+- Python must be installed **for all users** (not the per-user `%LOCALAPPDATA%\Programs\Python\…` install) so the child's task can launch `pythonw.exe`. The installer refuses with a clear message if only a per-user Python is found.
+- The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid).
+- The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile.
 
 2. **On your PC (Windows or macOS; for Linux, see the Linux parent steps below):**
 ```bash
@@ -129,6 +143,21 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 *Side note: if your kid is "good" with computers, consider copying the scripts somewhere less obvious.*
 
+## 🖥️ Command-line client
+
+From the repo, run the CLI on your parent machine (Linux, macOS, or Windows):
+
+```bash
+cd kid-pc-monitor/src
+python3 pc_cli.py scan
+python3 pc_cli.py inspect 192.168.1.105
+python3 pc_cli.py set-limit 192.168.1.105 60
+python3 pc_cli.py add-lock-time 192.168.1.105 21:00
+python3 pc_cli.py lock 192.168.1.105
+```
+
+Use `python3 pc_cli.py --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `pc_cli.py scan --subnet 192.168.1.0/24`.
+
 ## 📖 Usage Guide
 
 ### Setting Up Daily Limits
@@ -143,8 +172,10 @@ Both services run invisibly in the background using `pythonw.exe`.
 1. Select a PC
 2. Scroll to "Set Lock Time"
 3. Choose bedtime (e.g., 9:00 PM)
-4. PC will lock automatically at that time
+4. PC will lock automatically at that time and stay locked for the rest of the day — if the child signs back in after the bedtime minute, the agent re-locks immediately. The window resets at local midnight.
 5. See the scheduled lock in "Current Settings"
+
+Note: when a usage limit or bedtime is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password.
 
 ### Clearing/Removing Limits
 1. View the "📊 Current Settings" section
@@ -162,7 +193,7 @@ While remote unlock isn't possible for security, you can:
 ## ⚙️ Configuration
 
 ### Custom PC Names
-Edit `src/web_panel.py`:
+Edit `CUSTOM_PC_NAMES` in `src/remote_client.py` (used by the web panel and `pc_cli.py`):
 ```python
 CUSTOM_PC_NAMES = {
     '192.168.1.105': 'Tommy\'s Laptop',
@@ -221,7 +252,7 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Only works on local network (not internet)
 - Optional **parent web panel** password: use **Add password protection** on the home page. Only a secure hash is stored in `web_panel_auth.json` next to the app (not the plain password). Until you set one, anyone on the LAN can use the panel—the same as before this feature.
 - Can't bypass Windows lock screen
-- Kids can close if they have admin rights
+- Kids can close the agent if their account has admin rights. If you install in cross-user mode (admin installs, non-admin child runs), the child cannot stop or delete the scheduled task or its files.
 
 ## 🤝 Contributing
 
