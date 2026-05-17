@@ -139,6 +139,21 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 *Side note: if your kid is "good" with computers, consider copying the scripts somewhere less obvious.*
 
+## 🖥️ Command-line client
+
+From the repo, run the CLI on your parent machine (Linux, macOS, or Windows):
+
+```bash
+cd kid-pc-monitor/src
+python3 pc_cli.py scan
+python3 pc_cli.py inspect 192.168.1.105
+python3 pc_cli.py set-limit 192.168.1.105 60
+python3 pc_cli.py add-lock-time 192.168.1.105 21:00
+python3 pc_cli.py lock 192.168.1.105
+```
+
+Use `python3 pc_cli.py --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `pc_cli.py scan --subnet 192.168.1.0/24`.
+
 ## 📖 Usage Guide
 
 ### Setting Up Daily Limits
@@ -174,7 +189,7 @@ While remote unlock isn't possible for security, you can:
 ## ⚙️ Configuration
 
 ### Custom PC Names
-Edit `src/web_panel.py`:
+Edit `CUSTOM_PC_NAMES` in `src/remote_client.py` (used by the web panel and `pc_cli.py`):
 ```python
 CUSTOM_PC_NAMES = {
     '192.168.1.105': 'Tommy\'s Laptop',
