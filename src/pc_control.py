@@ -16,6 +16,11 @@ import json
 import logging
 from pathlib import Path
 
+try:
+    from lock_policy import lock_decision, minutes_until_lock, should_monitor_user
+except ImportError:
+    from src.lock_policy import lock_decision, minutes_until_lock, should_monitor_user
+
 # ============================================
 # CONFIGURATION
 # ============================================
@@ -90,16 +95,7 @@ class PCTimeControl:
 
     def should_monitor_user(self):
         """Check if current user should be monitored based on configuration"""
-        # If MONITORED_USERS is specified, only monitor those users
-        if MONITORED_USERS:
-            return self.current_user in MONITORED_USERS
-
-        # If EXEMPT_USERS is specified, monitor everyone except those users
-        if EXEMPT_USERS:
-            return self.current_user not in EXEMPT_USERS
-
-        # If both lists are empty, monitor all users
-        return True
+        return should_monitor_user(self.current_user, MONITORED_USERS, EXEMPT_USERS)
 
     def load_state(self):
         """Load saved state from JSON file"""
@@ -248,34 +244,13 @@ class PCTimeControl:
 
     def get_time_remaining(self):
         """Calculate minutes remaining until lock. Returns None if no limit set."""
-        if not self.should_monitor_user():
-            return None
-
-        current_time = datetime.now()
-        min_remaining = None
-
-        # Check scheduled lock times
-        for lock_time in self.lock_times:
-            lock_datetime = current_time.replace(hour=lock_time.hour, minute=lock_time.minute, second=0, microsecond=0)
-
-            # If lock time is earlier today, it's for tomorrow
-            if lock_datetime <= current_time:
-                lock_datetime = lock_datetime.replace(day=lock_datetime.day + 1)
-
-            minutes_until_lock = (lock_datetime - current_time).total_seconds() / 60
-
-            if min_remaining is None or minutes_until_lock < min_remaining:
-                min_remaining = minutes_until_lock
-
-        # Check usage limit
-        if self.usage_limit:
-            usage_minutes = (current_time - self.start_time).total_seconds() / 60
-            minutes_until_limit = self.usage_limit - usage_minutes
-
-            if min_remaining is None or minutes_until_limit < min_remaining:
-                min_remaining = minutes_until_limit
-
-        return min_remaining
+        return minutes_until_lock(
+            now=datetime.now(),
+            lock_times=self.lock_times,
+            usage_limit=self.usage_limit,
+            start_time=self.start_time,
+            monitor_user=self.should_monitor_user(),
+        )
 
     def check_and_send_warnings(self):
         """Check if warnings should be sent and send them"""
@@ -317,23 +292,14 @@ class PCTimeControl:
         signs in after the bedtime minute still gets locked out. Usage-limit
         enforcement is a simple "minutes-used >= limit" check.
         """
-        if not self.should_monitor_user():
-            return False, ""
-
-        current_time = datetime.now()
-
-        # Scheduled bedtime: locked from lock_time through end of today.
-        for lock_time in self.lock_times:
-            if (current_time.hour, current_time.minute) >= (lock_time.hour, lock_time.minute):
-                return True, f"Past scheduled lock time {lock_time.hour:02d}:{lock_time.minute:02d}"
-
-        # Daily usage limit.
-        if self.usage_limit:
-            usage_minutes = (current_time - self.start_time).total_seconds() / 60
-            if usage_minutes >= self.usage_limit:
-                return True, f"Usage limit of {self.usage_limit} minutes reached"
-
-        return False, ""
+        decision = lock_decision(
+            now=datetime.now(),
+            lock_times=self.lock_times,
+            usage_limit=self.usage_limit,
+            start_time=self.start_time,
+            monitor_user=self.should_monitor_user(),
+        )
+        return decision.should_lock, decision.reason
 
     def run_monitor(self):
         """
