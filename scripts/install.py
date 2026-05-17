@@ -415,12 +415,36 @@ def _escape_ps_single_quoted(value):
     return value.replace("'", "''")
 
 
-def add_agent_firewall_rule(python_path):
+def prompt_allow_public_firewall():
+    """
+    Ask whether inbound agent traffic should be allowed on Public (untrusted) networks.
+
+    Default is no: only Private and Domain profiles (safer on coffee-shop Wi‑Fi).
+    """
+    print("\n🔒 Windows Firewall — remote control port")
+    print(f"\n   The agent listens on TCP {AGENT_PORT}. By default, the installer")
+    print("   allows inbound connections only on Private and Domain networks")
+    print("   (typical home Wi‑Fi when Windows trusts the network).")
+    print("\n   Public/untrusted networks are blocked so strangers on open Wi‑Fi")
+    print("   cannot reach the agent.")
+    print("\n   Problem: A child can disconnect Wi‑Fi and reconnect; Windows may")
+    print("   then treat your home network as Public, and you lose remote control")
+    print("   until you fix the network profile or re-run this installer.")
+    print("\n   Desktop PCs rarely join random networks; laptops are the main case.")
+    print("   You can allow Public networks below if you accept that trade-off.")
+    choice = input(
+        f"\nAllow inbound TCP {AGENT_PORT} on Public networks too? (y/N): "
+    ).strip().lower()
+    return choice in ("y", "yes")
+
+
+def add_agent_firewall_rule(python_path, *, allow_public=False):
     """
     Allow inbound TCP only on AGENT_PORT for the specific pythonw.exe used by the task.
 
-    Restrictions: one program path, one local port, TCP only, Private+Domain profiles
-    (not Public). Does not grant outbound or other ports for this executable.
+    Restrictions: one program path, one local port, TCP only. Profile is Private+Domain
+    by default; include Public when allow_public is True. Does not grant outbound or
+    other ports for this executable.
     """
     python_path = os.path.normpath(os.path.abspath(python_path))
     if not os.path.isfile(python_path):
@@ -430,6 +454,12 @@ def add_agent_firewall_rule(python_path):
     ps_python = _escape_ps_single_quoted(python_path)
     ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
     ps_group = _escape_ps_single_quoted(FIREWALL_RULE_GROUP)
+    if allow_public:
+        firewall_profiles = "Private,Domain,Public"
+        profile_label = "Private, Domain, and Public profiles"
+    else:
+        firewall_profiles = "Private,Domain"
+        profile_label = "Private and Domain profiles"
 
     ps_script = f"""
     $ErrorActionPreference = 'Stop'
@@ -446,11 +476,11 @@ def add_agent_firewall_rule(python_path):
         -Direction Inbound `
         -Action Allow `
         -Enabled True `
-        -Profile Private,Domain `
+        -Profile {firewall_profiles} `
         -Program $python `
         -Protocol TCP `
         -LocalPort {AGENT_PORT}
-    Write-Host "SUCCESS: Firewall rule added for $python on TCP {AGENT_PORT} (Private, Domain profiles)"
+    Write-Host "SUCCESS: Firewall rule added for $python on TCP {AGENT_PORT} ({profile_label})"
     exit 0
     """
 
@@ -560,13 +590,15 @@ def run_install_flow():
             return False
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
-        add_agent_firewall_rule(python_path)
+        allow_public_firewall = prompt_allow_public_firewall()
+        add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
     if create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
-        add_agent_firewall_rule(python_path)
+        allow_public_firewall = prompt_allow_public_firewall()
+        add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
         print("\n✅ Setup complete using XML method!")
         return True
 

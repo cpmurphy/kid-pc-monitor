@@ -53,6 +53,12 @@ Auto-discovery scans the `/24` subnet containing the parent machine's primary IP
 
 There are two ways to set up Kid PC Monitor:
 
+#### Windows agent firewall (kid PCs)
+
+When you run `scripts/install.py` as administrator, it creates a Windows Firewall inbound rule for TCP **9999** scoped to the scheduled `pythonw.exe`. By default the rule applies only on **Private** and **Domain** networks—not **Public**—so strangers on open Wi‑Fi cannot reach the agent.
+
+After the scheduled task is created, the installer asks whether to allow **Public** networks too. Say **yes** if you use a laptop and a child might disconnect and reconnect Wi‑Fi; Windows can then treat your home network as Public and block remote control until you fix the network profile or re-run the installer. Desktop PCs on a trusted home LAN usually keep the default (**no**). Only enable Public if you accept the extra exposure on genuinely untrusted networks.
+
 #### Option A: Separate Parent PC (Recommended)
 
 Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
