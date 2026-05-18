@@ -246,37 +246,72 @@ class PCTimeControl:
     def load_state(self):
         """Load saved state from JSON file"""
         try:
-            if os.path.exists(self.state_file):
-                with open(self.state_file, 'r') as f:
-                    state = json.load(f)
+            if not os.path.exists(self.state_file):
+                self.logger.info("No state file at %s", self.state_file)
+                return
 
-                # Restore lock times
-                if 'lock_times' in state:
-                    self.lock_times = [dtime(*map(int, t.split(':'))) for t in state['lock_times']]
+            with open(self.state_file, 'r') as f:
+                state = json.load(f)
 
-                # Restore usage limit
-                if 'usage_limit' in state:
-                    self.usage_limit = state['usage_limit']
+            self.logger.info(
+                "State file %s: %s",
+                self.state_file,
+                json.dumps(state, sort_keys=True),
+            )
 
-                # Restore persistent manual lock requested by the parent.
-                self.manual_lock_active = bool(state.get('manual_lock_active', False))
+            # Restore lock times
+            if 'lock_times' in state:
+                self.lock_times = [dtime(*map(int, t.split(':'))) for t in state['lock_times']]
 
-                # Restore start time (for usage tracking)
-                if 'start_time' in state:
-                    saved_start_time = datetime.fromisoformat(state['start_time'])
-                    current_date = datetime.now().date()
-                    saved_date = saved_start_time.date()
+            # Restore usage limit
+            if 'usage_limit' in state:
+                self.usage_limit = state['usage_limit']
 
-                    # If start_time is from a previous day, reset it to today
-                    if saved_date < current_date:
-                        self.start_time = datetime.now()
-                        self.logger.info(f"Start time was from {saved_date}, reset to today")
-                        print(f"[{datetime.now():%H:%M:%S}] Usage timer reset for new day")
-                    else:
-                        self.start_time = saved_start_time
+            # Restore persistent manual lock requested by the parent.
+            self.manual_lock_active = bool(state.get('manual_lock_active', False))
 
-                self.logger.info(f"State loaded: {len(self.lock_times)} lock times, usage limit: {self.usage_limit}")
-                print(f"[{datetime.now():%H:%M:%S}] Loaded previous settings from {self.state_file}")
+            # Restore start time (for usage tracking)
+            if 'start_time' in state:
+                saved_start_time = datetime.fromisoformat(state['start_time'])
+                current_date = datetime.now().date()
+                saved_date = saved_start_time.date()
+
+                # If start_time is from a previous day, reset it to today
+                if saved_date < current_date:
+                    self.start_time = datetime.now()
+                    self.logger.info(
+                        "Start time in file was %s; reset to today (%s)",
+                        saved_start_time.isoformat(),
+                        self.start_time.isoformat(),
+                    )
+                    print(f"[{datetime.now():%H:%M:%S}] Usage timer reset for new day")
+                else:
+                    self.start_time = saved_start_time
+            elif self.usage_limit is not None:
+                self.logger.warning(
+                    "State file has usage_limit=%s but no start_time — "
+                    "using fresh start_time %s",
+                    self.usage_limit,
+                    self.start_time.isoformat(),
+                )
+
+            lock_times_label = (
+                ",".join(f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times)
+                or "none"
+            )
+            usage_elapsed = None
+            if self.usage_limit is not None:
+                usage_elapsed = (datetime.now() - self.start_time).total_seconds() / 60
+            self.logger.info(
+                "State applied: lock_times=[%s] usage_limit=%s manual_lock=%s "
+                "start_time=%s usage_elapsed_min=%s",
+                lock_times_label,
+                self.usage_limit,
+                self.manual_lock_active,
+                self.start_time.isoformat(),
+                f"{usage_elapsed:.1f}" if usage_elapsed is not None else "n/a",
+            )
+            print(f"[{datetime.now():%H:%M:%S}] Loaded previous settings from {self.state_file}")
         except Exception as e:
             self.logger.error("Error loading state: %s", e, exc_info=True)
             print(f"[{datetime.now():%H:%M:%S}] Could not load previous state: {e}")
