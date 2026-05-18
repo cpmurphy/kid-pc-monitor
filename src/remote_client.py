@@ -159,6 +159,10 @@ def get_usage_limit(ip: str, port: int = DEFAULT_PORT) -> int | None:
         return None
 
 
+def get_manual_lock(ip: str, port: int = DEFAULT_PORT) -> bool:
+    return query_command(ip, "GET_MANUAL_LOCK", port=port) == "YES"
+
+
 def get_lock_times(ip: str, port: int = DEFAULT_PORT) -> list[str] | None:
     times = query_command(ip, "GET_LOCK_TIMES", port=port)
     if times is None or times == "None":
@@ -181,6 +185,7 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
 
     status = q("GET_STATUS")
     usage_raw = q("GET_USAGE_LIMIT")
+    manual_lock_raw = q("GET_MANUAL_LOCK")
     lock_times_raw = q("GET_LOCK_TIMES")
     time_remaining = q("GET_TIME_REMAINING")
 
@@ -207,6 +212,7 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
         "locked": status == "LOCKED",
         "current_user": q("GET_CURRENT_USER"),
         "usage_limit": usage_limit,
+        "manual_lock_active": manual_lock_raw == "YES",
         "lock_times": lock_times,
         "time_remaining": time_remaining,
         "reachable": True,

@@ -153,6 +153,16 @@
             {% endif %}
             </p>
 
+            <!-- Manual Lock -->
+            <p>🔒 <strong>Manual Lock:</strong>
+            {% if pc_info.get('manual_lock_active') %}
+                Active
+                <button onclick="clearLimit('all')" style="margin-left: 10px; padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">❌ Clear</button>
+            {% else %}
+                <span style="color: #999;">Not active</span>
+            {% endif %}
+            </p>
+
             <!-- Time Remaining -->
             {% if pc_info.get('time_remaining') and pc_info.get('time_remaining') != 'No limits set' %}
             <p>⏳ <strong>Time Remaining:</strong> {{ pc_info.time_remaining }}</p>
@@ -169,7 +179,7 @@
             </p>
 
             <!-- Clear All Button -->
-            {% if pc_info.get('usage_limit') or pc_info.get('lock_times') %}
+            {% if pc_info.get('usage_limit') or pc_info.get('lock_times') or pc_info.get('manual_lock_active') %}
             <button onclick="clearLimit('all')" style="width: 100%; margin-top: 10px; padding: 10px; background-color: #ff5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🗑️ Clear All Limits</button>
             {% endif %}
         </div>

@@ -76,6 +76,7 @@ from remote_client import (
     get_default_scan_network,
     get_local_ip,
     get_lock_times,
+    get_manual_lock,
     get_time_remaining,
     get_usage_limit,
     parse_scan_subnet,
@@ -226,6 +227,8 @@ def control(ip):
 
     usage_limit = get_usage_limit(ip)
     pc_info['usage_limit'] = usage_limit
+
+    pc_info['manual_lock_active'] = get_manual_lock(ip)
 
     lock_times = get_lock_times(ip)
     pc_info['lock_times'] = lock_times

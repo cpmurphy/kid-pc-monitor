@@ -104,6 +104,8 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     print(f"  Windows user:      {info['current_user'] or '—'}")
     limit = info["usage_limit"]
     print(f"  Daily usage limit: {f'{limit} min' if limit is not None else 'none'}")
+    manual = "yes" if info["manual_lock_active"] else "no"
+    print(f"  Manual lock:       {manual}")
     times = info["lock_times"]
     if times:
         print(f"  Bedtime locks:     {', '.join(times)}")
@@ -185,7 +187,7 @@ def _build_parser() -> argparse.ArgumentParser:
         p.set_defaults(func=_cmd_action, action_name=name)
         return p
 
-    add_action("lock", "Lock the PC immediately")
+    add_action("lock", "Lock the PC and keep it locked until clear-all")
     add_action("shutdown", "Shut down the PC (60 second warning)")
     add_action(
         "message",

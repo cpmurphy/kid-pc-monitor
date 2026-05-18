@@ -27,6 +27,18 @@ class LockPolicyTests(unittest.TestCase):
         self.assertTrue(decision.should_lock)
         self.assertEqual(decision.reason, "Past scheduled lock time 21:00")
 
+    def test_manual_lock_keeps_relocking_after_kid_signs_back_in(self):
+        decision = lock_decision(
+            now=datetime(2026, 5, 17, 15, 45),
+            lock_times=[],
+            usage_limit=None,
+            start_time=datetime(2026, 5, 17, 15, 0),
+            manual_lock_active=True,
+        )
+
+        self.assertTrue(decision.should_lock)
+        self.assertEqual(decision.reason, "Manual lock requested")
+
     def test_scheduled_lock_does_not_carry_past_midnight(self):
         decision = lock_decision(
             now=datetime(2026, 5, 18, 0, 5),
@@ -55,6 +67,7 @@ class LockPolicyTests(unittest.TestCase):
             usage_limit=30,
             start_time=datetime(2026, 5, 17, 10, 0),
             monitor_user=False,
+            manual_lock_active=True,
         )
 
         self.assertFalse(decision.should_lock)

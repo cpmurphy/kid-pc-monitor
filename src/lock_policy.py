@@ -41,6 +41,7 @@ def lock_decision(
     usage_limit: int | None,
     start_time: datetime,
     monitor_user: bool = True,
+    manual_lock_active: bool = False,
 ) -> LockDecision:
     """
     Decide whether the agent should enforce a lock at now.
@@ -51,6 +52,9 @@ def lock_decision(
     """
     if not monitor_user:
         return LockDecision(False)
+
+    if manual_lock_active:
+        return LockDecision(True, "Manual lock requested")
 
     for lock_time in lock_times:
         if (now.hour, now.minute) >= (lock_time.hour, lock_time.minute):
@@ -77,6 +81,7 @@ def minutes_until_lock(
     usage_limit: int | None,
     start_time: datetime,
     monitor_user: bool = True,
+    manual_lock_active: bool = False,
 ) -> float | None:
     """Return minutes until the next lock, 0 if already locked, or None."""
     if not monitor_user:
@@ -88,6 +93,7 @@ def minutes_until_lock(
         usage_limit=usage_limit,
         start_time=start_time,
         monitor_user=monitor_user,
+        manual_lock_active=manual_lock_active,
     ).should_lock:
         return 0
 

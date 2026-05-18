@@ -68,6 +68,7 @@ class PCTimeControl:
     def __init__(self):
         self.lock_times = []
         self.usage_limit = None
+        self.manual_lock_active = False
         self.start_time = datetime.now()
         self.is_locked = False
         self.last_activity = datetime.now()
@@ -112,6 +113,9 @@ class PCTimeControl:
                 if 'usage_limit' in state:
                     self.usage_limit = state['usage_limit']
 
+                # Restore persistent manual lock requested by the parent.
+                self.manual_lock_active = bool(state.get('manual_lock_active', False))
+
                 # Restore start time (for usage tracking)
                 if 'start_time' in state:
                     saved_start_time = datetime.fromisoformat(state['start_time'])
@@ -136,8 +140,9 @@ class PCTimeControl:
         """Save current state to JSON file"""
         try:
             state = {
-                'lock_times': [f"{lt.hour}:{lt.minute}" for lt in self.lock_times],
+                'lock_times': [f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times],
                 'usage_limit': self.usage_limit,
+                'manual_lock_active': self.manual_lock_active,
                 'start_time': self.start_time.isoformat(),
                 'current_user': self.current_user
             }
@@ -250,6 +255,7 @@ class PCTimeControl:
             usage_limit=self.usage_limit,
             start_time=self.start_time,
             monitor_user=self.should_monitor_user(),
+            manual_lock_active=self.manual_lock_active,
         )
 
     def check_and_send_warnings(self):
@@ -298,6 +304,7 @@ class PCTimeControl:
             usage_limit=self.usage_limit,
             start_time=self.start_time,
             monitor_user=self.should_monitor_user(),
+            manual_lock_active=self.manual_lock_active,
         )
         return decision.should_lock, decision.reason
 
@@ -425,8 +432,10 @@ class RemoteControlServer:
         """Process incoming commands and return responses."""
         try:
             if command == "LOCK":
+                self.pc_control.manual_lock_active = True
+                self.pc_control.save_state()
                 self.pc_control.lock_pc()
-                return "PC Locked"
+                return "Manual lock enabled; PC locked"
                 
             elif command == "SHUTDOWN":
                 self.pc_control.shutdown_pc()
@@ -444,9 +453,12 @@ class RemoteControlServer:
                     return str(self.pc_control.usage_limit)
                 return "None"
 
+            elif command == "GET_MANUAL_LOCK":
+                return "YES" if self.pc_control.manual_lock_active else "NO"
+
             elif command == "GET_LOCK_TIMES":
                 if self.pc_control.lock_times:
-                    times = [f"{lt.hour}:{lt.minute:02d}" for lt in self.pc_control.lock_times]
+                    times = [f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.pc_control.lock_times]
                     return ",".join(times)
                 return "None"
 
@@ -516,6 +528,7 @@ class RemoteControlServer:
             elif command == "CLEAR_ALL":
                 self.pc_control.usage_limit = None
                 self.pc_control.lock_times = []
+                self.pc_control.manual_lock_active = False
                 self.pc_control.warnings_sent.clear()
                 self.pc_control.save_state()
                 self.logger.info("All limits and locks cleared")
@@ -524,12 +537,13 @@ class RemoteControlServer:
             elif command == "HELP":
                 return (
                     "Available commands:\n"
-                    "LOCK - Lock the PC\n"
+                    "LOCK - Lock the PC and keep it locked until CLEAR_ALL\n"
                     "SHUTDOWN - Shutdown the PC\n"
                     "GET_NAME - Get PC name\n"
                     "GET_CURRENT_USER - Get current Windows username\n"
                     "GET_STATUS - Check if PC is locked\n"
                     "GET_USAGE_LIMIT - Get current usage limit\n"
+                    "GET_MANUAL_LOCK - Check if manual lock enforcement is active\n"
                     "GET_LOCK_TIMES - Get scheduled lock times\n"
                     "GET_TIME_REMAINING - Get time until next lock\n"
                     "MESSAGE:<text> - Show popup message\n"
@@ -538,7 +552,7 @@ class RemoteControlServer:
                     "EXTEND_TIME:<minutes> - Extend usage time\n"
                     "CLEAR_USAGE_LIMIT - Remove usage limit\n"
                     "CLEAR_LOCK_TIMES - Remove all scheduled locks\n"
-                    "CLEAR_ALL - Clear all limits and locks"
+                    "CLEAR_ALL - Clear all limits, scheduled locks, and manual lock"
                 )
                 
             else:

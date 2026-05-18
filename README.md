@@ -175,7 +175,7 @@ Use `python3 pc_cli.py --help` for all commands (`message`, `shutdown`, `extend-
 4. PC will lock automatically at that time and stay locked for the rest of the day — if the child signs back in after the bedtime minute, the agent re-locks immediately. The window resets at local midnight.
 5. See the scheduled lock in "Current Settings"
 
-Note: when a usage limit or bedtime is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password.
+Note: when a usage limit, bedtime, or manual lock is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password. The **Lock Computer Now** button enables a manual lock that remains active until you clear all limits.
 
 ### Clearing/Removing Limits
 1. View the "📊 Current Settings" section
@@ -187,6 +187,7 @@ Note: when a usage limit or bedtime is active, the agent re-issues the lock when
 While remote unlock isn't possible for security, you can:
 - Clear the usage limit to grant unlimited time
 - Clear scheduled locks to prevent automatic locking
+- Clear all limits to release a manual **Lock Computer Now** lock
 - Send a message to request unlock
 - Restart the PC (if no password)
 
