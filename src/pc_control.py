@@ -348,56 +348,122 @@ class RemoteControlServer:
         self.server_socket = None
         self.clients = {}
         self.client_id_counter = 0
+        self.last_primary_ip = None
         self.logger = logging.getLogger('RemoteControlServer')
 
+    def get_primary_ip(self):
+        """Return the primary IPv4 address, or None while networking is down."""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.settimeout(2)
+                s.connect(("8.8.8.8", 80))
+                return s.getsockname()[0]
+        except OSError:
+            return None
+
+    def close_sockets(self):
+        """Close active client and listener sockets without changing run intent."""
+        for client_id, client_info in list(self.clients.items()):
+            try:
+                client_info['socket'].close()
+            except Exception as e:
+                self.logger.error(f"Error closing client socket {client_id}: {e}")
+            del self.clients[client_id]
+
+        if self.server_socket:
+            try:
+                self.server_socket.close()
+            except Exception as e:
+                self.logger.error(f"Error closing server socket: {e}")
+            self.server_socket = None
+
+    def check_for_ip_change(self):
+        """Return True when the primary IP changed and the listener should restart."""
+        current_ip = self.get_primary_ip()
+        if current_ip != self.last_primary_ip:
+            self.logger.info(
+                "Primary IP changed from %s to %s; restarting TCP listener",
+                self.last_primary_ip or "none",
+                current_ip or "none",
+            )
+            print(
+                f"[{datetime.now():%H:%M:%S}] Network address changed "
+                f"({self.last_primary_ip or 'none'} -> {current_ip or 'none'}); "
+                "restarting server"
+            )
+            self.last_primary_ip = current_ip
+            return True
+        return False
+
     def start_server(self, pc_control):
-        """Start the remote control server."""
+        """Start the remote control server and recover from network/socket changes."""
         self.pc_control = pc_control
         self.running = True
-        
-        try:
-            self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.server_socket.settimeout(5)  # Allow periodic checks for self.running
-            self.server_socket.bind(('0.0.0.0', self.port))
-            self.server_socket.listen(5)
-            
-            self.logger.info(f"Server started on port {self.port}")
-            
-            while self.running:
-                try:
-                    client_socket, client_address = self.server_socket.accept()
-                    client_socket.settimeout(self.timeout)
-                    
-                    client_id = self.client_id_counter
-                    self.client_id_counter += 1
-                    
-                    self.logger.info(f"New connection from {client_address} (ID: {client_id})")
-                    
-                    # Start a new thread for each client
-                    client_thread = threading.Thread(
-                        target=self.handle_client,
-                        args=(client_socket, client_address, client_id),
-                        daemon=True
-                    )
-                    self.clients[client_id] = {
-                        'thread': client_thread,
-                        'socket': client_socket,
-                        'address': client_address
-                    }
-                    client_thread.start()
-                    
-                except socket.timeout:
-                    continue  # Normal timeout for checking self.running
-                except Exception as e:
-                    self.logger.error(f"Accept error: {e}")
-                    break
-                
-        except Exception as e:
-            self.logger.error(f"Server error: {e}")
-        finally:
-            self.stop_server()
-            self.logger.info("Server stopped")
+        restart_delay = 1
+
+        while self.running:
+            try:
+                self.last_primary_ip = self.get_primary_ip()
+                self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.server_socket.settimeout(5)  # Allow periodic health checks.
+                self.server_socket.bind(('0.0.0.0', self.port))
+                self.server_socket.listen(5)
+
+                self.logger.info(
+                    "Server started on port %s (primary IP: %s)",
+                    self.port,
+                    self.last_primary_ip or "unknown",
+                )
+                restart_delay = 1
+
+                while self.running:
+                    try:
+                        client_socket, client_address = self.server_socket.accept()
+                        client_socket.settimeout(self.timeout)
+
+                        client_id = self.client_id_counter
+                        self.client_id_counter += 1
+
+                        self.logger.info(f"New connection from {client_address} (ID: {client_id})")
+
+                        # Start a new thread for each client
+                        client_thread = threading.Thread(
+                            target=self.handle_client,
+                            args=(client_socket, client_address, client_id),
+                            daemon=True
+                        )
+                        self.clients[client_id] = {
+                            'thread': client_thread,
+                            'socket': client_socket,
+                            'address': client_address
+                        }
+                        client_thread.start()
+
+                    except socket.timeout:
+                        if self.check_for_ip_change():
+                            break
+                        continue
+                    except OSError as e:
+                        if self.running:
+                            self.logger.warning(f"Accept failed; restarting server: {e}")
+                        break
+                    except Exception as e:
+                        if self.running:
+                            self.logger.error(f"Accept error; restarting server: {e}")
+                        break
+
+            except Exception as e:
+                if self.running:
+                    self.logger.error(f"Server error; retrying in {restart_delay}s: {e}")
+            finally:
+                self.close_sockets()
+
+            if self.running:
+                time.sleep(restart_delay)
+                restart_delay = min(restart_delay * 2, 30)
+
+        self.logger.info("Server stopped")
 
     def handle_client(self, client_socket, client_address, client_id):
         """Handle communication with a connected client."""
@@ -572,22 +638,7 @@ class RemoteControlServer:
     def stop_server(self):
         """Stop the server and clean up resources."""
         self.running = False
-        
-        # Close all client connections
-        for client_id, client_info in list(self.clients.items()):
-            try:
-                client_info['socket'].close()
-            except Exception as e:
-                self.logger.error(f"Error closing client socket {client_id}: {e}")
-            del self.clients[client_id]
-
-        # Close server socket
-        if self.server_socket:
-            try:
-                self.server_socket.close()
-            except Exception as e:
-                self.logger.error(f"Error closing server socket: {e}")
-            self.server_socket = None
+        self.close_sockets()
 
     def __del__(self):
         """Destructor to ensure proper cleanup."""
