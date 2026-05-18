@@ -16,6 +16,9 @@ import json
 import logging
 from pathlib import Path
 
+# Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
+_FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
+
 try:
     from lock_policy import lock_decision, minutes_until_lock, should_monitor_user
 except ImportError:
@@ -47,22 +50,164 @@ data_dir = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'KidPCMonito
 data_dir.mkdir(parents=True, exist_ok=True)
 
 log_file = data_dir / 'pc_control.log'
+AGENT_PORT = 9999
+
+def _log_level_from_env() -> int:
+    raw = os.environ.get('KID_PC_MONITOR_LOG_LEVEL', 'INFO').strip().upper()
+    return getattr(logging, raw, logging.INFO)
+
 
 def _configure_logging():
     """Append to the per-user log (do not truncate — empty logs make debugging hard)."""
+    level = _log_level_from_env()
     root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    root.setLevel(level)
     for handler in root.handlers[:]:
         root.removeHandler(handler)
     handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(
-        '[%(asctime)s] %(message)s',
+        '[%(asctime)s] %(levelname)s %(name)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     ))
     root.addHandler(handler)
+    return level
 
-_configure_logging()
+_log_level = _configure_logging()
 logger = logging.getLogger('kid_pc_monitor')
+
+
+def _run_powershell_json(script: str):
+    """Run a PowerShell snippet that prints a single JSON object; return dict or None."""
+    try:
+        out = subprocess.check_output(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=15,
+        ).strip()
+        if not out:
+            return None
+        return json.loads(out)
+    except (subprocess.SubprocessError, json.JSONDecodeError, ValueError) as exc:
+        logger.debug("PowerShell diagnostic failed: %s", exc)
+        return None
+
+
+def log_connectivity_diagnostics():
+    """
+    Log Windows network profile and firewall rule state.
+
+    Helps explain unreachable agents when the PC is online but classified as a
+    Public network (installer firewall rule is Private+Domain by default).
+    """
+    if sys.platform != 'win32':
+        return
+
+    primary_ip = None
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(2)
+            s.connect(("8.8.8.8", 80))
+            primary_ip = s.getsockname()[0]
+    except OSError:
+        pass
+
+    logger.info(
+        "Connectivity check: pid=%s user=%s primary_ip=%s python=%s log=%s level=%s",
+        os.getpid(),
+        getpass.getuser(),
+        primary_ip or "none",
+        sys.executable,
+        log_file,
+        logging.getLevelName(_log_level),
+    )
+
+    on_public = False
+    profiles = _run_powershell_json(
+        "@(Get-NetConnectionProfile -ErrorAction SilentlyContinue | "
+        "Select-Object InterfaceAlias, IPv4Connectivity, NetworkCategory) | "
+        "ConvertTo-Json -Compress"
+    )
+    if profiles is None:
+        logger.warning("Could not read Windows network profiles (Get-NetConnectionProfile)")
+    elif isinstance(profiles, dict):
+        profiles = [profiles]
+    if profiles:
+        for entry in profiles:
+            logger.info(
+                "Network profile: interface=%s connectivity=%s category=%s",
+                entry.get('InterfaceAlias', '?'),
+                entry.get('IPv4Connectivity', '?'),
+                entry.get('NetworkCategory', '?'),
+            )
+        def _is_public(category):
+            if category in (0, '0'):
+                return True
+            return str(category).lower() == 'public'
+
+        on_public = any(_is_public(p.get('NetworkCategory')) for p in profiles)
+        if on_public:
+            logger.warning(
+                "At least one interface is Public. The installer "
+                "firewall rule allows inbound TCP %s only on Private/Domain "
+                "unless you chose to include Public. Remote scans and pc_cli "
+                "will fail until the network is Private or the rule includes Public.",
+                AGENT_PORT,
+            )
+
+    rule = _run_powershell_json(
+        f"$r = Get-NetFirewallRule -DisplayName '{_FIREWALL_RULE_DISPLAY_NAME}' "
+        "-ErrorAction SilentlyContinue | Select-Object -First 1; "
+        "if (-not $r) { @{{found=$false}} | ConvertTo-Json -Compress } "
+        "else { "
+        "@{{found=$true; enabled=$r.Enabled; profile=$r.Profile; "
+        "program=($r | Get-NetFirewallApplicationFilter).Program; "
+        "localPort=($r | Get-NetFirewallPortFilter).LocalPort}} | "
+        "ConvertTo-Json -Compress "
+        "}"
+    )
+    if rule is None:
+        logger.warning("Could not query Windows Firewall rule for the agent")
+    elif not rule.get('found'):
+        logger.warning(
+            "No firewall rule named %r — inbound TCP 9999 may be blocked. "
+            "Re-run scripts/install.py as administrator.",
+            _FIREWALL_RULE_DISPLAY_NAME,
+        )
+    else:
+        profile_mask = int(rule.get('profile') or 0)
+        profile_names = []
+        if profile_mask & 1:
+            profile_names.append('Domain')
+        if profile_mask & 2:
+            profile_names.append('Private')
+        if profile_mask & 4:
+            profile_names.append('Public')
+        logger.info(
+            "Firewall rule: enabled=%s profiles=%s (%s) program=%s localPort=%s",
+            rule.get('enabled'),
+            profile_mask,
+            ','.join(profile_names) or 'none',
+            rule.get('program'),
+            rule.get('localPort'),
+        )
+        if on_public and not (profile_mask & 4):
+            logger.warning(
+                "Network is Public but the firewall rule does not include the "
+                "Public profile — LAN clients cannot reach TCP %s. Set the home "
+                "network to Private in Windows Settings, or re-run scripts/install.py "
+                "and allow Public networks.",
+                AGENT_PORT,
+            )
+        program = rule.get('program') or ''
+        if program and os.path.normcase(sys.executable) != os.path.normcase(program):
+            logger.warning(
+                "Firewall rule program %r does not match this process %r — "
+                "inbound connections may be blocked.",
+                program,
+                sys.executable,
+            )
 
 class PCTimeControl:
     def __init__(self):
@@ -133,7 +278,7 @@ class PCTimeControl:
                 self.logger.info(f"State loaded: {len(self.lock_times)} lock times, usage limit: {self.usage_limit}")
                 print(f"[{datetime.now():%H:%M:%S}] Loaded previous settings from {self.state_file}")
         except Exception as e:
-            self.logger.error(f"Error loading state: {e}")
+            self.logger.error("Error loading state: %s", e, exc_info=True)
             print(f"[{datetime.now():%H:%M:%S}] Could not load previous state: {e}")
 
     def save_state(self):
@@ -150,9 +295,9 @@ class PCTimeControl:
             with open(self.state_file, 'w') as f:
                 json.dump(state, f, indent=2)
 
-            self.logger.info("State saved successfully")
+            self.logger.debug("State saved")
         except Exception as e:
-            self.logger.error(f"Error saving state: {e}")
+            self.logger.error("Error saving state: %s", e, exc_info=True)
 
     def check_if_locked(self):
         """
@@ -169,8 +314,7 @@ class PCTimeControl:
             # print(f"[{datetime.now():%H:%M:%S}] LogonUI.exe running? {locked}")
             return locked
         except Exception as e:
-            print(f"[{datetime.now():%H:%M:%S}] Error checking LogonUI: {e}")
-            # fallback to whatever you had before (or assume unlocked)
+            self.logger.error("Error checking lock state (LogonUI): %s", e, exc_info=True)
             return False
 
     def monitor_activity(self):
@@ -349,6 +493,7 @@ class RemoteControlServer:
         self.clients = {}
         self.client_id_counter = 0
         self.last_primary_ip = None
+        self.listener_ready = threading.Event()
         self.logger = logging.getLogger('RemoteControlServer')
 
     def get_primary_ip(self):
@@ -381,7 +526,7 @@ class RemoteControlServer:
         """Return True when the primary IP changed and the listener should restart."""
         current_ip = self.get_primary_ip()
         if current_ip != self.last_primary_ip:
-            self.logger.info(
+            self.logger.warning(
                 "Primary IP changed from %s to %s; restarting TCP listener",
                 self.last_primary_ip or "none",
                 current_ip or "none",
@@ -392,6 +537,7 @@ class RemoteControlServer:
                 "restarting server"
             )
             self.last_primary_ip = current_ip
+            log_connectivity_diagnostics()
             return True
         return False
 
@@ -402,6 +548,7 @@ class RemoteControlServer:
         restart_delay = 1
 
         while self.running:
+            self.listener_ready.clear()
             try:
                 self.last_primary_ip = self.get_primary_ip()
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -409,9 +556,10 @@ class RemoteControlServer:
                 self.server_socket.settimeout(5)  # Allow periodic health checks.
                 self.server_socket.bind(('0.0.0.0', self.port))
                 self.server_socket.listen(5)
+                self.listener_ready.set()
 
                 self.logger.info(
-                    "Server started on port %s (primary IP: %s)",
+                    "Listening on 0.0.0.0:%s (primary IP: %s)",
                     self.port,
                     self.last_primary_ip or "unknown",
                 )
@@ -425,7 +573,11 @@ class RemoteControlServer:
                         client_id = self.client_id_counter
                         self.client_id_counter += 1
 
-                        self.logger.info(f"New connection from {client_address} (ID: {client_id})")
+                        self.logger.info(
+                            "Client connected from %s (id=%s)",
+                            client_address[0],
+                            client_id,
+                        )
 
                         # Start a new thread for each client
                         client_thread = threading.Thread(
@@ -446,16 +598,25 @@ class RemoteControlServer:
                         continue
                     except OSError as e:
                         if self.running:
-                            self.logger.warning(f"Accept failed; restarting server: {e}")
+                            self.logger.warning(
+                                "Accept failed; restarting listener: %s", e, exc_info=True
+                            )
                         break
                     except Exception as e:
                         if self.running:
-                            self.logger.error(f"Accept error; restarting server: {e}")
+                            self.logger.error(
+                                "Accept error; restarting listener: %s", e, exc_info=True
+                            )
                         break
 
             except Exception as e:
                 if self.running:
-                    self.logger.error(f"Server error; retrying in {restart_delay}s: {e}")
+                    self.logger.error(
+                        "Listener bind/start failed; retry in %ss: %s",
+                        restart_delay,
+                        e,
+                        exc_info=True,
+                    )
             finally:
                 self.close_sockets()
 
@@ -474,7 +635,9 @@ class RemoteControlServer:
                     if not data:
                         break  # Client disconnected
                         
-                    self.logger.info(f"Received from {client_address} (ID: {client_id}): {data}")
+                    self.logger.debug(
+                        "Command from %s (ID: %s): %s", client_address, client_id, data
+                    )
                     response = self.process_command(data)
                     
                     if response is not None:
@@ -485,14 +648,16 @@ class RemoteControlServer:
                     client_socket.sendall(b"ALIVE")
                     continue
                 except Exception as e:
-                    self.logger.error(f"Client {client_id} error: {e}")
+                    self.logger.error(
+                        "Client %s error: %s", client_id, e, exc_info=True
+                    )
                     break
                     
         finally:
             client_socket.close()
             if client_id in self.clients:
                 del self.clients[client_id]
-            self.logger.info(f"Client {client_address} (ID: {client_id}) disconnected")
+            self.logger.debug("Client %s (ID: %s) disconnected", client_address, client_id)
 
     def process_command(self, command):
         """Process incoming commands and return responses."""
@@ -538,7 +703,9 @@ class RemoteControlServer:
                 actual_locked = self.pc_control.check_if_locked()
                 if actual_locked != self.pc_control.is_locked:
                     self.pc_control.is_locked = actual_locked
-                    self.logger.info(f"Status changed to: {'LOCKED' if actual_locked else 'UNLOCKED'}")
+                    self.logger.debug(
+                        "Status query: %s", 'LOCKED' if actual_locked else 'UNLOCKED'
+                    )
                 return "LOCKED" if actual_locked else "UNLOCKED"
                 
             elif command.startswith("MESSAGE:"):
@@ -632,7 +799,7 @@ class RemoteControlServer:
                 return "Unknown command (try HELP)"
                 
         except Exception as e:
-            self.logger.error(f"Command processing error: {e}")
+            self.logger.error("Command processing error: %s", e, exc_info=True)
             return f"Error processing command: {e}"
 
     def stop_server(self):
@@ -660,11 +827,13 @@ if __name__ == "__main__":
         "Agent process starting (pid=%s, user=%s, script=%s)",
         os.getpid(), getpass.getuser(), script_path,
     )
+    log_connectivity_diagnostics()
 
-    if not check_port_availability(9999):
+    if not check_port_availability(AGENT_PORT):
         logger.error(
-            "Port 9999 already in use — another KidPCMonitor instance is probably "
-            "already running. Exiting duplicate startup."
+            "Port %s already in use — another KidPCMonitor instance is probably "
+            "already running. Exiting duplicate startup.",
+            AGENT_PORT,
         )
         sys.exit(1)
 
@@ -681,10 +850,12 @@ if __name__ == "__main__":
     server_thread.daemon = True
     server_thread.start()
     
-    # Verify server started
-    time.sleep(1)  # Give server time to start
-    if not remote.running:
-        logger.error("Remote control server failed to start on port 9999")
+    if not remote.listener_ready.wait(timeout=10):
+        logger.error(
+            "TCP listener did not start on port %s within 10s — check %s",
+            AGENT_PORT,
+            log_file,
+        )
         control.show_message(
             "Failed to start network server!\n"
             "Check firewall settings and try again.",
@@ -692,7 +863,11 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    logger.info("Agent running (enforcement loop + TCP server on port 9999)")
+    logger.info(
+        "Agent running (enforcement + TCP %s on 0.0.0.0). "
+        "Verbose command logging: set KID_PC_MONITOR_LOG_LEVEL=DEBUG",
+        remote.port,
+    )
     print("Server is running. Press Ctrl+C to stop.")
     
     try:

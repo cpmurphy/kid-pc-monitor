@@ -34,6 +34,23 @@ This is normal. You can:
 1. Add custom names in config.py
 2. The PC will still work, just with generic name
 
+### Scan finds no PCs / pc_cli cannot connect, but the kid PC is online
+
+The agent may be running and listening on port **9999** locally while **Windows Firewall still blocks inbound** connections from your parent PC or phone.
+
+**Most common cause — Public network profile:** When you run `scripts/install.py`, the firewall rule allows inbound TCP 9999 only on **Private** and **Domain** networks by default (not **Public**). If Windows classifies your home Wi‑Fi as Public—common after disconnecting and reconnecting Wi‑Fi—the agent keeps running but remote scans and `pc_cli` time out.
+
+**Fix (pick one):**
+1. On the kid PC: **Settings → Network & Internet → Wi‑Fi → (your network) → Network profile → Private**
+2. Re-run `scripts/install.py` as administrator and answer **yes** when asked to allow **Public** networks (trade-off: slightly less isolation on real public Wi‑Fi)
+3. Manually add or edit the inbound rule **Kid PC Monitor Agent (TCP 9999)** in Windows Defender Firewall
+
+**Check the agent log** on the kid PC: `%LOCALAPPDATA%\KidPCMonitor\pc_control.log`. At startup it logs network profiles, firewall rule profiles, and whether the listener bound. Look for `Network profile: ... category=Public` or a warning about Public networks.
+
+**Other causes:** Agent not running (Task Scheduler), wrong subnet in scan, firewall rule scoped to a different `pythonw.exe` path than the one running the task, or parent and kid PC on different VLANs without routing.
+
+Set `KID_PC_MONITOR_LOG_LEVEL=DEBUG` on the kid PC (Task Scheduler → task → Environment) for per-connection detail without changing code.
+
 ## Usage Questions
 
 ### Can I unlock a PC remotely?
