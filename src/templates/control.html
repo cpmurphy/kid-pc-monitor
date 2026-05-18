@@ -157,7 +157,7 @@
             <p>🔒 <strong>Manual Lock:</strong>
             {% if pc_info.get('manual_lock_active') %}
                 Active
-                <button onclick="clearLimit('all')" style="margin-left: 10px; padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">❌ Clear</button>
+                <button onclick="clearLimit('manual')" style="margin-left: 10px; padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">❌ Clear</button>
             {% else %}
                 <span style="color: #999;">Not active</span>
             {% endif %}
@@ -367,8 +367,11 @@
             } else if (type === 'locks') {
                 confirmMsg = 'Clear all scheduled lock times?';
                 action = 'clear_lock_times';
+            } else if (type === 'manual') {
+                confirmMsg = 'Clear the manual lock?';
+                action = 'clear_manual_lock';
             } else if (type === 'all') {
-                confirmMsg = 'Clear ALL limits and scheduled locks?';
+                confirmMsg = 'Clear ALL limits, scheduled locks, and manual lock?';
                 action = 'clear_all';
             }
 

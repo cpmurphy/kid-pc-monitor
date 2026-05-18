@@ -21,6 +21,7 @@ ACTION_COMMANDS: dict[str, str | None] = {
     "shutdown": "SHUTDOWN",
     "clear-usage-limit": "CLEAR_USAGE_LIMIT",
     "clear-lock-times": "CLEAR_LOCK_TIMES",
+    "clear-manual-lock": "CLEAR_MANUAL_LOCK",
     "clear-all": "CLEAR_ALL",
     "help": "HELP",
 }
@@ -211,7 +212,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_action("clear-usage-limit", "Remove the daily usage limit")
     add_action("clear-lock-times", "Remove all scheduled bedtime locks")
-    add_action("clear-all", "Remove usage limit and all bedtime locks")
+    add_action("clear-manual-lock", "Remove manual lock enforcement")
+    add_action("clear-all", "Remove usage limit, bedtime locks, and manual lock")
     add_action("help", "Show commands supported by the agent")
 
     p_raw = sub.add_parser(

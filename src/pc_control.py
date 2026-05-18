@@ -525,6 +525,12 @@ class RemoteControlServer:
                 self.logger.info("All scheduled lock times cleared")
                 return "All scheduled lock times cleared"
 
+            elif command == "CLEAR_MANUAL_LOCK":
+                self.pc_control.manual_lock_active = False
+                self.pc_control.save_state()
+                self.logger.info("Manual lock cleared")
+                return "Manual lock cleared"
+
             elif command == "CLEAR_ALL":
                 self.pc_control.usage_limit = None
                 self.pc_control.lock_times = []
@@ -552,6 +558,7 @@ class RemoteControlServer:
                     "EXTEND_TIME:<minutes> - Extend usage time\n"
                     "CLEAR_USAGE_LIMIT - Remove usage limit\n"
                     "CLEAR_LOCK_TIMES - Remove all scheduled locks\n"
+                    "CLEAR_MANUAL_LOCK - Remove manual lock enforcement\n"
                     "CLEAR_ALL - Clear all limits, scheduled locks, and manual lock"
                 )
                 

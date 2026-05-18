@@ -269,6 +269,8 @@ def action():
         success, response = send_command(ip, "CLEAR_USAGE_LIMIT")
     elif action_type == 'clear_lock_times':
         success, response = send_command(ip, "CLEAR_LOCK_TIMES")
+    elif action_type == 'clear_manual_lock':
+        success, response = send_command(ip, "CLEAR_MANUAL_LOCK")
     elif action_type == 'clear_all':
         success, response = send_command(ip, "CLEAR_ALL")
     else:
