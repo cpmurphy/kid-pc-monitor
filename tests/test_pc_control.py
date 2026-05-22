@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timedelta, time as dtime
@@ -132,6 +133,33 @@ class PCTimeControlTests(unittest.TestCase):
             control.lock_pc()
             self.assertEqual(platform.lock_calls, 1)
             self.assertTrue(platform.locked)
+
+    def test_applies_wake_time_from_install_config_when_state_missing(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            program_data = data_dir / "ProgramData" / "KidPCMonitor"
+            program_data.mkdir(parents=True)
+            (program_data / "install_config.json").write_text(
+                '{"target_user": "kid", "wake_time": "08:30"}',
+                encoding="utf-8",
+            )
+            old_win = sys.platform
+            try:
+                sys.platform = "win32"
+                control = PCTimeControl(
+                    platform=platform,
+                    data_directory=data_dir / "profile",
+                    start_background_threads=False,
+                )
+                control.current_user = "kid"
+                control._install_config_path = lambda: program_data / "install_config.json"  # type: ignore[method-assign]
+                control.load_state()
+            finally:
+                sys.platform = old_win
+
+            self.assertEqual(control.wake_time, dtime(8, 30))
+            self.assertTrue((data_dir / "profile" / "pc_control_state.json").is_file())
 
     def test_check_if_locked_delegates_to_platform(self) -> None:
         platform = FakeHostPlatform(locked=True)

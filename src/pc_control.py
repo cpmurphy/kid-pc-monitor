@@ -61,6 +61,7 @@ data_dir.mkdir(parents=True, exist_ok=True)
 
 log_file = data_dir / 'pc_control.log'
 AGENT_PORT = 9999
+INSTALL_CONFIG_FILE = "install_config.json"
 
 def _log_level_from_env() -> int:
     raw = os.environ.get('KID_PC_MONITOR_LOG_LEVEL', 'INFO').strip().upper()
@@ -166,11 +167,49 @@ class PCTimeControl:
             self.current_user, self.monitored_users, self.exempt_users
         )
 
+    def _install_config_path(self) -> Path:
+        if sys.platform == "win32":
+            program_data = os.environ.get("ProgramData", r"C:\ProgramData")
+            return Path(program_data) / "KidPCMonitor" / INSTALL_CONFIG_FILE
+        return Path("/nonexistent") / INSTALL_CONFIG_FILE
+
+    def _apply_wake_time_from_install_config(self) -> bool:
+        """Apply wake_time from install_config.json when the profile state lacks it."""
+        config_path = self._install_config_path()
+        if not config_path.is_file():
+            return False
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            self.logger.warning("Could not read install config %s: %s", config_path, exc)
+            return False
+
+        target_user = config.get("target_user")
+        if isinstance(target_user, str) and target_user:
+            if target_user.lower() != self.current_user.lower():
+                return False
+
+        wake_raw = config.get("wake_time")
+        if not isinstance(wake_raw, str) or ":" not in wake_raw:
+            return False
+
+        hour, minute = map(int, wake_raw.split(":"))
+        self.wake_time = dtime(hour, minute)
+        self.logger.info(
+            "Applied wake_time %02d:%02d from install config %s",
+            hour,
+            minute,
+            config_path,
+        )
+        return True
+
     def load_state(self):
         """Load saved state from JSON file"""
         try:
             if not os.path.exists(self.state_file):
                 self.logger.info("No state file at %s", self.state_file)
+                if self._apply_wake_time_from_install_config():
+                    self.save_state()
                 return
 
             with open(self.state_file, 'r') as f:
@@ -189,6 +228,8 @@ class PCTimeControl:
             if 'wake_time' in state:
                 hour, minute = map(int, state['wake_time'].split(':'))
                 self.wake_time = dtime(hour, minute)
+            elif self._apply_wake_time_from_install_config():
+                self.save_state()
 
             # Restore usage limit
             if 'usage_limit' in state:

@@ -14,6 +14,7 @@ except ImportError:
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
+INSTALL_CONFIG_FILE = "install_config.json"
 AGENT_PORT = 9999
 FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 FIREWALL_RULE_GROUP = "Kid PC Monitor"
@@ -94,27 +95,175 @@ def agent_state_dir_for_user(username: str, *, same_user: bool) -> Path:
         if not local_app:
             raise OSError("LOCALAPPDATA is not set")
         return Path(local_app) / "KidPCMonitor"
+    resolved = resolve_user_localappdata_dir(username)
+    if resolved is not None:
+        return resolved
     return Path(os.environ.get("SystemDrive", "C:")) / "Users" / username / "AppData" / "Local" / "KidPCMonitor"
 
 
-def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: bool) -> Path:
-    """Persist wake_time into the child's agent state file (merge if present)."""
-    state_dir = agent_state_dir_for_user(username, same_user=same_user)
-    state_dir.mkdir(parents=True, exist_ok=True)
-    state_path = state_dir / "pc_control_state.json"
+def resolve_user_localappdata_dir(username: str) -> Path | None:
+    """
+    Resolve ...\\AppData\\Local\\KidPCMonitor from the user's registry profile path.
 
+    Returns None if the account has no profile yet (kid must sign in once).
+    """
+    if sys.platform != "win32":
+        return None
+
+    safe_user = username.replace("'", "''")
+    ps = f"""
+    $ErrorActionPreference = 'Stop'
+    $name = '{safe_user}'
+    $acct = New-Object System.Security.Principal.NTAccount($name)
+    $sid = $acct.Translate([System.Security.Principal.SecurityIdentifier]).Value
+    $key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\$sid"
+    if (-not (Test-Path -LiteralPath $key)) {{
+        Write-Output 'NO_PROFILE'
+        exit 2
+    }}
+    $profile = (Get-ItemProperty -LiteralPath $key).ProfileImagePath
+    if (-not $profile) {{
+        Write-Output 'NO_PATH'
+        exit 3
+    }}
+    Join-Path $profile 'AppData\\Local\\KidPCMonitor'
+    """
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.SubprocessError:
+        return None
+
+    out = (result.stdout or "").strip()
+    if result.returncode != 0 or out in ("NO_PROFILE", "NO_PATH", ""):
+        return None
+    return Path(out)
+
+
+def _merge_wake_time_into_state_file(state_path: Path, wake_time: str) -> None:
     state: dict = {}
     if state_path.is_file():
         try:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             state = {}
-
     state["wake_time"] = wake_time
+    state_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = state_path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
     os.replace(tmp, state_path)
-    return state_path
+
+
+def _grant_user_modify_on_dir(username: str, directory: Path) -> None:
+    if sys.platform != "win32":
+        return
+    subprocess.run(
+        ["icacls", str(directory), "/grant", f"{username}:(OI)(CI)M", "/T", "/Q"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None:
+    """Write wake_time into the child's state file using an elevated PowerShell helper."""
+    safe_user = username.replace("'", "''")
+    safe_wake = wake_time.replace("'", "''")
+    ps = f"""
+    $ErrorActionPreference = 'Stop'
+    $name = '{safe_user}'
+    $wake = '{safe_wake}'
+    $acct = New-Object System.Security.Principal.NTAccount($name)
+    $sid = $acct.Translate([System.Security.Principal.SecurityIdentifier]).Value
+    $key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\$sid"
+    if (-not (Test-Path -LiteralPath $key)) {{
+        Write-Error "No Windows profile for $name. Ask them to sign in once, then re-run install."
+    }}
+    $profile = (Get-ItemProperty -LiteralPath $key).ProfileImagePath
+    $dir = Join-Path $profile 'AppData\\Local\\KidPCMonitor'
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $statePath = Join-Path $dir 'pc_control_state.json'
+    $state = @{{}}
+    if (Test-Path -LiteralPath $statePath) {{
+        $raw = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8
+        if ($raw) {{
+            $state = $raw | ConvertFrom-Json
+            if ($state -is [System.Array]) {{ $state = @{{}} }}
+        }}
+    }}
+    $state | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
+    $json = $state | ConvertTo-Json -Depth 5
+    Set-Content -LiteralPath $statePath -Value $json -Encoding UTF8
+    Write-Output $statePath
+    """
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except subprocess.SubprocessError:
+        return None
+
+    if result.returncode != 0:
+        err = (result.stderr or result.stdout or "").strip()
+        if err:
+            print(f"\n⚠️  Could not write wake-up time to the child's profile: {err}")
+        return None
+
+    out = (result.stdout or "").strip().splitlines()
+    if not out:
+        return None
+    return Path(out[-1])
+
+
+def write_install_config(target_user: str, wake_time: str) -> Path:
+    """Write machine-wide install defaults (always writable during admin install)."""
+    dest = Path(INSTALL_DIR_DEFAULT)
+    dest.mkdir(parents=True, exist_ok=True)
+    config_path = dest / INSTALL_CONFIG_FILE
+    payload = {"target_user": target_user, "wake_time": wake_time}
+    tmp = config_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    os.replace(tmp, config_path)
+    return config_path
+
+
+def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: bool) -> tuple[Path | None, bool]:
+    """
+    Persist wake_time into the child's agent state file (merge if present).
+
+    Returns (state_path, success). Also writes install_config.json under ProgramData.
+    """
+    config_path = write_install_config(username, wake_time)
+    print(f"   Install defaults: {config_path}")
+
+    state_dir = agent_state_dir_for_user(username, same_user=same_user)
+    state_path = state_dir / "pc_control_state.json"
+
+    try:
+        _merge_wake_time_into_state_file(state_path, wake_time)
+        _grant_user_modify_on_dir(username, state_dir)
+        return state_path, True
+    except OSError as exc:
+        print(f"\n⚠️  Direct write to {state_path} failed: {exc}")
+
+    if not same_user:
+        ps_path = write_wake_time_via_powershell(username, wake_time)
+        if ps_path is not None:
+            _grant_user_modify_on_dir(username, ps_path.parent)
+            return ps_path, True
+
+    print(
+        "\n⚠️  Wake-up time was saved to ProgramData only. The agent will apply it "
+        "on the child's next logon. If the child has never signed in, have them log "
+        "in once and re-run install, or add wake_time manually to their state file."
+    )
+    return None, False
 
 
 def prompt_target_user():
@@ -655,14 +804,15 @@ def run_install_flow():
             return False
 
     wake_time = prompt_wake_up_time()
+    state_path, state_ok = write_wake_time_to_agent_state(
+        target_user, wake_time, same_user=not cross_user
+    )
+    if state_ok and state_path is not None:
+        print(f"\n✅ Wake-up time saved to {state_path}")
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
-        state_path = write_wake_time_to_agent_state(
-            target_user, wake_time, same_user=not cross_user
-        )
-        print(f"\n✅ Wake-up time saved to {state_path}")
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
@@ -670,10 +820,6 @@ def run_install_flow():
     if create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
-        state_path = write_wake_time_to_agent_state(
-            target_user, wake_time, same_user=not cross_user
-        )
-        print(f"\n✅ Wake-up time saved to {state_path}")
         print("\n✅ Setup complete using XML method!")
         return True
 
