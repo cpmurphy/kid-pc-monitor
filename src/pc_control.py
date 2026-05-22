@@ -336,18 +336,26 @@ class PCTimeControl:
 
     def check_if_locked(self):
         """
-        Returns True if LogonUI.exe is present (screen locked),
-        False otherwise.
+        Returns True if LogonUI.exe is running in *this* session — i.e.
+        our session is locked.
+
+        Filtering by session matters when another user is logged in via
+        fast user switching: their locked/disconnected session also runs
+        LogonUI.exe, which would otherwise make us falsely report LOCKED.
         """
         try:
+            kernel32 = ctypes.windll.kernel32
+            sid = ctypes.c_ulong()
+            ok = kernel32.ProcessIdToSessionId(
+                kernel32.GetCurrentProcessId(), ctypes.byref(sid)
+            )
+            session_filter = f'/FI "SESSION eq {sid.value}" ' if ok else ''
             out = subprocess.check_output(
-                'tasklist /FI "IMAGENAME eq LogonUI.exe" /NH',
+                f'tasklist /FI "IMAGENAME eq LogonUI.exe" {session_filter}/NH',
                 shell=True,
                 text=True
             )
-            locked = "LogonUI.exe" in out
-            # print(f"[{datetime.now():%H:%M:%S}] LogonUI.exe running? {locked}")
-            return locked
+            return "LogonUI.exe" in out
         except Exception as e:
             self.logger.error("Error checking lock state (LogonUI): %s", e, exc_info=True)
             return False
