@@ -7,7 +7,7 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import messagebox
-from datetime import datetime, time as dtime
+from datetime import datetime, date as ddate, time as dtime
 import subprocess
 from ctypes import wintypes
 import getpass
@@ -214,7 +214,17 @@ class PCTimeControl:
         self.lock_times = []
         self.usage_limit = None
         self.manual_lock_active = False
-        self.start_time = datetime.now()
+        # Accumulated active-use seconds for today (session active + unlocked).
+        # Advanced by tick_accumulator() while the kid is actually on the PC,
+        # so locked or backgrounded time doesn't burn their allowance.
+        self.accumulated_seconds = 0.0
+        self.accumulated_date = datetime.now().date()
+        # Wall-clock of the most recent observed active+unlocked tick, or None
+        # if the previous tick was paused. Used to credit elapsed seconds
+        # between consecutive active ticks while ignoring paused gaps.
+        self.last_tick_at = None
+        # Throttle for periodic save_state() calls inside run_monitor.
+        self.last_persist_at = None
         self.is_locked = False
         self.last_activity = datetime.now()
         self.current_user = getpass.getuser()
@@ -270,46 +280,35 @@ class PCTimeControl:
             # Restore persistent manual lock requested by the parent.
             self.manual_lock_active = bool(state.get('manual_lock_active', False))
 
-            # Restore start time (for usage tracking)
-            if 'start_time' in state:
-                saved_start_time = datetime.fromisoformat(state['start_time'])
-                current_date = datetime.now().date()
-                saved_date = saved_start_time.date()
-
-                # If start_time is from a previous day, reset it to today
+            # Restore accumulated active-use counter, but only if it's for today.
+            current_date = datetime.now().date()
+            if 'accumulated_date' in state:
+                saved_date = ddate.fromisoformat(state['accumulated_date'])
                 if saved_date < current_date:
-                    self.start_time = datetime.now()
                     self.logger.info(
-                        "Start time in file was %s; reset to today (%s)",
-                        saved_start_time.isoformat(),
-                        self.start_time.isoformat(),
+                        "Accumulated counter in file was for %s; reset to 0 for today (%s)",
+                        saved_date.isoformat(),
+                        current_date.isoformat(),
                     )
                     print(f"[{datetime.now():%H:%M:%S}] Usage timer reset for new day")
+                    self.accumulated_seconds = 0.0
+                    self.accumulated_date = current_date
                 else:
-                    self.start_time = saved_start_time
-            elif self.usage_limit is not None:
-                self.logger.warning(
-                    "State file has usage_limit=%s but no start_time — "
-                    "using fresh start_time %s",
-                    self.usage_limit,
-                    self.start_time.isoformat(),
-                )
+                    self.accumulated_seconds = float(state.get('accumulated_seconds', 0.0))
+                    self.accumulated_date = saved_date
 
             lock_times_label = (
                 ",".join(f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times)
                 or "none"
             )
-            usage_elapsed = None
-            if self.usage_limit is not None:
-                usage_elapsed = (datetime.now() - self.start_time).total_seconds() / 60
             self.logger.info(
                 "State applied: lock_times=[%s] usage_limit=%s manual_lock=%s "
-                "start_time=%s usage_elapsed_min=%s",
+                "accumulated_min=%.1f accumulated_date=%s",
                 lock_times_label,
                 self.usage_limit,
                 self.manual_lock_active,
-                self.start_time.isoformat(),
-                f"{usage_elapsed:.1f}" if usage_elapsed is not None else "n/a",
+                self.accumulated_seconds / 60,
+                self.accumulated_date.isoformat(),
             )
             print(f"[{datetime.now():%H:%M:%S}] Loaded previous settings from {self.state_file}")
         except Exception as e:
@@ -323,7 +322,8 @@ class PCTimeControl:
                 'lock_times': [f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times],
                 'usage_limit': self.usage_limit,
                 'manual_lock_active': self.manual_lock_active,
-                'start_time': self.start_time.isoformat(),
+                'accumulated_seconds': round(self.accumulated_seconds, 3),
+                'accumulated_date': self.accumulated_date.isoformat(),
                 'current_user': self.current_user
             }
 
@@ -359,6 +359,66 @@ class PCTimeControl:
         except Exception as e:
             self.logger.error("Error checking lock state (LogonUI): %s", e, exc_info=True)
             return False
+
+    def session_is_active(self):
+        """
+        True if our session is the active console session AND not locked.
+
+        Used by tick_accumulator to advance the usage counter only while the
+        kid is actually on the PC — not while their session is locked or has
+        been backgrounded by fast user switching.
+        """
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            our_sid = ctypes.c_ulong()
+            ok = kernel32.ProcessIdToSessionId(
+                kernel32.GetCurrentProcessId(), ctypes.byref(our_sid)
+            )
+            if not ok:
+                # Can't tell which session we're in; fall back to lock check
+                # alone so we don't silently stop counting.
+                return not self.check_if_locked()
+            active_sid = kernel32.WTSGetActiveConsoleSessionId()
+            # 0xFFFFFFFF means "no session is currently attached to the console"
+            # (e.g. between logoff and next logon).
+            if active_sid == 0xFFFFFFFF or active_sid != our_sid.value:
+                return False
+            return not self.check_if_locked()
+        except Exception as e:
+            self.logger.error("Error checking session active state: %s", e, exc_info=True)
+            return not self.check_if_locked()
+
+    def tick_accumulator(self):
+        """
+        Advance the active-use counter by the seconds elapsed since the last
+        active tick. Reset at local midnight. Called once per second from
+        run_monitor.
+        """
+        now = datetime.now()
+
+        if now.date() != self.accumulated_date:
+            self.logger.info(
+                "Midnight rollover: resetting accumulated counter "
+                "(was %.1f min for %s)",
+                self.accumulated_seconds / 60,
+                self.accumulated_date.isoformat(),
+            )
+            self.accumulated_seconds = 0.0
+            self.accumulated_date = now.date()
+            self.last_tick_at = None
+
+        if self.should_monitor_user() and self.session_is_active():
+            if self.last_tick_at is not None:
+                delta = (now - self.last_tick_at).total_seconds()
+                # Clamp to (0, 60): negative means clock went backwards;
+                # >60 means the loop stalled or we resumed from sleep, in
+                # which case we don't want to credit the whole gap.
+                if 0 < delta < 60:
+                    self.accumulated_seconds += delta
+            self.last_tick_at = now
+        else:
+            self.last_tick_at = None
 
     def monitor_activity(self):
         """Monitor lock/unlock status"""
@@ -440,7 +500,7 @@ class PCTimeControl:
             now=datetime.now(),
             lock_times=self.lock_times,
             usage_limit=self.usage_limit,
-            start_time=self.start_time,
+            accumulated_minutes=self.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.manual_lock_active,
         )
@@ -489,7 +549,7 @@ class PCTimeControl:
             now=datetime.now(),
             lock_times=self.lock_times,
             usage_limit=self.usage_limit,
-            start_time=self.start_time,
+            accumulated_minutes=self.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.manual_lock_active,
         )
@@ -504,6 +564,7 @@ class PCTimeControl:
         print("PC Time Control is running...")
         last_logged_reason = None
         while True:
+            self.tick_accumulator()
             self.check_and_send_warnings()
 
             locked, reason = self.currently_in_lock_window()
@@ -515,6 +576,13 @@ class PCTimeControl:
                 self.lock_pc()
             elif not locked:
                 last_logged_reason = None
+
+            # Persist the accumulator periodically so a crash or power loss
+            # doesn't hand the kid a free reset of their daily usage.
+            now = datetime.now()
+            if self.last_persist_at is None or (now - self.last_persist_at).total_seconds() >= 60:
+                self.save_state()
+                self.last_persist_at = now
 
             time.sleep(1)
 
@@ -760,7 +828,10 @@ class RemoteControlServer:
                 try:
                     minutes = int(command.split(":", 1)[1])
                     self.pc_control.set_usage_limit(minutes)
-                    self.pc_control.start_time = datetime.now()  # Reset start time when setting new limit
+                    # Setting a new limit gives the kid a fresh budget from now.
+                    self.pc_control.accumulated_seconds = 0.0
+                    self.pc_control.accumulated_date = datetime.now().date()
+                    self.pc_control.last_tick_at = None
                     self.pc_control.warnings_sent.clear()  # Clear warnings for new limit
                     self.pc_control.save_state()  # Save state after setting limit
                     return f"Usage limit set to {minutes} minutes"

@@ -21,7 +21,7 @@ class LockPolicyTests(unittest.TestCase):
             now=datetime(2026, 5, 17, 21, 5),
             lock_times=[dtime(21, 0)],
             usage_limit=None,
-            start_time=datetime(2026, 5, 17, 18, 0),
+            accumulated_minutes=0,
         )
 
         self.assertTrue(decision.should_lock)
@@ -32,7 +32,7 @@ class LockPolicyTests(unittest.TestCase):
             now=datetime(2026, 5, 17, 15, 45),
             lock_times=[],
             usage_limit=None,
-            start_time=datetime(2026, 5, 17, 15, 0),
+            accumulated_minutes=0,
             manual_lock_active=True,
         )
 
@@ -44,28 +44,41 @@ class LockPolicyTests(unittest.TestCase):
             now=datetime(2026, 5, 18, 0, 5),
             lock_times=[dtime(21, 0)],
             usage_limit=None,
-            start_time=datetime(2026, 5, 18, 0, 0),
+            accumulated_minutes=0,
         )
 
         self.assertFalse(decision.should_lock)
 
-    def test_usage_limit_still_applies_after_agent_restarts_same_day(self):
+    def test_usage_limit_locks_once_accumulated_reaches_limit(self):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 10, 45),
             lock_times=[],
             usage_limit=30,
-            start_time=datetime(2026, 5, 17, 10, 0),
+            accumulated_minutes=30,
         )
 
         self.assertTrue(decision.should_lock)
         self.assertEqual(decision.reason, "Usage limit of 30 minutes reached")
+
+    def test_usage_limit_does_not_lock_below_limit(self):
+        # Counter-case to confirm wall-clock no longer matters: even after
+        # hours have passed, the kid still has budget if accumulated_minutes
+        # hasn't reached the limit (e.g. they were locked or switched away).
+        decision = lock_decision(
+            now=datetime(2026, 5, 17, 18, 0),
+            lock_times=[],
+            usage_limit=30,
+            accumulated_minutes=12,
+        )
+
+        self.assertFalse(decision.should_lock)
 
     def test_unmonitored_user_is_never_locked(self):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 21, 5),
             lock_times=[dtime(21, 0)],
             usage_limit=30,
-            start_time=datetime(2026, 5, 17, 10, 0),
+            accumulated_minutes=99,
             monitor_user=False,
             manual_lock_active=True,
         )
@@ -77,7 +90,7 @@ class LockPolicyTests(unittest.TestCase):
             now=datetime(2026, 5, 17, 21, 5),
             lock_times=[dtime(21, 0)],
             usage_limit=None,
-            start_time=datetime(2026, 5, 17, 18, 0),
+            accumulated_minutes=0,
         )
 
         self.assertEqual(remaining, 0)
@@ -87,10 +100,21 @@ class LockPolicyTests(unittest.TestCase):
             now=datetime(2026, 1, 31, 20, 0),
             lock_times=[dtime(21, 0)],
             usage_limit=None,
-            start_time=datetime(2026, 1, 31, 18, 0),
+            accumulated_minutes=0,
         )
 
         self.assertEqual(remaining, 60)
+
+    def test_minutes_until_lock_uses_remaining_budget_when_lower(self):
+        # 5 minutes of budget left should win over a bedtime that's 60 min off.
+        remaining = minutes_until_lock(
+            now=datetime(2026, 5, 17, 20, 0),
+            lock_times=[dtime(21, 0)],
+            usage_limit=30,
+            accumulated_minutes=25,
+        )
+
+        self.assertEqual(remaining, 5)
 
 
 if __name__ == "__main__":

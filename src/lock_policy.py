@@ -39,7 +39,7 @@ def lock_decision(
     now: datetime,
     lock_times: list[dtime] | tuple[dtime, ...],
     usage_limit: int | None,
-    start_time: datetime,
+    accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
 ) -> LockDecision:
@@ -48,7 +48,7 @@ def lock_decision(
 
     Scheduled lock times are daily bedtime starts: once the local clock reaches
     a configured time, the user stays locked until local midnight. Usage limits
-    lock once elapsed minutes for the current start_time reach the limit.
+    lock once accumulated_minutes (active-use time today) reaches the limit.
     """
     if not monitor_user:
         return LockDecision(False)
@@ -63,13 +63,11 @@ def lock_decision(
                 f"Past scheduled lock time {lock_time.hour:02d}:{lock_time.minute:02d}",
             )
 
-    if usage_limit:
-        usage_minutes = (now - start_time).total_seconds() / 60
-        if usage_minutes >= usage_limit:
-            return LockDecision(
-                True,
-                f"Usage limit of {usage_limit} minutes reached",
-            )
+    if usage_limit and accumulated_minutes >= usage_limit:
+        return LockDecision(
+            True,
+            f"Usage limit of {usage_limit} minutes reached",
+        )
 
     return LockDecision(False)
 
@@ -79,7 +77,7 @@ def minutes_until_lock(
     now: datetime,
     lock_times: list[dtime] | tuple[dtime, ...],
     usage_limit: int | None,
-    start_time: datetime,
+    accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
 ) -> float | None:
@@ -91,7 +89,7 @@ def minutes_until_lock(
         now=now,
         lock_times=lock_times,
         usage_limit=usage_limit,
-        start_time=start_time,
+        accumulated_minutes=accumulated_minutes,
         monitor_user=monitor_user,
         manual_lock_active=manual_lock_active,
     ).should_lock:
@@ -115,8 +113,7 @@ def minutes_until_lock(
             min_remaining = minutes_remaining
 
     if usage_limit:
-        usage_minutes = (now - start_time).total_seconds() / 60
-        minutes_remaining = usage_limit - usage_minutes
+        minutes_remaining = usage_limit - accumulated_minutes
         if min_remaining is None or minutes_remaining < min_remaining:
             min_remaining = minutes_remaining
 
