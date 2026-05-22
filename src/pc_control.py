@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 import time
@@ -517,25 +518,37 @@ class PCTimeControl:
 
         time_remaining = self.get_time_remaining()
 
-        if time_remaining is None:
+        if time_remaining is None or time_remaining <= 0:
             return
 
-        # Check each warning interval
-        for warning_mins in self.warning_intervals:
+        # Fire the smallest applicable threshold first so a kid with only a
+        # few minutes left doesn't get a misleading "15 minutes" popup. Once
+        # a smaller threshold fires, mark the larger thresholds as also-sent
+        # — those longer warning windows never applied to this session and
+        # would just be noise if they fired later.
+        for warning_mins in sorted(self.warning_intervals):
             warning_key = f"{warning_mins}min"
+            if warning_key in self.warnings_sent:
+                continue
+            if time_remaining > warning_mins:
+                continue
 
-            # If we're within the warning window and haven't sent this warning yet
-            if time_remaining <= warning_mins and warning_key not in self.warnings_sent:
-                self.warnings_sent.add(warning_key)
+            self.warnings_sent.add(warning_key)
+            for larger in self.warning_intervals:
+                if larger > warning_mins:
+                    self.warnings_sent.add(f"{larger}min")
 
-                if warning_mins == 1:
-                    msg = "⚠️ Computer will lock in 1 minute!"
-                else:
-                    msg = f"⚠️ Computer will lock in {warning_mins} minutes!"
+            actual_mins = max(1, math.ceil(time_remaining))
+            unit = "minute" if actual_mins == 1 else "minutes"
+            msg = f"⚠️ Computer will lock in {actual_mins} {unit}!"
 
-                self.show_message(msg, "Warning")
-                self.logger.info(f"Warning sent: {warning_mins} minutes remaining")
-                print(f"[{datetime.now():%H:%M:%S}] Warning: {warning_mins} minutes until lock")
+            self.show_message(msg, "Warning")
+            self.logger.info(
+                "Warning sent: %d %s remaining (threshold %d)",
+                actual_mins, unit, warning_mins,
+            )
+            print(f"[{datetime.now():%H:%M:%S}] Warning: {actual_mins} {unit} until lock")
+            break
 
     def currently_in_lock_window(self):
         """
