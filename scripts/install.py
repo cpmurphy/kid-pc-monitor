@@ -462,10 +462,10 @@ def add_agent_firewall_rule(python_path, *, allow_public=False):
     ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
     ps_group = _escape_ps_single_quoted(FIREWALL_RULE_GROUP)
     if allow_public:
-        firewall_profiles = "Private,Domain,Public"
+        firewall_profiles = "@('Private', 'Domain', 'Public')"
         profile_label = "Private, Domain, and Public profiles"
     else:
-        firewall_profiles = "Private,Domain"
+        firewall_profiles = "@('Private', 'Domain')"
         profile_label = "Private and Domain profiles"
 
     ps_script = f"""
