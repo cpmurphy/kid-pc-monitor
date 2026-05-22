@@ -174,7 +174,7 @@ Use `python3 pc_cli.py --help` for all commands (`message`, `shutdown`, `extend-
 1. Select a PC
 2. Scroll to "Set Lock Time"
 3. Choose bedtime (e.g., 9:00 PM)
-4. PC will lock automatically at that time and stay locked for the rest of the day — if the child signs back in after the bedtime minute, the agent re-locks immediately. The window resets at local midnight.
+4. PC will lock automatically at that time and stay locked until the **wake-up time** set during install (default 7:00 AM) — if the child signs back in after bedtime or before wake-up, the agent re-locks immediately. Early-morning use before wake-up is still blocked.
 5. See the scheduled lock in "Current Settings"
 
 Note: when a usage limit, bedtime, or manual lock is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password. The **Lock Computer Now** button enables a manual lock that remains active until you clear all limits.

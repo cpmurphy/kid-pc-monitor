@@ -13,10 +13,22 @@ from pathlib import Path
 
 try:
     from host_platform import HostPlatform, get_default_platform
-    from lock_policy import lock_decision, minutes_until_lock, should_monitor_user
+    from lock_policy import (
+        DEFAULT_WAKE_TIME,
+        lock_decision,
+        minutes_until_lock,
+        should_monitor_user,
+        usage_period_date,
+    )
 except ImportError:
     from src.host_platform import HostPlatform, get_default_platform
-    from src.lock_policy import lock_decision, minutes_until_lock, should_monitor_user
+    from src.lock_policy import (
+        DEFAULT_WAKE_TIME,
+        lock_decision,
+        minutes_until_lock,
+        should_monitor_user,
+        usage_period_date,
+    )
 
 # ============================================
 # CONFIGURATION
@@ -33,6 +45,10 @@ EXEMPT_USERS = []
 # If both lists are empty, ALL users will be monitored
 # If MONITORED_USERS has entries, ONLY those users are monitored
 # If EXEMPT_USERS has entries, everyone EXCEPT those users is monitored
+
+# Morning unlock for bedtime curfews and daily usage reset (HH:MM local time).
+# Overridden by wake_time in pc_control_state.json (set at install).
+DEFAULT_WAKE_UP_TIME = DEFAULT_WAKE_TIME
 
 # ============================================
 
@@ -99,13 +115,14 @@ class PCTimeControl:
         self.exempt_users = EXEMPT_USERS if exempt_users is None else exempt_users
 
         self.lock_times = []
+        self.wake_time = DEFAULT_WAKE_UP_TIME
         self.usage_limit = None
         self.manual_lock_active = False
         # Accumulated active-use seconds for today (session active + unlocked).
         # Advanced by tick_accumulator() while the kid is actually on the PC,
         # so locked or backgrounded time doesn't burn their allowance.
         self.accumulated_seconds = 0.0
-        self.accumulated_date = datetime.now().date()
+        self.accumulated_date = usage_period_date(datetime.now(), self.wake_time)
         # Wall-clock of the most recent observed active+unlocked tick, or None
         # if the previous tick was paused. Used to credit elapsed seconds
         # between consecutive active ticks while ignoring paused gaps.
@@ -121,7 +138,7 @@ class PCTimeControl:
         self.logger = logging.getLogger('PCTimeControl')
         self.warnings_sent = set()  # Track which warnings have been sent
         self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
-        self.warnings_date = datetime.now().date()  # Reset warnings_sent at midnight rollover
+        self.warnings_date = None
 
         # Log which user we're running as
         if self.should_monitor_user():
@@ -133,6 +150,7 @@ class PCTimeControl:
 
         # Load previous state if exists
         self.load_state()
+        self.warnings_date = usage_period_date(datetime.now(), self.wake_time)
 
         if start_background_threads:
             self.monitor_thread = threading.Thread(
@@ -168,6 +186,10 @@ class PCTimeControl:
             if 'lock_times' in state:
                 self.lock_times = [dtime(*map(int, t.split(':'))) for t in state['lock_times']]
 
+            if 'wake_time' in state:
+                hour, minute = map(int, state['wake_time'].split(':'))
+                self.wake_time = dtime(hour, minute)
+
             # Restore usage limit
             if 'usage_limit' in state:
                 self.usage_limit = state['usage_limit']
@@ -175,31 +197,35 @@ class PCTimeControl:
             # Restore persistent manual lock requested by the parent.
             self.manual_lock_active = bool(state.get('manual_lock_active', False))
 
-            # Restore accumulated active-use counter, but only if it's for today.
-            current_date = datetime.now().date()
+            # Restore accumulated active-use counter for the current wake-to-wake day.
+            current_period = usage_period_date(datetime.now(), self.wake_time)
             if 'accumulated_date' in state:
                 saved_date = ddate.fromisoformat(state['accumulated_date'])
-                if saved_date < current_date:
+                if saved_date < current_period:
                     self.logger.info(
-                        "Accumulated counter in file was for %s; reset to 0 for today (%s)",
+                        "Accumulated counter in file was for %s; reset to 0 for period %s",
                         saved_date.isoformat(),
-                        current_date.isoformat(),
+                        current_period.isoformat(),
                     )
                     print(f"[{datetime.now():%H:%M:%S}] Usage timer reset for new day")
                     self.accumulated_seconds = 0.0
-                    self.accumulated_date = current_date
+                    self.accumulated_date = current_period
                 else:
                     self.accumulated_seconds = float(state.get('accumulated_seconds', 0.0))
                     self.accumulated_date = saved_date
+            else:
+                self.accumulated_date = current_period
 
             lock_times_label = (
                 ",".join(f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times)
                 or "none"
             )
             self.logger.info(
-                "State applied: lock_times=[%s] usage_limit=%s manual_lock=%s "
-                "accumulated_min=%.1f accumulated_date=%s",
+                "State applied: lock_times=[%s] wake_time=%02d:%02d usage_limit=%s "
+                "manual_lock=%s accumulated_min=%.1f accumulated_date=%s",
                 lock_times_label,
+                self.wake_time.hour,
+                self.wake_time.minute,
                 self.usage_limit,
                 self.manual_lock_active,
                 self.accumulated_seconds / 60,
@@ -215,6 +241,7 @@ class PCTimeControl:
         try:
             state = {
                 'lock_times': [f"{lt.hour:02d}:{lt.minute:02d}" for lt in self.lock_times],
+                'wake_time': f"{self.wake_time.hour:02d}:{self.wake_time.minute:02d}",
                 'usage_limit': self.usage_limit,
                 'manual_lock_active': self.manual_lock_active,
                 'accumulated_seconds': round(self.accumulated_seconds, 3),
@@ -240,20 +267,23 @@ class PCTimeControl:
     def tick_accumulator(self):
         """
         Advance the active-use counter by the seconds elapsed since the last
-        active tick. Reset at local midnight. Called once per second from
+        active tick. Reset at wake_time each day. Called once per second from
         run_monitor.
         """
         now = datetime.now()
+        current_period = usage_period_date(now, self.wake_time)
 
-        if now.date() != self.accumulated_date:
+        if current_period != self.accumulated_date:
             self.logger.info(
-                "Midnight rollover: resetting accumulated counter "
+                "Wake-time rollover (%02d:%02d): resetting accumulated counter "
                 "(was %.1f min for %s)",
+                self.wake_time.hour,
+                self.wake_time.minute,
                 self.accumulated_seconds / 60,
                 self.accumulated_date.isoformat(),
             )
             self.accumulated_seconds = 0.0
-            self.accumulated_date = now.date()
+            self.accumulated_date = current_period
             self.last_tick_at = None
 
         if self.should_monitor_user() and self.session_is_active():
@@ -328,14 +358,14 @@ class PCTimeControl:
             accumulated_minutes=self.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.manual_lock_active,
+            wake_time=self.wake_time,
         )
 
     def check_and_send_warnings(self):
         """Check if warnings should be sent and send them"""
-        # Clear sent-warning memory at local midnight so the 15/5/1-minute
-        # warnings fire again for the next day if the agent has been running
-        # continuously across the rollover.
-        today = datetime.now().date()
+        # Clear sent-warning memory at wake_time so the 15/5/1-minute warnings
+        # fire again for the next usage period if the agent runs continuously.
+        today = usage_period_date(datetime.now(), self.wake_time)
         if today != self.warnings_date:
             self.warnings_sent.clear()
             self.warnings_date = today
@@ -378,9 +408,9 @@ class PCTimeControl:
         """
         Return (locked, reason) for whether the agent should currently be
         enforcing a lock. Treats each scheduled lock_time as the start of a
-        window that runs until midnight of the same local day, so a child who
-        signs in after the bedtime minute still gets locked out. Usage-limit
-        enforcement is a simple "minutes-used >= limit" check.
+        window that runs until wake_time, so a child who signs in after bedtime
+        or before wake is still locked out. Usage-limit enforcement is a
+        simple "minutes-used >= limit" check for the current wake-to-wake day.
         """
         decision = lock_decision(
             now=datetime.now(),
@@ -389,6 +419,7 @@ class PCTimeControl:
             accumulated_minutes=self.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.manual_lock_active,
+            wake_time=self.wake_time,
         )
         return decision.should_lock, decision.reason
 
@@ -667,7 +698,9 @@ class RemoteControlServer:
                     self.pc_control.set_usage_limit(minutes)
                     # Setting a new limit gives the kid a fresh budget from now.
                     self.pc_control.accumulated_seconds = 0.0
-                    self.pc_control.accumulated_date = datetime.now().date()
+                    self.pc_control.accumulated_date = usage_period_date(
+                        datetime.now(), self.pc_control.wake_time
+                    )
                     self.pc_control.last_tick_at = None
                     self.pc_control.warnings_sent.clear()  # Clear warnings for new limit
                     self.pc_control.save_state()  # Save state after setting limit

@@ -1,9 +1,16 @@
+import json
 import subprocess
 import os
 import sys
 import glob
 import shutil
 from pathlib import Path
+
+try:
+    from src.lock_policy import parse_time_hhmm
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from src.lock_policy import parse_time_hhmm
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
@@ -64,6 +71,50 @@ def prompt_install_mode(current_user):
     print( "  2. A different user account — admin installs, a non-admin child runs")
     choice = input("\nChoice (1-2) [1]: ").strip() or "1"
     return choice == "2"
+
+
+def prompt_wake_up_time():
+    """Ask for the daily morning unlock time (local HH:MM)."""
+    print("\n⏰ Wake-up time")
+    print("   Bedtime locks stay active until this time each morning.")
+    print("   Daily screen-time limits also reset at wake-up (not at midnight).")
+    while True:
+        raw = input("\nWake-up time (HH:MM, default 07:00): ").strip() or "07:00"
+        try:
+            parsed = parse_time_hhmm(raw)
+            return f"{parsed.hour:02d}:{parsed.minute:02d}"
+        except ValueError as exc:
+            print(f"❌ {exc}")
+
+
+def agent_state_dir_for_user(username: str, *, same_user: bool) -> Path:
+    """Return %LOCALAPPDATA%\\KidPCMonitor for the account that will run the agent."""
+    if same_user:
+        local_app = os.environ.get("LOCALAPPDATA")
+        if not local_app:
+            raise OSError("LOCALAPPDATA is not set")
+        return Path(local_app) / "KidPCMonitor"
+    return Path(os.environ.get("SystemDrive", "C:")) / "Users" / username / "AppData" / "Local" / "KidPCMonitor"
+
+
+def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: bool) -> Path:
+    """Persist wake_time into the child's agent state file (merge if present)."""
+    state_dir = agent_state_dir_for_user(username, same_user=same_user)
+    state_dir.mkdir(parents=True, exist_ok=True)
+    state_path = state_dir / "pc_control_state.json"
+
+    state: dict = {}
+    if state_path.is_file():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            state = {}
+
+    state["wake_time"] = wake_time
+    tmp = state_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    os.replace(tmp, state_path)
+    return state_path
 
 
 def prompt_target_user():
@@ -603,9 +654,15 @@ def run_install_flow():
         if not script_path:
             return False
 
+    wake_time = prompt_wake_up_time()
+
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
+        state_path = write_wake_time_to_agent_state(
+            target_user, wake_time, same_user=not cross_user
+        )
+        print(f"\n✅ Wake-up time saved to {state_path}")
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
@@ -613,6 +670,10 @@ def run_install_flow():
     if create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
+        state_path = write_wake_time_to_agent_state(
+            target_user, wake_time, same_user=not cross_user
+        )
+        print(f"\n✅ Wake-up time saved to {state_path}")
         print("\n✅ Setup complete using XML method!")
         return True
 

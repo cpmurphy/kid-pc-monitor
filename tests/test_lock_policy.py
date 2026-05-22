@@ -1,7 +1,13 @@
 import unittest
-from datetime import datetime, time as dtime
+from datetime import datetime, timedelta, time as dtime
 
-from src.lock_policy import lock_decision, minutes_until_lock, should_monitor_user
+from src.lock_policy import (
+    is_in_bedtime_curfew,
+    lock_decision,
+    minutes_until_lock,
+    should_monitor_user,
+    usage_period_date,
+)
 
 
 class LockPolicyTests(unittest.TestCase):
@@ -39,15 +45,48 @@ class LockPolicyTests(unittest.TestCase):
         self.assertTrue(decision.should_lock)
         self.assertEqual(decision.reason, "Manual lock requested")
 
-    def test_scheduled_lock_does_not_carry_past_midnight(self):
+    def test_scheduled_lock_stays_active_until_wake_time(self):
         decision = lock_decision(
             now=datetime(2026, 5, 18, 0, 5),
             lock_times=[dtime(21, 0)],
             usage_limit=None,
             accumulated_minutes=0,
+            wake_time=dtime(7, 0),
+        )
+
+        self.assertTrue(decision.should_lock)
+        self.assertIn("wake-up", decision.reason.lower())
+
+    def test_scheduled_lock_releases_after_wake_time(self):
+        decision = lock_decision(
+            now=datetime(2026, 5, 18, 8, 0),
+            lock_times=[dtime(21, 0)],
+            usage_limit=None,
+            accumulated_minutes=0,
+            wake_time=dtime(7, 0),
         )
 
         self.assertFalse(decision.should_lock)
+
+    def test_usage_period_date_rolls_at_wake_not_midnight(self):
+        before_wake = datetime(2026, 5, 18, 6, 30)
+        after_wake = datetime(2026, 5, 18, 7, 30)
+        self.assertEqual(
+            usage_period_date(before_wake, dtime(7, 0)),
+            before_wake.date() - timedelta(days=1),
+        )
+        self.assertEqual(usage_period_date(after_wake, dtime(7, 0)), after_wake.date())
+
+    def test_is_in_bedtime_curfew_overnight_window(self):
+        self.assertTrue(
+            is_in_bedtime_curfew(datetime(2026, 5, 17, 22, 0), dtime(21, 0), dtime(7, 0))
+        )
+        self.assertTrue(
+            is_in_bedtime_curfew(datetime(2026, 5, 18, 6, 0), dtime(21, 0), dtime(7, 0))
+        )
+        self.assertFalse(
+            is_in_bedtime_curfew(datetime(2026, 5, 18, 10, 0), dtime(21, 0), dtime(7, 0))
+        )
 
     def test_usage_limit_locks_once_accumulated_reaches_limit(self):
         decision = lock_decision(

@@ -7,7 +7,10 @@ dependencies so it can be unit-tested on any development machine.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, time as dtime, timedelta
+from datetime import date, datetime, time as dtime, timedelta
+
+# Default morning unlock when wake_time is not configured (e.g. legacy state files).
+DEFAULT_WAKE_TIME = dtime(7, 0)
 
 
 @dataclass(frozen=True)
@@ -34,6 +37,53 @@ def should_monitor_user(
     return True
 
 
+def parse_time_hhmm(value: str) -> dtime:
+    """Parse HH:MM or H:MM into a time; raises ValueError if invalid."""
+    parts = value.strip().split(":")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid time '{value}'; use HH:MM")
+    hour, minute = int(parts[0]), int(parts[1])
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValueError(f"Invalid time '{value}'; hour/minute out of range")
+    return dtime(hour, minute)
+
+
+def _minutes_since_midnight(when: dtime) -> int:
+    return when.hour * 60 + when.minute
+
+
+def usage_period_date(now: datetime, wake_time: dtime = DEFAULT_WAKE_TIME) -> date:
+    """
+    Label for the current daily usage period.
+
+    The period starts at wake_time each day (not midnight), so early-morning
+    use before wake still counts toward the previous day's allowance.
+    """
+    if (now.hour, now.minute) < (wake_time.hour, wake_time.minute):
+        return now.date() - timedelta(days=1)
+    return now.date()
+
+
+def is_in_bedtime_curfew(
+    now: datetime,
+    lock_time: dtime,
+    wake_time: dtime = DEFAULT_WAKE_TIME,
+) -> bool:
+    """
+    True when now is in the overnight curfew from lock_time until wake_time.
+
+    Typical case: bedtime 21:00, wake 07:00 — locked from 21:00 through 06:59.
+    """
+    now_m = now.hour * 60 + now.minute
+    lock_m = _minutes_since_midnight(lock_time)
+    wake_m = _minutes_since_midnight(wake_time)
+    if lock_m == wake_m:
+        return False
+    if lock_m > wake_m:
+        return now_m >= lock_m or now_m < wake_m
+    return lock_m <= now_m < wake_m
+
+
 def lock_decision(
     *,
     now: datetime,
@@ -42,13 +92,14 @@ def lock_decision(
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
+    wake_time: dtime = DEFAULT_WAKE_TIME,
 ) -> LockDecision:
     """
     Decide whether the agent should enforce a lock at now.
 
-    Scheduled lock times are daily bedtime starts: once the local clock reaches
-    a configured time, the user stays locked until local midnight. Usage limits
-    lock once accumulated_minutes (active-use time today) reaches the limit.
+    Scheduled lock times start a curfew that lasts until wake_time (not midnight).
+    Usage limits lock once accumulated_minutes for the current wake-to-wake period
+    reaches the limit.
     """
     if not monitor_user:
         return LockDecision(False)
@@ -57,7 +108,12 @@ def lock_decision(
         return LockDecision(True, "Manual lock requested")
 
     for lock_time in lock_times:
-        if (now.hour, now.minute) >= (lock_time.hour, lock_time.minute):
+        if is_in_bedtime_curfew(now, lock_time, wake_time):
+            if (now.hour, now.minute) < (wake_time.hour, wake_time.minute):
+                return LockDecision(
+                    True,
+                    f"Before wake-up time {wake_time.hour:02d}:{wake_time.minute:02d}",
+                )
             return LockDecision(
                 True,
                 f"Past scheduled lock time {lock_time.hour:02d}:{lock_time.minute:02d}",
@@ -80,6 +136,7 @@ def minutes_until_lock(
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
+    wake_time: dtime = DEFAULT_WAKE_TIME,
 ) -> float | None:
     """Return minutes until the next lock, 0 if already locked, or None."""
     if not monitor_user:
@@ -92,6 +149,7 @@ def minutes_until_lock(
         accumulated_minutes=accumulated_minutes,
         monitor_user=monitor_user,
         manual_lock_active=manual_lock_active,
+        wake_time=wake_time,
     ).should_lock:
         return 0
 

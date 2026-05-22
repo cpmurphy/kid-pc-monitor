@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
-from datetime import datetime, time as dtime
+from datetime import datetime, timedelta, time as dtime
 from pathlib import Path
 
 from src.host_platform import HostPlatform
@@ -99,7 +99,7 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=Path(tmp),
                 start_background_threads=False,
             )
-            control.last_tick_at = datetime.now()
+            control.last_tick_at = datetime.now() - timedelta(seconds=30)
             control.tick_accumulator()
             self.assertGreater(control.accumulated_seconds, 0.0)
 
