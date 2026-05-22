@@ -2,27 +2,20 @@ import math
 import os
 import sys
 import time
-import datetime
-import ctypes
 import socket
 import threading
-import tkinter as tk
-from tkinter import messagebox
 from datetime import datetime, date as ddate, time as dtime
-import subprocess
-from ctypes import wintypes
 import getpass
 import json
 
 import logging
 from pathlib import Path
 
-# Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
-_FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
-
 try:
+    from host_platform import HostPlatform, get_default_platform
     from lock_policy import lock_decision, minutes_until_lock, should_monitor_user
 except ImportError:
+    from src.host_platform import HostPlatform, get_default_platform
     from src.lock_policy import lock_decision, minutes_until_lock, should_monitor_user
 
 # ============================================
@@ -78,140 +71,33 @@ _log_level = _configure_logging()
 logger = logging.getLogger('kid_pc_monitor')
 
 
-def _run_powershell_json(script: str):
-    """Run a PowerShell snippet that prints a single JSON object; return dict or None."""
-    try:
-        out = subprocess.check_output(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
-            text=True,
-            stderr=subprocess.DEVNULL,
-            timeout=15,
-        ).strip()
-        if not out:
-            return None
-        return json.loads(out)
-    except (subprocess.SubprocessError, json.JSONDecodeError, ValueError) as exc:
-        logger.debug("PowerShell diagnostic failed: %s", exc)
-        return None
-
-
-def log_connectivity_diagnostics():
-    """
-    Log Windows network profile and firewall rule state.
-
-    Helps explain unreachable agents when the PC is online but classified as a
-    Public network (installer firewall rule is Private+Domain by default).
-    """
-    if sys.platform != 'win32':
-        return
-
-    primary_ip = None
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.settimeout(2)
-            s.connect(("8.8.8.8", 80))
-            primary_ip = s.getsockname()[0]
-    except OSError:
-        pass
-
-    logger.info(
-        "Connectivity check: pid=%s user=%s primary_ip=%s python=%s log=%s level=%s",
-        os.getpid(),
-        getpass.getuser(),
-        primary_ip or "none",
-        sys.executable,
-        log_file,
-        logging.getLevelName(_log_level),
+def log_connectivity_diagnostics(platform: HostPlatform) -> None:
+    """Delegate OS-specific network/firewall diagnostics to the platform layer."""
+    platform.log_connectivity_diagnostics(
+        logger,
+        agent_port=AGENT_PORT,
+        log_file=str(log_file),
+        log_level_name=logging.getLevelName(_log_level),
+        python_executable=sys.executable,
     )
 
-    on_public = False
-    profiles = _run_powershell_json(
-        "@(Get-NetConnectionProfile -ErrorAction SilentlyContinue | "
-        "Select-Object InterfaceAlias, IPv4Connectivity, NetworkCategory) | "
-        "ConvertTo-Json -Compress"
-    )
-    if profiles is None:
-        logger.warning("Could not read Windows network profiles (Get-NetConnectionProfile)")
-    elif isinstance(profiles, dict):
-        profiles = [profiles]
-    if profiles:
-        for entry in profiles:
-            logger.info(
-                "Network profile: interface=%s connectivity=%s category=%s",
-                entry.get('InterfaceAlias', '?'),
-                entry.get('IPv4Connectivity', '?'),
-                entry.get('NetworkCategory', '?'),
-            )
-        def _is_public(category):
-            if category in (0, '0'):
-                return True
-            return str(category).lower() == 'public'
-
-        on_public = any(_is_public(p.get('NetworkCategory')) for p in profiles)
-        if on_public:
-            logger.warning(
-                "At least one interface is Public. The installer "
-                "firewall rule allows inbound TCP %s only on Private/Domain "
-                "unless you chose to include Public. Remote scans and pc_cli "
-                "will fail until the network is Private or the rule includes Public.",
-                AGENT_PORT,
-            )
-
-    rule = _run_powershell_json(
-        f"$r = Get-NetFirewallRule -DisplayName '{_FIREWALL_RULE_DISPLAY_NAME}' "
-        "-ErrorAction SilentlyContinue | Select-Object -First 1; "
-        "if (-not $r) { @{{found=$false}} | ConvertTo-Json -Compress } "
-        "else { "
-        "@{{found=$true; enabled=$r.Enabled; profile=$r.Profile; "
-        "program=($r | Get-NetFirewallApplicationFilter).Program; "
-        "localPort=($r | Get-NetFirewallPortFilter).LocalPort}} | "
-        "ConvertTo-Json -Compress "
-        "}"
-    )
-    if rule is None:
-        logger.warning("Could not query Windows Firewall rule for the agent")
-    elif not rule.get('found'):
-        logger.warning(
-            "No firewall rule named %r — inbound TCP 9999 may be blocked. "
-            "Re-run scripts/install.py as administrator.",
-            _FIREWALL_RULE_DISPLAY_NAME,
-        )
-    else:
-        profile_mask = int(rule.get('profile') or 0)
-        profile_names = []
-        if profile_mask & 1:
-            profile_names.append('Domain')
-        if profile_mask & 2:
-            profile_names.append('Private')
-        if profile_mask & 4:
-            profile_names.append('Public')
-        logger.info(
-            "Firewall rule: enabled=%s profiles=%s (%s) program=%s localPort=%s",
-            rule.get('enabled'),
-            profile_mask,
-            ','.join(profile_names) or 'none',
-            rule.get('program'),
-            rule.get('localPort'),
-        )
-        if on_public and not (profile_mask & 4):
-            logger.warning(
-                "Network is Public but the firewall rule does not include the "
-                "Public profile — LAN clients cannot reach TCP %s. Set the home "
-                "network to Private in Windows Settings, or re-run scripts/install.py "
-                "and allow Public networks.",
-                AGENT_PORT,
-            )
-        program = rule.get('program') or ''
-        if program and os.path.normcase(sys.executable) != os.path.normcase(program):
-            logger.warning(
-                "Firewall rule program %r does not match this process %r — "
-                "inbound connections may be blocked.",
-                program,
-                sys.executable,
-            )
 
 class PCTimeControl:
-    def __init__(self):
+    def __init__(
+        self,
+        platform: HostPlatform | None = None,
+        *,
+        monitored_users: list[str] | None = None,
+        exempt_users: list[str] | None = None,
+        data_directory: Path | None = None,
+        start_background_threads: bool = True,
+    ):
+        self.platform = platform or get_default_platform()
+        self.monitored_users = (
+            MONITORED_USERS if monitored_users is None else monitored_users
+        )
+        self.exempt_users = EXEMPT_USERS if exempt_users is None else exempt_users
+
         self.lock_times = []
         self.usage_limit = None
         self.manual_lock_active = False
@@ -229,7 +115,9 @@ class PCTimeControl:
         self.is_locked = False
         self.last_activity = datetime.now()
         self.current_user = getpass.getuser()
-        self.state_file = str(data_dir / 'pc_control_state.json')
+        base_dir = data_directory or data_dir
+        base_dir.mkdir(parents=True, exist_ok=True)
+        self.state_file = str(base_dir / 'pc_control_state.json')
         self.logger = logging.getLogger('PCTimeControl')
         self.warnings_sent = set()  # Track which warnings have been sent
         self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
@@ -246,13 +134,19 @@ class PCTimeControl:
         # Load previous state if exists
         self.load_state()
 
-        # Start monitoring thread
-        self.monitor_thread = threading.Thread(target=self.monitor_activity, daemon=True)
-        self.monitor_thread.start()
+        if start_background_threads:
+            self.monitor_thread = threading.Thread(
+                target=self.monitor_activity, daemon=True
+            )
+            self.monitor_thread.start()
+        else:
+            self.monitor_thread = None
 
     def should_monitor_user(self):
         """Check if current user should be monitored based on configuration"""
-        return should_monitor_user(self.current_user, MONITORED_USERS, EXEMPT_USERS)
+        return should_monitor_user(
+            self.current_user, self.monitored_users, self.exempt_users
+        )
 
     def load_state(self):
         """Load saved state from JSON file"""
@@ -335,60 +229,13 @@ class PCTimeControl:
         except Exception as e:
             self.logger.error("Error saving state: %s", e, exc_info=True)
 
-    def check_if_locked(self):
-        """
-        Returns True if LogonUI.exe is running in *this* session — i.e.
-        our session is locked.
+    def check_if_locked(self) -> bool:
+        """True when this session's workstation is locked (OS-specific)."""
+        return self.platform.check_session_locked()
 
-        Filtering by session matters when another user is logged in via
-        fast user switching: their locked/disconnected session also runs
-        LogonUI.exe, which would otherwise make us falsely report LOCKED.
-        """
-        try:
-            kernel32 = ctypes.windll.kernel32
-            sid = ctypes.c_ulong()
-            ok = kernel32.ProcessIdToSessionId(
-                kernel32.GetCurrentProcessId(), ctypes.byref(sid)
-            )
-            session_filter = f'/FI "SESSION eq {sid.value}" ' if ok else ''
-            out = subprocess.check_output(
-                f'tasklist /FI "IMAGENAME eq LogonUI.exe" {session_filter}/NH',
-                shell=True,
-                text=True
-            )
-            return "LogonUI.exe" in out
-        except Exception as e:
-            self.logger.error("Error checking lock state (LogonUI): %s", e, exc_info=True)
-            return False
-
-    def session_is_active(self):
-        """
-        True if our session is the active console session AND not locked.
-
-        Used by tick_accumulator to advance the usage counter only while the
-        kid is actually on the PC — not while their session is locked or has
-        been backgrounded by fast user switching.
-        """
-        try:
-            import ctypes
-            kernel32 = ctypes.windll.kernel32
-            our_sid = ctypes.c_ulong()
-            ok = kernel32.ProcessIdToSessionId(
-                kernel32.GetCurrentProcessId(), ctypes.byref(our_sid)
-            )
-            if not ok:
-                # Can't tell which session we're in; fall back to lock check
-                # alone so we don't silently stop counting.
-                return not self.check_if_locked()
-            active_sid = kernel32.WTSGetActiveConsoleSessionId()
-            # 0xFFFFFFFF means "no session is currently attached to the console"
-            # (e.g. between logoff and next logon).
-            if active_sid == 0xFFFFFFFF or active_sid != our_sid.value:
-                return False
-            return not self.check_if_locked()
-        except Exception as e:
-            self.logger.error("Error checking session active state: %s", e, exc_info=True)
-            return not self.check_if_locked()
+    def session_is_active(self) -> bool:
+        """True when this session is the active console and not locked."""
+        return self.platform.session_is_active()
 
     def tick_accumulator(self):
         """
@@ -446,54 +293,31 @@ class PCTimeControl:
         self.usage_limit = minutes
 
     def show_message(self, message, title="PC Time Control"):
-        """Display a message using tkinter"""
-        def display():
-            root = None
-            try:
-                root = tk.Tk()
-                root.withdraw()  # Hide the main window
-                root.attributes('-topmost', True)  # Make it appear on top
-
-                # Auto-close after 60 seconds to prevent hanging
-                root.after(60000, root.destroy)
-
-                messagebox.showwarning(title, message)
-            except Exception as e:
-                self.logger.error(f"Error showing message: {e}")
-                print(f"[{datetime.now():%H:%M:%S}] Error showing message: {e}")
-            finally:
-                if root:
-                    try:
-                        root.quit()
-                        root.destroy()
-                    except Exception:
-                        pass  # Already destroyed
-
-        # Run in a separate thread to avoid blocking
-        threading.Thread(target=display, daemon=True).start()
+        """Display a message to the logged-in user (OS-specific UI)."""
+        self.platform.show_message(message, title=title)
 
     def lock_pc(self):
-        """Lock the Windows PC"""
+        """Lock the workstation for this session."""
         try:
             self.is_locked = True
-            ctypes.windll.user32.LockWorkStation()
+            self.platform.lock_workstation()
             self.logger.info("PC locked successfully")
         except Exception as e:
             self.logger.error(f"Error locking PC: {e}")
             print(f"[{datetime.now():%H:%M:%S}] Error locking PC: {e}")
 
     def shutdown_pc(self, seconds=60):
-        """Shutdown PC with warning"""
+        """Shutdown PC with warning."""
         try:
-            os.system(f'shutdown /s /t {seconds} /c "Computer will shutdown in {seconds} seconds"')
+            self.platform.shutdown(seconds)
             self.logger.info(f"Shutdown initiated ({seconds}s)")
         except Exception as e:
             self.logger.error(f"Error initiating shutdown: {e}")
             print(f"[{datetime.now():%H:%M:%S}] Error shutting down: {e}")
 
     def cancel_shutdown(self):
-        """Cancel pending shutdown"""
-        os.system('shutdown /a')
+        """Cancel pending shutdown."""
+        self.platform.cancel_shutdown()
 
     def get_time_remaining(self):
         """Calculate minutes remaining until lock. Returns None if no limit set."""
@@ -661,7 +485,8 @@ class RemoteControlServer:
                 "restarting server"
             )
             self.last_primary_ip = current_ip
-            log_connectivity_diagnostics()
+            if self.pc_control is not None:
+                log_connectivity_diagnostics(self.pc_control.platform)
             return True
         return False
 
@@ -797,8 +622,7 @@ class RemoteControlServer:
                 return "PC Shutting down"
                 
             elif command == "GET_NAME":
-                import platform
-                return platform.node()
+                return self.pc_control.platform.get_hostname()
 
             elif command == "GET_CURRENT_USER":
                 return self.pc_control.current_user
@@ -954,7 +778,8 @@ if __name__ == "__main__":
         "Agent process starting (pid=%s, user=%s, script=%s)",
         os.getpid(), getpass.getuser(), script_path,
     )
-    log_connectivity_diagnostics()
+    platform = get_default_platform()
+    log_connectivity_diagnostics(platform)
 
     if not check_port_availability(AGENT_PORT):
         logger.error(
@@ -965,7 +790,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Create control instance
-    control = PCTimeControl()
+    control = PCTimeControl(platform=platform)
     
     # Enforce usage limits, bedtimes, and warnings (separate from the TCP server)
     enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)

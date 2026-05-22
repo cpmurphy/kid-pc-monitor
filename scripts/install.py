@@ -146,12 +146,19 @@ def install_to_programdata(target_user, source_script):
 
     shutil.copy2(source_script, dest / "pc_control.py")
     source_dir = Path(source_script).resolve().parent
-    for helper in ["lock_policy.py"]:
+    for helper in ["lock_policy.py", "host_platform.py"]:
         helper_path = source_dir / helper
         if helper_path.exists():
             shutil.copy2(helper_path, dest / helper)
         else:
             print(f"\n⚠️  Optional helper not found next to pc_control.py: {helper}")
+
+    platforms_src = source_dir / "platforms"
+    if platforms_src.is_dir():
+        platforms_dest = dest / "platforms"
+        platforms_dest.mkdir(parents=True, exist_ok=True)
+        for platform_file in platforms_src.glob("*.py"):
+            shutil.copy2(platform_file, platforms_dest / platform_file.name)
 
     # Optional: copy requirements.txt for reference
     repo_root = source_dir.parent
