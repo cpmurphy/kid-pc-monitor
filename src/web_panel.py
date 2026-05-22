@@ -71,8 +71,6 @@ def safe_next_path(next_param):
     return n
 
 from remote_client import (
-    check_pc_status,
-    get_current_user,
     get_default_scan_network,
     get_local_ip,
     get_lock_times,
@@ -80,6 +78,7 @@ from remote_client import (
     get_time_remaining,
     get_usage_limit,
     parse_scan_subnet,
+    refresh_discovered_entry,
     scan_for_servers as discover_servers,
     send_command,
 )
@@ -182,13 +181,8 @@ def set_password():
 @app.route('/')
 def index():
     """Main page showing all discovered PCs"""
-    for ip in discovered_pcs:
-        status = check_pc_status(ip)
-        discovered_pcs[ip]['locked'] = (status == "LOCKED")
-
-        username = get_current_user(ip)
-        if username:
-            discovered_pcs[ip]['current_user'] = username
+    for ip in list(discovered_pcs.keys()):
+        refresh_discovered_entry(ip, discovered_pcs[ip])
 
     return render_template(
         'index.html',
@@ -217,13 +211,22 @@ def scan():
 @app.route('/control/<ip>')
 def control(ip):
     """Control page for a specific PC"""
-    pc_info = discovered_pcs.get(ip, {'hostname': 'Unknown', 'status': 'unknown'})
-    status = check_pc_status(ip)
-    pc_info['locked'] = (status == "LOCKED")
+    if ip in discovered_pcs:
+        pc_info = discovered_pcs[ip]
+    else:
+        pc_info = {'hostname': 'Unknown', 'status': 'unknown'}
+    refresh_discovered_entry(ip, pc_info)
+    if ip in discovered_pcs:
+        discovered_pcs[ip] = pc_info
 
-    username = get_current_user(ip)
-    if username:
-        pc_info['current_user'] = username
+    if not pc_info.get('reachable'):
+        return render_template(
+            'control.html',
+            ip=ip,
+            pc_info=pc_info,
+            password_protected=password_is_configured(),
+            panel_auth=bool(session.get(SESSION_AUTH_KEY)),
+        )
 
     usage_limit = get_usage_limit(ip)
     pc_info['usage_limit'] = usage_limit

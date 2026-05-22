@@ -139,7 +139,8 @@
         <p style="text-align: center; color: #666;">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
         {% endif %}
 
-        <!-- Display Current Settings (Always Visible) -->
+        {% if pc_info.get('reachable', true) %}
+        <!-- Display Current Settings -->
         <div class="action-group">
             <div class="action-title">📊 Current Settings</div>
 
@@ -183,8 +184,13 @@
             <button onclick="clearLimit('all')" style="width: 100%; margin-top: 10px; padding: 10px; background-color: #ff5722; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">🗑️ Clear All Limits</button>
             {% endif %}
         </div>
+        {% endif %}
 
-        {% if pc_info.locked %}
+        {% if not pc_info.get('reachable', true) %}
+        <div class="status-message" style="display: block; background-color: #e2e3e5; color: #383d41;">
+            ○ This computer is offline or unreachable. Scan again after it is powered on.
+        </div>
+        {% elif pc_info.locked %}
         <div class="status-message" style="display: block; background-color: #fff3cd; color: #856404;">
             🔒 This computer is currently LOCKED
         </div>
@@ -192,6 +198,7 @@
         
         <div id="status-message" class="status-message"></div>
         
+        {% if pc_info.get('reachable', true) %}
         <div class="action-group">
             <div class="action-title">🔒 Quick Actions</div>
             <button class="btn btn-lock" onclick="performAction('lock')">
@@ -232,6 +239,7 @@
                 Set Bedtime Lock
             </button>
         </div>
+        {% endif %}
     </div>
     
     <script>

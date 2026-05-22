@@ -90,6 +90,40 @@ def query_command(host: str, command: str, port: int = DEFAULT_PORT) -> str | No
     return response if ok else None
 
 
+def is_pc_reachable(host: str, port: int = DEFAULT_PORT, timeout: float = QUERY_TIMEOUT) -> bool:
+    """True when the kid PC agent accepts TCP connections on port."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(timeout)
+            return s.connect_ex((host, port)) == 0
+    except OSError:
+        return False
+
+
+def refresh_discovered_entry(
+    ip: str, entry: dict[str, Any], port: int = DEFAULT_PORT
+) -> None:
+    """Update a cached scan entry with current reachability, lock, and user."""
+    reachable = is_pc_reachable(ip, port=port)
+    entry["reachable"] = reachable
+    entry["status"] = "online" if reachable else "offline"
+    if not reachable:
+        entry["locked"] = False
+        entry.pop("current_user", None)
+        for key in ("usage_limit", "manual_lock_active", "lock_times", "time_remaining"):
+            entry.pop(key, None)
+        return
+
+    entry["last_seen"] = datetime.now()
+    status = check_pc_status(ip, port=port)
+    entry["locked"] = status == "LOCKED"
+    username = get_current_user(ip, port=port)
+    if username:
+        entry["current_user"] = username
+    else:
+        entry.pop("current_user", None)
+
+
 def _resolve_hostname(ip: str, port: int) -> str:
     if ip in CUSTOM_PC_NAMES:
         return CUSTOM_PC_NAMES[ip]
