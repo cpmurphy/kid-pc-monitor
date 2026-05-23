@@ -204,6 +204,11 @@ def get_lock_times(ip: str, port: int = DEFAULT_PORT) -> list[str] | None:
     return [t.strip() for t in times.split(",") if t.strip()]
 
 
+def get_wake_time(ip: str, port: int = DEFAULT_PORT) -> str | None:
+    """Return wake-up time as HH:MM, or None if the agent did not respond."""
+    return query_command(ip, "GET_WAKE_TIME", port=port)
+
+
 def get_time_remaining(ip: str, port: int = DEFAULT_PORT) -> str | None:
     return query_command(ip, "GET_TIME_REMAINING", port=port)
 
@@ -221,6 +226,7 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
     usage_raw = q("GET_USAGE_LIMIT")
     manual_lock_raw = q("GET_MANUAL_LOCK")
     lock_times_raw = q("GET_LOCK_TIMES")
+    wake_time = q("GET_WAKE_TIME")
     time_remaining = q("GET_TIME_REMAINING")
 
     usage_limit: int | None
@@ -248,6 +254,7 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
         "usage_limit": usage_limit,
         "manual_lock_active": manual_lock_raw == "YES",
         "lock_times": lock_times,
+        "wake_time": wake_time,
         "time_remaining": time_remaining,
         "reachable": True,
     }

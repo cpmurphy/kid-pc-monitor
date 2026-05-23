@@ -170,12 +170,21 @@
             {% endif %}
 
             <!-- Scheduled Locks -->
-            <p>🕐 <strong>Scheduled Locks:</strong>
+            <p>🕐 <strong>Bedtime Lock:</strong>
             {% if pc_info.get('lock_times') %}
                 {{ pc_info.lock_times|join(', ') }}
                 <button onclick="clearLimit('locks')" style="margin-left: 10px; padding: 5px 10px; background-color: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">❌ Clear</button>
             {% else %}
                 <span style="color: #999;">Not set</span>
+            {% endif %}
+            </p>
+
+            <!-- Wake-up time -->
+            <p>🌅 <strong>Wake-up Time:</strong>
+            {% if pc_info.get('wake_time') %}
+                {{ pc_info.wake_time }}
+            {% else %}
+                <span style="color: #999;">Unknown</span>
             {% endif %}
             </p>
 
@@ -233,10 +242,21 @@
         </div>
         
         <div class="action-group">
-            <div class="action-title">🕐 Set Lock Time</div>
+            <div class="action-title">🕐 Set Bedtime Lock</div>
             <input type="time" id="lock-time" value="21:00">
             <button class="btn btn-limit" onclick="setLockTime()">
                 Set Bedtime Lock
+            </button>
+        </div>
+
+        <div class="action-group">
+            <div class="action-title">🌅 Set Wake-up Time</div>
+            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+                Bedtime locks stay active until this time. Daily screen-time resets here too.
+            </p>
+            <input type="time" id="wake-time" value="{{ pc_info.get('wake_time', '07:00') }}">
+            <button class="btn btn-limit" onclick="setWakeTime()">
+                Set Wake-up Time
             </button>
         </div>
         {% endif %}
@@ -358,10 +378,32 @@
             .then(data => {
                 showStatus(data.response, data.success);
                 if (data.success) {
-                    // Reload page after 1 second to show updated settings
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
+                    setTimeout(() => location.reload(), 1000);
+                }
+            });
+        }
+
+        function setWakeTime() {
+            const time = document.getElementById('wake-time').value;
+            if (!time) {
+                showStatus('Please select a time', false);
+                return;
+            }
+
+            fetch('/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    ip: '{{ ip }}',
+                    action: 'set_wake_time',
+                    time: time
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showStatus(data.response, data.success);
+                if (data.success) {
+                    setTimeout(() => location.reload(), 1000);
                 }
             });
         }

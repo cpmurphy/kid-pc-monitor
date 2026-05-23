@@ -112,6 +112,8 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
         print(f"  Bedtime locks:     {', '.join(times)}")
     else:
         print("  Bedtime locks:     none")
+    wake = info.get("wake_time")
+    print(f"  Wake-up time:      {wake or '—'}")
     remaining = info["time_remaining"]
     print(f"  Time remaining:    {remaining or '—'}")
     return 0
@@ -128,6 +130,8 @@ def _cmd_action(args: argparse.Namespace) -> int:
         command = f"SET_LIMIT:{args.minutes}"
     elif name == "add-lock-time":
         command = f"ADD_LOCK_TIME:{args.time}"
+    elif name == "set-wake-time":
+        command = f"SET_WAKE_TIME:{args.time}"
     elif name == "extend-time":
         command = f"EXTEND_TIME:{args.minutes}"
     elif name == "raw":
@@ -152,6 +156,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "  %(prog)s inspect 192.168.1.105\n"
             "  %(prog)s set-limit 192.168.1.105 60\n"
             "  %(prog)s add-lock-time 192.168.1.105 21:00\n"
+            "  %(prog)s set-wake-time 192.168.1.105 07:00\n"
             "  %(prog)s lock 192.168.1.105\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -204,6 +209,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "add-lock-time",
         "Add a scheduled bedtime lock (HH:MM, 24-hour)",
         time={"metavar": "HH:MM", "help": "Lock time, e.g. 21:00"},
+    )
+    add_action(
+        "set-wake-time",
+        "Set morning wake-up time when locks lift (HH:MM, 24-hour)",
+        time={"metavar": "HH:MM", "help": "Wake-up time, e.g. 07:00"},
     )
     add_action(
         "extend-time",

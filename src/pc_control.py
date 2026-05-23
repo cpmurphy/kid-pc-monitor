@@ -359,6 +359,11 @@ class PCTimeControl:
         """Add a time when the PC should be locked"""
         self.lock_times.append(dtime(hour, minute))
 
+    def set_wake_time(self, hour: int, minute: int) -> None:
+        """Set the daily morning unlock time (end of bedtime curfew)."""
+        self.wake_time = dtime(hour, minute)
+        self.warnings_date = usage_period_date(datetime.now(), self.wake_time)
+
     def set_usage_limit(self, minutes):
         """Set maximum usage time in minutes"""
         self.usage_limit = minutes
@@ -713,6 +718,10 @@ class RemoteControlServer:
                     return ",".join(times)
                 return "None"
 
+            elif command == "GET_WAKE_TIME":
+                wt = self.pc_control.wake_time
+                return f"{wt.hour:02d}:{wt.minute:02d}"
+
             elif command == "GET_TIME_REMAINING":
                 remaining = self.pc_control.get_time_remaining()
                 if remaining is not None:
@@ -756,6 +765,18 @@ class RemoteControlServer:
                     self.pc_control.add_scheduled_lock(hour, minute)
                     self.pc_control.save_state()  # Save state after adding lock time
                     return f"Lock time added: {hour:02d}:{minute:02d}"
+                except ValueError:
+                    return "Invalid time format (use HH:MM)"
+
+            elif command.startswith("SET_WAKE_TIME:"):
+                try:
+                    time_str = command.split(":", 1)[1]
+                    hour, minute = map(int, time_str.split(":"))
+                    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                        return "Invalid time (hour/minute out of range)"
+                    self.pc_control.set_wake_time(hour, minute)
+                    self.pc_control.save_state()
+                    return f"Wake-up time set to {hour:02d}:{minute:02d}"
                 except ValueError:
                     return "Invalid time format (use HH:MM)"
                     
@@ -809,10 +830,12 @@ class RemoteControlServer:
                     "GET_USAGE_LIMIT - Get current usage limit\n"
                     "GET_MANUAL_LOCK - Check if manual lock enforcement is active\n"
                     "GET_LOCK_TIMES - Get scheduled lock times\n"
+                    "GET_WAKE_TIME - Get morning wake-up / unlock time\n"
                     "GET_TIME_REMAINING - Get time until next lock\n"
                     "MESSAGE:<text> - Show popup message\n"
                     "SET_LIMIT:<minutes> - Set usage limit\n"
                     "ADD_LOCK_TIME:HH:MM - Add scheduled lock\n"
+                    "SET_WAKE_TIME:HH:MM - Set morning wake-up time\n"
                     "EXTEND_TIME:<minutes> - Extend usage time\n"
                     "CLEAR_USAGE_LIMIT - Remove usage limit\n"
                     "CLEAR_LOCK_TIMES - Remove all scheduled locks\n"

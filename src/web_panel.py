@@ -74,6 +74,7 @@ from remote_client import (
     get_default_scan_network,
     get_local_ip,
     get_lock_times,
+    get_wake_time,
     get_manual_lock,
     get_time_remaining,
     get_usage_limit,
@@ -236,6 +237,9 @@ def control(ip):
     lock_times = get_lock_times(ip)
     pc_info['lock_times'] = lock_times
 
+    wake_time = get_wake_time(ip)
+    pc_info['wake_time'] = wake_time
+
     time_remaining = get_time_remaining(ip)
     pc_info['time_remaining'] = time_remaining
 
@@ -268,6 +272,9 @@ def action():
     elif action_type == 'add_lock_time':
         lock_time = data.get('time', '21:00')
         success, response = send_command(ip, f"ADD_LOCK_TIME:{lock_time}")
+    elif action_type == 'set_wake_time':
+        wake_time = data.get('time', '07:00')
+        success, response = send_command(ip, f"SET_WAKE_TIME:{wake_time}")
     elif action_type == 'clear_usage_limit':
         success, response = send_command(ip, "CLEAR_USAGE_LIMIT")
     elif action_type == 'clear_lock_times':
