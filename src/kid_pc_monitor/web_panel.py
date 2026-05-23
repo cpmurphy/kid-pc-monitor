@@ -21,7 +21,7 @@ from flask import (
     url_for,
 )
 
-from kid_pc_monitor.paths import config_dir, template_dir
+from kid_pc_monitor.paths import config_dir, package_dir, template_dir
 from kid_pc_monitor.remote_client import (
     format_minutes_duration,
     format_seconds_duration,
@@ -39,7 +39,21 @@ SESSION_AUTH_KEY = "panel_authenticated"
 
 
 def _auth_path() -> Path:
-    return config_dir() / AUTH_FILE
+    """Return the auth file to read; prefer canonical config_dir, then legacy package dir."""
+    canonical = config_dir() / AUTH_FILE
+    if canonical.is_file():
+        return canonical
+    legacy = package_dir() / AUTH_FILE
+    if legacy.is_file():
+        return legacy
+    return canonical
+
+
+def _auth_save_path() -> Path:
+    """Where new passwords are written (always under the user config directory)."""
+    path = config_dir() / AUTH_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def _hash_password(password: str) -> str:
@@ -80,8 +94,7 @@ def password_is_configured() -> bool:
 
 
 def save_password(password: str) -> None:
-    path = _auth_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    path = _auth_save_path()
     path.write_text(
         json.dumps({"password_hash": _hash_password(password)}, indent=2),
         encoding="utf-8",

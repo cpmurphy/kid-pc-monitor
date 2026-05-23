@@ -148,6 +148,8 @@
             <a href="{{ url_for('logout') }}">Log out</a>
             &nbsp;·&nbsp;
             <a href="{{ url_for('set_password') }}">Change password</a>
+            {% else %}
+            <a href="{{ url_for('login', next=request.path) }}">Log in</a>
             {% endif %}
         </p>
         

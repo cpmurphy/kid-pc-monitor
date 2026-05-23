@@ -28,3 +28,4 @@ Thumbs.db
 *.log
 config_local.py
 src/web_panel_auth.json
+src/kid_pc_monitor/web_panel_auth.json
