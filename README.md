@@ -49,6 +49,20 @@ If these terms scare you, consider commercial alternatives like:
 
 Auto-discovery scans the `/24` subnet containing the parent machine's primary IPv4 address (see `scan_for_servers` in `src/kid_pc_monitor/web_panel.py`). If discovery misses a PC, you can still use it once the agent is reachable at its IP.
 
+### Python virtual environment (Linux)
+
+Modern Debian, Ubuntu, and similar distributions block `pip install` into the system Python (you may see `externally-managed-environment`). **Create a project venv first**, then install into it:
+
+```bash
+cd kid-pc-monitor
+python3 -m venv venv
+# If venv creation fails: sudo apt install python3-venv python3-pip
+./venv/bin/python3 -m pip install -r requirements.txt
+./venv/bin/python3 -m pip install -e .
+```
+
+After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`, or `./scripts/run_web_panel.py` (the launch scripts switch to `venv/` automatically when it exists).
+
 ### Installation
 
 There are two ways to set up Kid PC Monitor:
@@ -98,7 +112,7 @@ kid-pc-web-panel
 # Open in browser: http://YOUR-PC-IP:5000
 ```
 
-**Linux parent machine:** The web panel does not require `pywin32`; `requirements.txt` installs it only on Windows. From the repo root:
+**Linux parent machine:** The web panel does not require `pywin32`; `requirements.txt` installs it only on Windows. On Debian/Ubuntu you must use a venv (see [Python virtual environment (Linux)](#python-virtual-environment-linux) above). From the repo root:
 
 ```bash
 git clone https://github.com/rookie7799/kid-pc-monitor.git
@@ -112,7 +126,7 @@ source venv/bin/activate   # On Windows: venv\Scripts\activate
 
 Then open `http://YOUR-LINUX-IP:5000` from your phone or browser. Allow inbound TCP **5000** on the Linux host (example with UFW: `sudo ufw allow 5000/tcp`).
 
-**Install as a user service (survives reboot when user lingering is enabled):** from the repo root, after `pip install -r requirements.txt`:
+**Install as a user service (survives reboot when user lingering is enabled):** from the repo root, after creating the venv and running `./venv/bin/python3 -m pip install -r requirements.txt`:
 
 ```bash
 chmod +x scripts/install_web_panel_linux.sh
@@ -152,19 +166,20 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 ## 🖥️ Command-line client
 
-From the repo root, run the CLI on your parent machine (Linux, macOS, or Windows):
+From the repo root, run the CLI on your parent machine (Linux, macOS, or Windows). On Linux, create a venv first if you have not already (see [Python virtual environment (Linux)](#python-virtual-environment-linux)):
 
 ```bash
 cd kid-pc-monitor
-pip install -e .   # once, if you have not already
-kid-pc-cli scan
-kid-pc-cli inspect 192.168.1.105
-kid-pc-cli set-limit 192.168.1.105 60
-kid-pc-cli add-lock-time 192.168.1.105 21:00
-kid-pc-cli lock 192.168.1.105
+python3 -m venv venv          # Linux (Debian/Ubuntu): required
+./venv/bin/python3 -m pip install -e .
+./venv/bin/kid-pc-cli scan
+./venv/bin/kid-pc-cli inspect 192.168.1.105
+./venv/bin/kid-pc-cli set-limit 192.168.1.105 60
+./venv/bin/kid-pc-cli add-lock-time 192.168.1.105 21:00
+./venv/bin/kid-pc-cli lock 192.168.1.105
 ```
 
-Use `kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `kid-pc-cli scan --subnet 192.168.1.0/24`.
+Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
 
 ## 📖 Usage Guide
 
