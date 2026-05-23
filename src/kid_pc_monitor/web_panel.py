@@ -7,7 +7,6 @@ import os
 import secrets
 from datetime import datetime
 from functools import wraps
-from hashlib import scrypt
 from pathlib import Path
 from typing import Any, Callable
 
@@ -20,6 +19,7 @@ from flask import (
     session,
     url_for,
 )
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from kid_pc_monitor.paths import config_dir, package_dir, template_dir
 from kid_pc_monitor.remote_client import (
@@ -56,26 +56,25 @@ def _auth_save_path() -> Path:
     return path
 
 
-def _hash_password(password: str) -> str:
-    salt = secrets.token_bytes(16)
-    digest = scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
-    return json.dumps(
-        {
-            "salt": salt.hex(),
-            "hash": digest.hex(),
-        }
-    )
+def _stored_password_hash(record: dict | None) -> str | None:
+    if not record:
+        return None
+    value = record.get("password_hash")
+    return value if isinstance(value, str) and value else None
 
 
-def _verify_password(stored: str, password: str) -> bool:
-    try:
-        payload = json.loads(stored)
-        salt = bytes.fromhex(payload["salt"])
-        expected = bytes.fromhex(payload["hash"])
-    except (json.JSONDecodeError, KeyError, ValueError):
+def _panel_secret_key(record: dict | None) -> str | None:
+    if not record:
+        return None
+    key = record.get("secret_key")
+    return key if isinstance(key, str) and len(key) >= 16 else None
+
+
+def _verify_password(record: dict, password: str) -> bool:
+    stored = _stored_password_hash(record)
+    if not stored:
         return False
-    digest = scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
-    return secrets.compare_digest(digest, expected)
+    return check_password_hash(stored, password)
 
 
 def load_auth_record() -> dict | None:
@@ -89,21 +88,33 @@ def load_auth_record() -> dict | None:
 
 
 def password_is_configured() -> bool:
-    record = load_auth_record()
-    return bool(record and record.get("password_hash"))
+    return _stored_password_hash(load_auth_record()) is not None
 
 
 def save_password(password: str) -> None:
+    record = load_auth_record() or {}
+    secret_key = _panel_secret_key(record) or secrets.token_hex(32)
     path = _auth_save_path()
     path.write_text(
-        json.dumps({"password_hash": _hash_password(password)}, indent=2),
+        json.dumps(
+            {
+                "secret_key": secret_key,
+                "password_hash": generate_password_hash(password, method="scrypt"),
+            },
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
 
 def create_app() -> Flask:
     app = Flask(__name__, template_folder=str(template_dir()))
-    app.secret_key = os.environ.get("KID_PC_MONITOR_SECRET") or secrets.token_hex(32)
+    record = load_auth_record()
+    app.secret_key = (
+        os.environ.get("KID_PC_MONITOR_SECRET")
+        or _panel_secret_key(record)
+        or secrets.token_hex(32)
+    )
 
     @app.context_processor
     def inject_panel_context() -> dict[str, Any]:
@@ -131,7 +142,7 @@ def create_app() -> Flask:
         if request.method == "POST":
             record = load_auth_record()
             password = request.form.get("password", "")
-            if record and _verify_password(record["password_hash"], password):
+            if record and _verify_password(record, password):
                 session[SESSION_AUTH_KEY] = True
                 next_url = request.form.get("next") or url_for("index")
                 return redirect(next_url)
@@ -160,6 +171,10 @@ def create_app() -> Flask:
                 flash("Passwords do not match.", "error")
             else:
                 save_password(password)
+                record = load_auth_record()
+                panel_key = _panel_secret_key(record)
+                if panel_key:
+                    app.secret_key = panel_key
                 session[SESSION_AUTH_KEY] = True
                 flash("Password saved.", "success")
                 return redirect(url_for("index"))
