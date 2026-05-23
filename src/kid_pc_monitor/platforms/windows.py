@@ -6,7 +6,6 @@ import ctypes
 import json
 import logging
 import os
-import socket
 import subprocess
 import sys
 import threading
@@ -16,6 +15,7 @@ from tkinter import messagebox
 import getpass
 
 from kid_pc_monitor.host_platform import HostPlatform
+from kid_pc_monitor.network import get_primary_ipv4
 
 # Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
 _FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
@@ -140,14 +140,7 @@ class WindowsHostPlatform(HostPlatform):
         log_level_name: str,
         python_executable: str,
     ) -> None:
-        primary_ip = None
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.settimeout(2)
-                s.connect(("8.8.8.8", 80))
-                primary_ip = s.getsockname()[0]
-        except OSError:
-            pass
+        primary_ip = get_primary_ipv4()
 
         logger.info(
             "Connectivity check: pid=%s user=%s primary_ip=%s python=%s log=%s level=%s",

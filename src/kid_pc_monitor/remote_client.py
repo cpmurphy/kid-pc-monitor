@@ -19,16 +19,7 @@ CUSTOM_PC_NAMES: dict[str, str] = {
 }
 
 
-def get_local_ip() -> str:
-    """Primary IPv4 address used for outbound traffic."""
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-    except OSError:
-        return "127.0.0.1"
-
-
+from kid_pc_monitor.network import get_local_ip
 def get_default_scan_network() -> ipaddress.IPv4Network:
     local_ip = get_local_ip()
     return ipaddress.ip_network(f"{local_ip}/24", strict=False)

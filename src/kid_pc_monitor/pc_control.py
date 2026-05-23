@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 
 from kid_pc_monitor.host_platform import HostPlatform, get_default_platform
+from kid_pc_monitor.network import get_primary_ipv4
 from kid_pc_monitor.lock_policy import (
     DEFAULT_WAKE_TIME,
     lock_decision,
@@ -513,13 +514,7 @@ class RemoteControlServer:
 
     def get_primary_ip(self):
         """Return the primary IPv4 address, or None while networking is down."""
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                s.settimeout(2)
-                s.connect(("8.8.8.8", 80))
-                return s.getsockname()[0]
-        except OSError:
-            return None
+        return get_primary_ipv4()
 
     def close_sockets(self):
         """Close active client and listener sockets without changing run intent."""
