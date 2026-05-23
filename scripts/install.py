@@ -15,7 +15,7 @@ from kid_pc_monitor.lock_policy import parse_time_hhmm
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
-INSTALL_CONFIG_FILE = "install_config.json"
+INSTALL_CONFIG_FILE = "default_values.json"
 AGENT_PORT = 9999
 FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 FIREWALL_RULE_GROUP = "Kid PC Monitor"
@@ -165,18 +165,18 @@ def resolve_user_localappdata_dir(username: str) -> Path | None:
     return Path(out)
 
 
-def _merge_wake_time_into_state_file(state_path: Path, wake_time: str) -> None:
-    state: dict = {}
-    if state_path.is_file():
+def _merge_wake_time_into_defaults_file(defaults_path: Path, wake_time: str) -> None:
+    defaults: dict = {}
+    if defaults_path.is_file():
         try:
-            state = json.loads(state_path.read_text(encoding="utf-8"))
+            defaults = json.loads(defaults_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
-            state = {}
-    state["wake_time"] = wake_time
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = state_path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    os.replace(tmp, state_path)
+            defaults = {}
+    defaults["wake_time"] = wake_time
+    defaults_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = defaults_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(defaults, indent=2), encoding="utf-8")
+    os.replace(tmp, defaults_path)
 
 
 def _grant_user_modify_on_dir(username: str, directory: Path) -> None:
@@ -206,19 +206,19 @@ def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None
     $profile = (Get-ItemProperty -LiteralPath $key).ProfileImagePath
     $dir = Join-Path $profile 'AppData\\Local\\KidPCMonitor'
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $statePath = Join-Path $dir 'pc_control_state.json'
-    $state = @{{}}
-    if (Test-Path -LiteralPath $statePath) {{
-        $raw = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8
+    $defaultsPath = Join-Path $dir 'default_values.json'
+    $defaults = @{{}}
+    if (Test-Path -LiteralPath $defaultsPath) {{
+        $raw = Get-Content -LiteralPath $defaultsPath -Raw -Encoding UTF8
         if ($raw) {{
-            $state = $raw | ConvertFrom-Json
-            if ($state -is [System.Array]) {{ $state = @{{}} }}
+            $defaults = $raw | ConvertFrom-Json
+            if ($defaults -is [System.Array]) {{ $defaults = @{{}} }}
         }}
     }}
-    $state | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
-    $json = $state | ConvertTo-Json -Depth 5
-    Set-Content -LiteralPath $statePath -Value $json -Encoding UTF8
-    Write-Output $statePath
+    $defaults | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
+    $json = $defaults | ConvertTo-Json -Depth 5
+    Set-Content -LiteralPath $defaultsPath -Value $json -Encoding UTF8
+    Write-Output $defaultsPath
     """
     try:
         result = subprocess.run(
@@ -242,7 +242,7 @@ def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None
     return Path(out[-1])
 
 
-def write_install_config(target_user: str, wake_time: str) -> Path:
+def write_program_data_defaults(target_user: str, wake_time: str) -> Path:
     """Write machine-wide install defaults (always writable during admin install)."""
     dest = Path(INSTALL_DIR_DEFAULT)
     dest.mkdir(parents=True, exist_ok=True)
@@ -256,22 +256,22 @@ def write_install_config(target_user: str, wake_time: str) -> Path:
 
 def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: bool) -> tuple[Path | None, bool]:
     """
-    Persist wake_time into the child's agent state file (merge if present).
+    Persist wake_time into the child's default_values.json (merge if present).
 
-    Returns (state_path, success). Also writes install_config.json under ProgramData.
+    Returns (defaults_path, success). Also writes ProgramData default_values.json.
     """
-    config_path = write_install_config(username, wake_time)
+    config_path = write_program_data_defaults(username, wake_time)
     print(f"   Install defaults: {config_path}")
 
     state_dir = agent_state_dir_for_user(username, same_user=same_user)
-    state_path = state_dir / "pc_control_state.json"
+    defaults_path = state_dir / "default_values.json"
 
     try:
-        _merge_wake_time_into_state_file(state_path, wake_time)
+        _merge_wake_time_into_defaults_file(defaults_path, wake_time)
         _grant_user_modify_on_dir(username, state_dir)
-        return state_path, True
+        return defaults_path, True
     except OSError as exc:
-        print(f"\n⚠️  Direct write to {state_path} failed: {exc}")
+        print(f"\n⚠️  Direct write to {defaults_path} failed: {exc}")
 
     if not same_user:
         ps_path = write_wake_time_via_powershell(username, wake_time)
@@ -282,7 +282,7 @@ def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: 
     print(
         "\n⚠️  Wake-up time was saved to ProgramData only. The agent will apply it "
         "on the child's next logon. If the child has never signed in, have them log "
-        "in once and re-run install, or add wake_time manually to their state file."
+        "in once and re-run install, or add wake_time manually to their defaults file."
     )
     return None, False
 
@@ -818,11 +818,11 @@ def run_install_flow():
             return False
 
     wake_time = prompt_wake_up_time()
-    state_path, state_ok = write_wake_time_to_agent_state(
+    defaults_path, state_ok = write_wake_time_to_agent_state(
         target_user, wake_time, same_user=not cross_user
     )
-    if state_ok and state_path is not None:
-        print(f"\n✅ Wake-up time saved to {state_path}")
+    if state_ok and defaults_path is not None:
+        print(f"\n✅ Wake-up time saved to {defaults_path}")
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()

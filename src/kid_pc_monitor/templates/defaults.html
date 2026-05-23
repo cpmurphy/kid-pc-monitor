@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defaults — {{ pc_info.hostname }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
+        .container { max-width: 500px; margin: 0 auto; }
+        h1 { color: #333; text-align: center; font-size: 24px; }
+        .back-btn { display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
+        .action-group { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .action-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        .btn-save { background-color: #2196F3; color: white; }
+        .btn-save:hover { background-color: #0b7dda; }
+        .btn-clear { background-color: #f44336; color: white; }
+        input[type="number"], input[type="time"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        .hint { color: #666; font-size: 14px; margin: 0 0 10px 0; line-height: 1.4; }
+        .status-message { padding: 15px; margin: 15px 0; border-radius: 5px; text-align: center; display: none; }
+        .status-message.success { background-color: #d4edda; color: #155724; }
+        .status-message.error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
+
+        <h1>⚙️ Defaults</h1>
+        <p style="text-align: center; color: #666;">{{ pc_info.hostname }} · {{ ip }}</p>
+        <p class="hint" style="text-align: center;">
+            These settings apply every day. Changes take effect immediately on the kid's PC.
+        </p>
+
+        <div id="status-message" class="status-message"></div>
+
+        <div class="action-group">
+            <div class="action-title">⏱️ Daily allowance</div>
+            <p class="hint">Screen-time cap per day (minutes). Leave blank for no cap.</p>
+            <input type="number" id="daily-limit-minutes"
+                   placeholder="Minutes, e.g. 120"
+                   value="{{ pc_info.daily_limit if pc_info.get('daily_limit') is not none else '' }}">
+            <button class="btn btn-save" onclick="saveDailyLimit()">Save daily allowance</button>
+            {% if pc_info.get('daily_limit') is not none %}
+            <button class="btn btn-clear" onclick="clearDailyLimit()">Remove daily allowance</button>
+            {% endif %}
+        </div>
+
+        <div class="action-group">
+            <div class="action-title">🕐 Bedtime</div>
+            <p class="hint">PC locks at this time until wake-up.</p>
+            <input type="time" id="bed-time" value="{{ pc_info.get('bed_time', '21:00') or '21:00' }}">
+            <button class="btn btn-save" onclick="saveBedTime()">Save bedtime</button>
+            {% if pc_info.get('bed_time') %}
+            <button class="btn btn-clear" onclick="clearBedTime()">Remove bedtime</button>
+            {% endif %}
+        </div>
+
+        <div class="action-group">
+            <div class="action-title">🌅 Wake-up time</div>
+            <p class="hint">Bedtime locks lift here. Daily usage resets at wake-up.</p>
+            <input type="time" id="wake-time" value="{{ pc_info.get('wake_time', '07:00') or '07:00' }}">
+            <button class="btn btn-save" onclick="saveWakeTime()">Save wake-up time</button>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, isSuccess) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + (isSuccess ? 'success' : 'error');
+            statusEl.style.display = 'block';
+            setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+        }
+
+        function postAction(body) {
+            return fetch('/action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(Object.assign({ ip: '{{ ip }}' }, body))
+            })
+            .then(response => response.json())
+            .then(data => {
+                showStatus(data.response, data.success);
+                if (data.success) {
+                    setTimeout(() => location.reload(), 1000);
+                }
+            });
+        }
+
+        function saveDailyLimit() {
+            const raw = document.getElementById('daily-limit-minutes').value;
+            if (!raw) {
+                showStatus('Enter minutes or use Remove', false);
+                return;
+            }
+            postAction({ action: 'set_daily_limit', minutes: parseInt(raw, 10) });
+        }
+
+        function clearDailyLimit() {
+            if (!confirm('Remove the daily allowance default?')) return;
+            postAction({ action: 'clear_usage_limit' });
+        }
+
+        function saveBedTime() {
+            const time = document.getElementById('bed-time').value;
+            if (!time) {
+                showStatus('Please select a bedtime', false);
+                return;
+            }
+            postAction({ action: 'set_bed_time', time: time });
+        }
+
+        function clearBedTime() {
+            if (!confirm('Remove the bedtime default?')) return;
+            postAction({ action: 'clear_bed_time' });
+        }
+
+        function saveWakeTime() {
+            const time = document.getElementById('wake-time').value;
+            if (!time) {
+                showStatus('Please select a wake-up time', false);
+                return;
+            }
+            postAction({ action: 'set_wake_time', time: time });
+        }
+    </script>
+</body>
+</html>

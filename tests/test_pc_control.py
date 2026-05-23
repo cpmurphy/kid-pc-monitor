@@ -76,10 +76,11 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=data_dir,
                 start_background_threads=False,
             )
-            control.lock_times = [dtime(21, 0)]
-            control.usage_limit = 90
-            control.manual_lock_active = True
-            control.accumulated_seconds = 120.0
+            control.set_bed_time(21, 0)
+            control.set_daily_limit(90)
+            control.runtime.manual_lock_active = True
+            control.runtime.accumulated_seconds = 120.0
+            control.runtime.cumulative_extension_seconds = 900
             control.save_state()
 
             reloaded = PCTimeControl(
@@ -87,10 +88,11 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=data_dir,
                 start_background_threads=False,
             )
-            self.assertEqual(reloaded.lock_times, [dtime(21, 0)])
-            self.assertEqual(reloaded.usage_limit, 90)
-            self.assertTrue(reloaded.manual_lock_active)
-            self.assertAlmostEqual(reloaded.accumulated_seconds, 120.0)
+            self.assertEqual(reloaded.defaults.bed_time, dtime(21, 0))
+            self.assertEqual(reloaded.defaults.daily_limit, 90)
+            self.assertTrue(reloaded.runtime.manual_lock_active)
+            self.assertAlmostEqual(reloaded.runtime.accumulated_seconds, 120.0)
+            self.assertEqual(reloaded.runtime.cumulative_extension_seconds, 900)
 
     def test_tick_accumulator_only_while_session_active(self) -> None:
         platform = FakeHostPlatform(session_active=True, locked=False)
@@ -102,12 +104,27 @@ class PCTimeControlTests(unittest.TestCase):
             )
             control.last_tick_at = datetime.now() - timedelta(seconds=30)
             control.tick_accumulator()
-            self.assertGreater(control.accumulated_seconds, 0.0)
+            self.assertGreater(control.runtime.accumulated_seconds, 0.0)
 
-            before = control.accumulated_seconds
+            before = control.runtime.accumulated_seconds
             platform.session_active = False
             control.tick_accumulator()
-            self.assertEqual(control.accumulated_seconds, before)
+            self.assertEqual(control.runtime.accumulated_seconds, before)
+
+    def test_extend_time_adds_to_cumulative_extension_only(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.set_daily_limit(60)
+            control.runtime.accumulated_seconds = 100.0
+            control.extend_time(30)
+            self.assertEqual(control.defaults.daily_limit, 60)
+            self.assertAlmostEqual(control.runtime.accumulated_seconds, 100.0)
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
 
     def test_currently_in_lock_window_manual_lock(self) -> None:
         platform = FakeHostPlatform()
@@ -117,7 +134,7 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=Path(tmp),
                 start_background_threads=False,
             )
-            control.manual_lock_active = True
+            control.runtime.manual_lock_active = True
             locked, reason = control.currently_in_lock_window()
             self.assertTrue(locked)
             self.assertIn("Manual", reason)
@@ -134,32 +151,38 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertEqual(platform.lock_calls, 1)
             self.assertTrue(platform.locked)
 
-    def test_applies_wake_time_from_install_config_when_state_missing(self) -> None:
+    def test_bootstraps_wake_time_from_program_data_defaults(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
             program_data = data_dir / "ProgramData" / "KidPCMonitor"
             program_data.mkdir(parents=True)
-            (program_data / "install_config.json").write_text(
+            (program_data / "default_values.json").write_text(
                 '{"target_user": "kid", "wake_time": "08:30"}',
                 encoding="utf-8",
             )
             old_win = sys.platform
             try:
                 sys.platform = "win32"
-                control = PCTimeControl(
-                    platform=platform,
-                    data_directory=data_dir / "profile",
-                    start_background_threads=False,
-                )
-                control.current_user = "kid"
-                control._install_config_path = lambda: program_data / "install_config.json"  # type: ignore[method-assign]
-                control.load_state()
+                from kid_pc_monitor import agent_state as agent_state_mod
+                from unittest.mock import patch
+
+                original = agent_state_mod.program_data_defaults_path
+                agent_state_mod.program_data_defaults_path = lambda: program_data / "default_values.json"
+                try:
+                    with patch("getpass.getuser", return_value="kid"):
+                        control = PCTimeControl(
+                            platform=platform,
+                            data_directory=data_dir / "profile",
+                            start_background_threads=False,
+                        )
+                finally:
+                    agent_state_mod.program_data_defaults_path = original
             finally:
                 sys.platform = old_win
 
-            self.assertEqual(control.wake_time, dtime(8, 30))
-            self.assertTrue((data_dir / "profile" / "pc_control_state.json").is_file())
+            self.assertEqual(control.defaults.wake_time, dtime(8, 30))
+            self.assertTrue((data_dir / "profile" / "default_values.json").is_file())
 
     def test_check_if_locked_delegates_to_platform(self) -> None:
         platform = FakeHostPlatform(locked=True)

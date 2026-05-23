@@ -66,29 +66,29 @@ def usage_period_date(now: datetime, wake_time: dtime = DEFAULT_WAKE_TIME) -> da
 
 def is_in_bedtime_curfew(
     now: datetime,
-    lock_time: dtime,
+    bed_time: dtime,
     wake_time: dtime = DEFAULT_WAKE_TIME,
 ) -> bool:
     """
-    True when now is in the overnight curfew from lock_time until wake_time.
+    True when now is in the overnight curfew from bed_time until wake_time.
 
     Typical case: bedtime 21:00, wake 07:00 — locked from 21:00 through 06:59.
     """
     now_m = now.hour * 60 + now.minute
-    lock_m = _minutes_since_midnight(lock_time)
+    bed_m = _minutes_since_midnight(bed_time)
     wake_m = _minutes_since_midnight(wake_time)
-    if lock_m == wake_m:
+    if bed_m == wake_m:
         return False
-    if lock_m > wake_m:
-        return now_m >= lock_m or now_m < wake_m
-    return lock_m <= now_m < wake_m
+    if bed_m > wake_m:
+        return now_m >= bed_m or now_m < wake_m
+    return bed_m <= now_m < wake_m
 
 
 def lock_decision(
     *,
     now: datetime,
-    lock_times: list[dtime] | tuple[dtime, ...],
-    usage_limit: int | None,
+    bed_time: dtime | None,
+    effective_usage_limit_minutes: float | None,
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
@@ -97,9 +97,9 @@ def lock_decision(
     """
     Decide whether the agent should enforce a lock at now.
 
-    Scheduled lock times start a curfew that lasts until wake_time (not midnight).
+    bed_time starts a curfew that lasts until wake_time (not midnight).
     Usage limits lock once accumulated_minutes for the current wake-to-wake period
-    reaches the limit.
+    reaches effective_usage_limit_minutes (daily allowance plus any extensions).
     """
     if not monitor_user:
         return LockDecision(False)
@@ -107,22 +107,27 @@ def lock_decision(
     if manual_lock_active:
         return LockDecision(True, "Manual lock requested")
 
-    for lock_time in lock_times:
-        if is_in_bedtime_curfew(now, lock_time, wake_time):
-            if (now.hour, now.minute) < (wake_time.hour, wake_time.minute):
-                return LockDecision(
-                    True,
-                    f"Before wake-up time {wake_time.hour:02d}:{wake_time.minute:02d}",
-                )
+    if bed_time is not None and is_in_bedtime_curfew(now, bed_time, wake_time):
+        if (now.hour, now.minute) < (wake_time.hour, wake_time.minute):
             return LockDecision(
                 True,
-                f"Past scheduled lock time {lock_time.hour:02d}:{lock_time.minute:02d}",
+                f"Before wake-up time {wake_time.hour:02d}:{wake_time.minute:02d}",
             )
-
-    if usage_limit and accumulated_minutes >= usage_limit:
         return LockDecision(
             True,
-            f"Usage limit of {usage_limit} minutes reached",
+            f"Past bedtime {bed_time.hour:02d}:{bed_time.minute:02d}",
+        )
+
+    if (
+        effective_usage_limit_minutes is not None
+        and accumulated_minutes >= effective_usage_limit_minutes
+    ):
+        limit_label = int(effective_usage_limit_minutes)
+        if effective_usage_limit_minutes != limit_label:
+            limit_label = round(effective_usage_limit_minutes, 1)
+        return LockDecision(
+            True,
+            f"Daily allowance of {limit_label} minutes reached",
         )
 
     return LockDecision(False)
@@ -131,8 +136,8 @@ def lock_decision(
 def minutes_until_lock(
     *,
     now: datetime,
-    lock_times: list[dtime] | tuple[dtime, ...],
-    usage_limit: int | None,
+    bed_time: dtime | None,
+    effective_usage_limit_minutes: float | None,
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
@@ -144,8 +149,8 @@ def minutes_until_lock(
 
     if lock_decision(
         now=now,
-        lock_times=lock_times,
-        usage_limit=usage_limit,
+        bed_time=bed_time,
+        effective_usage_limit_minutes=effective_usage_limit_minutes,
         accumulated_minutes=accumulated_minutes,
         monitor_user=monitor_user,
         manual_lock_active=manual_lock_active,
@@ -155,23 +160,22 @@ def minutes_until_lock(
 
     min_remaining = None
 
-    for lock_time in lock_times:
-        lock_datetime = now.replace(
-            hour=lock_time.hour,
-            minute=lock_time.minute,
+    if bed_time is not None:
+        bed_datetime = now.replace(
+            hour=bed_time.hour,
+            minute=bed_time.minute,
             second=0,
             microsecond=0,
         )
 
-        if lock_datetime <= now:
-            lock_datetime = lock_datetime + timedelta(days=1)
+        if bed_datetime <= now:
+            bed_datetime = bed_datetime + timedelta(days=1)
 
-        minutes_remaining = (lock_datetime - now).total_seconds() / 60
-        if min_remaining is None or minutes_remaining < min_remaining:
-            min_remaining = minutes_remaining
+        minutes_remaining = (bed_datetime - now).total_seconds() / 60
+        min_remaining = minutes_remaining
 
-    if usage_limit:
-        minutes_remaining = usage_limit - accumulated_minutes
+    if effective_usage_limit_minutes is not None:
+        minutes_remaining = effective_usage_limit_minutes - accumulated_minutes
         if min_remaining is None or minutes_remaining < min_remaining:
             min_remaining = minutes_remaining
 

@@ -20,6 +20,23 @@ CUSTOM_PC_NAMES: dict[str, str] = {
 
 
 from kid_pc_monitor.network import get_local_ip
+
+
+def format_minutes_duration(minutes: int | float | None) -> str:
+    """Format a minute count as H:MM or 'Not set'."""
+    if minutes is None:
+        return "Not set"
+    total = int(round(minutes))
+    hours, mins = divmod(total, 60)
+    if hours:
+        return f"{hours}:{mins:02d}"
+    return f"{mins} min"
+
+
+def format_seconds_duration(seconds: int | float) -> str:
+    return format_minutes_duration(seconds / 60)
+
+
 def get_default_scan_network() -> ipaddress.IPv4Network:
     local_ip = get_local_ip()
     return ipaddress.ip_network(f"{local_ip}/24", strict=False)
@@ -81,6 +98,15 @@ def query_command(host: str, command: str, port: int = DEFAULT_PORT) -> str | No
     return response if ok else None
 
 
+def _parse_optional_int(raw: str | None) -> int | None:
+    if raw is None or raw == "None":
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
 def is_pc_reachable(host: str, port: int = DEFAULT_PORT, timeout: float = QUERY_TIMEOUT) -> bool:
     """True when the kid PC agent accepts TCP connections on port."""
     try:
@@ -101,7 +127,14 @@ def refresh_discovered_entry(
     if not reachable:
         entry["locked"] = False
         entry.pop("current_user", None)
-        for key in ("usage_limit", "manual_lock_active", "lock_times", "time_remaining"):
+        for key in (
+            "daily_limit",
+            "usage_limit",
+            "manual_lock_active",
+            "bed_time",
+            "lock_times",
+            "time_remaining",
+        ):
             entry.pop(key, None)
         return
 
@@ -174,14 +207,20 @@ def get_current_user(ip: str, port: int = DEFAULT_PORT) -> str | None:
     return query_command(ip, "GET_CURRENT_USER", port=port)
 
 
+def get_daily_limit(ip: str, port: int = DEFAULT_PORT) -> int | None:
+    return _parse_optional_int(query_command(ip, "GET_DAILY_LIMIT", port=port))
+
+
 def get_usage_limit(ip: str, port: int = DEFAULT_PORT) -> int | None:
-    limit = query_command(ip, "GET_USAGE_LIMIT", port=port)
-    if limit is None or limit == "None":
+    """Legacy alias for get_daily_limit."""
+    return get_daily_limit(ip, port=port)
+
+
+def get_bed_time(ip: str, port: int = DEFAULT_PORT) -> str | None:
+    raw = query_command(ip, "GET_BED_TIME", port=port)
+    if raw is None or raw == "None":
         return None
-    try:
-        return int(limit)
-    except ValueError:
-        return None
+    return raw
 
 
 def get_manual_lock(ip: str, port: int = DEFAULT_PORT) -> bool:
@@ -189,15 +228,24 @@ def get_manual_lock(ip: str, port: int = DEFAULT_PORT) -> bool:
 
 
 def get_lock_times(ip: str, port: int = DEFAULT_PORT) -> list[str] | None:
-    times = query_command(ip, "GET_LOCK_TIMES", port=port)
-    if times is None or times == "None":
+    """Legacy: returns a single bedtime as a one-item list."""
+    bed = get_bed_time(ip, port=port)
+    if bed is None:
         return None
-    return [t.strip() for t in times.split(",") if t.strip()]
+    return [bed]
 
 
 def get_wake_time(ip: str, port: int = DEFAULT_PORT) -> str | None:
     """Return wake-up time as HH:MM, or None if the agent did not respond."""
     return query_command(ip, "GET_WAKE_TIME", port=port)
+
+
+def get_cumulative_extension_seconds(ip: str, port: int = DEFAULT_PORT) -> int | None:
+    return _parse_optional_int(query_command(ip, "GET_CUMULATIVE_EXTENSION", port=port))
+
+
+def get_accumulated_seconds(ip: str, port: int = DEFAULT_PORT) -> int | None:
+    return _parse_optional_int(query_command(ip, "GET_ACCUMULATED_SECONDS", port=port))
 
 
 def get_time_remaining(ip: str, port: int = DEFAULT_PORT) -> str | None:
@@ -214,26 +262,27 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
         return query_command(host, cmd, port=port)
 
     status = q("GET_STATUS")
-    usage_raw = q("GET_USAGE_LIMIT")
+    daily_limit = _parse_optional_int(q("GET_DAILY_LIMIT"))
     manual_lock_raw = q("GET_MANUAL_LOCK")
-    lock_times_raw = q("GET_LOCK_TIMES")
+    bed_time_raw = q("GET_BED_TIME")
     wake_time = q("GET_WAKE_TIME")
     time_remaining = q("GET_TIME_REMAINING")
+    extension_seconds = _parse_optional_int(q("GET_CUMULATIVE_EXTENSION")) or 0
+    accumulated_seconds = _parse_optional_int(q("GET_ACCUMULATED_SECONDS")) or 0
 
-    usage_limit: int | None
-    if usage_raw is None or usage_raw == "None":
-        usage_limit = None
+    bed_time: str | None
+    if bed_time_raw is None or bed_time_raw == "None":
+        bed_time = None
     else:
-        try:
-            usage_limit = int(usage_raw)
-        except ValueError:
-            usage_limit = None
+        bed_time = bed_time_raw
 
-    lock_times: list[str] | None
-    if lock_times_raw is None or lock_times_raw == "None":
-        lock_times = None
+    lock_times: list[str] | None = [bed_time] if bed_time else None
+
+    effective_limit: float | None
+    if daily_limit is None and extension_seconds <= 0:
+        effective_limit = None
     else:
-        lock_times = [t.strip() for t in lock_times_raw.split(",") if t.strip()]
+        effective_limit = (daily_limit or 0) + extension_seconds / 60
 
     return {
         "ip": host,
@@ -242,10 +291,15 @@ def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:
         "status": status or "UNKNOWN",
         "locked": status == "LOCKED",
         "current_user": q("GET_CURRENT_USER"),
-        "usage_limit": usage_limit,
-        "manual_lock_active": manual_lock_raw == "YES",
+        "daily_limit": daily_limit,
+        "usage_limit": daily_limit,
+        "bed_time": bed_time,
         "lock_times": lock_times,
         "wake_time": wake_time,
+        "manual_lock_active": manual_lock_raw == "YES",
+        "cumulative_extension_seconds": extension_seconds,
+        "accumulated_seconds": accumulated_seconds,
+        "effective_limit_minutes": effective_limit,
         "time_remaining": time_remaining,
         "reachable": True,
     }

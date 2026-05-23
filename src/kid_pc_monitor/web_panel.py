@@ -1,313 +1,288 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+"""Parent web panel for Kid PC Monitor."""
+
+from __future__ import annotations
+
 import json
 import os
 import secrets
-import socket
-import threading
-import ipaddress
-import time
 from datetime import datetime
+from functools import wraps
+from hashlib import scrypt
 from pathlib import Path
+from typing import Any, Callable
 
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 from kid_pc_monitor.paths import config_dir, template_dir
 from kid_pc_monitor.remote_client import (
+    format_minutes_duration,
+    format_seconds_duration,
     get_default_scan_network,
-    get_local_ip,
-    get_lock_times,
-    get_wake_time,
-    get_manual_lock,
-    get_time_remaining,
-    get_usage_limit,
+    inspect_pc,
     parse_scan_subnet,
     refresh_discovered_entry,
-    scan_for_servers as discover_servers,
+    scan_for_servers,
     send_command,
 )
 
-_TEMPLATE_DIR = template_dir()
-_AUTH_DIR = config_dir()
-
-app = Flask(__name__, template_folder=str(_TEMPLATE_DIR))
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-
-AUTH_FILE = _AUTH_DIR / "web_panel_auth.json"
-_LEGACY_AUTH_FILE = Path(__file__).resolve().parent.parent / "web_panel_auth.json"
+PANEL_USERNAME = "Kid PC Monitor"
+AUTH_FILE = "web_panel_auth.json"
+SESSION_AUTH_KEY = "panel_authenticated"
 
 
-def _migrate_legacy_auth_file() -> None:
-    if _LEGACY_AUTH_FILE.is_file() and not AUTH_FILE.is_file():
-        AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
-        AUTH_FILE.write_bytes(_LEGACY_AUTH_FILE.read_bytes())
+def _auth_path() -> Path:
+    return config_dir() / AUTH_FILE
 
 
-_migrate_legacy_auth_file()
-SESSION_AUTH_KEY = "panel_auth"
-PANEL_LOGIN_USERNAME = "Kids PC Control Panel"
+def _hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
+    return json.dumps(
+        {
+            "salt": salt.hex(),
+            "hash": digest.hex(),
+        }
+    )
 
 
-def read_auth_file():
-    if not AUTH_FILE.is_file():
-        return {}
+def _verify_password(stored: str, password: str) -> bool:
     try:
-        return json.loads(AUTH_FILE.read_text(encoding="utf-8"))
+        payload = json.loads(stored)
+        salt = bytes.fromhex(payload["salt"])
+        expected = bytes.fromhex(payload["hash"])
+    except (json.JSONDecodeError, KeyError, ValueError):
+        return False
+    digest = scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1, dklen=32)
+    return secrets.compare_digest(digest, expected)
+
+
+def load_auth_record() -> dict | None:
+    path = _auth_path()
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return {}
-
-
-def write_auth_file(data):
-    AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = AUTH_FILE.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    os.replace(tmp, AUTH_FILE)
-
-
-def get_stored_password_hash():
-    h = read_auth_file().get("password_hash")
-    return h if isinstance(h, str) and h else None
-
-
-def password_is_configured():
-    return get_stored_password_hash() is not None
-
-
-def sync_secret_key_from_disk():
-    data = read_auth_file()
-    sk = data.get("secret_key")
-    if isinstance(sk, str) and len(sk) >= 16:
-        app.secret_key = sk
-    else:
-        app.secret_key = secrets.token_hex(32)
-
-
-sync_secret_key_from_disk()
-
-
-def safe_next_path(next_param):
-    if not next_param or not isinstance(next_param, str):
-        return url_for("index")
-    n = next_param.strip()
-    if not n.startswith("/") or n.startswith("//"):
-        return url_for("index")
-    return n
-
-# Store discovered PCs
-discovered_pcs = {}
-last_scan_time = None
-last_scan_network = None
-
-
-def scan_for_servers(port=9999, subnet=None):
-    """Scan a network for PCs running the control server."""
-    global discovered_pcs, last_scan_time, last_scan_network
-
-    _network, network_label = parse_scan_subnet(subnet)
-    discovered_pcs = discover_servers(port=port, subnet=subnet)
-    last_scan_time = datetime.now()
-    last_scan_network = network_label
-    return discovered_pcs
-
-
-
-@app.before_request
-def require_panel_password():
-    if request.endpoint == "static" or request.endpoint is None:
         return None
-    if not password_is_configured():
-        return None
-    if session.get(SESSION_AUTH_KEY):
-        return None
-    if request.endpoint == "login":
-        return None
-    return redirect(url_for("login", next=request.path))
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if not password_is_configured():
-        return redirect(url_for("index"))
-    if session.get(SESSION_AUTH_KEY):
-        return redirect(url_for("index"))
-    if request.method == "POST":
-        pwd = request.form.get("password", "")
-        ph = get_stored_password_hash()
-        if ph and check_password_hash(ph, pwd):
-            session.clear()
-            session[SESSION_AUTH_KEY] = True
-            return redirect(safe_next_path(request.form.get("next")))
-        flash("Incorrect password.", "error")
-    next_path = safe_next_path(request.form.get("next") or request.args.get("next"))
-    return render_template(
-        "login.html",
-        next=next_path,
-        panel_username=PANEL_LOGIN_USERNAME,
+def password_is_configured() -> bool:
+    record = load_auth_record()
+    return bool(record and record.get("password_hash"))
+
+
+def save_password(password: str) -> None:
+    path = _auth_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"password_hash": _hash_password(password)}, indent=2),
+        encoding="utf-8",
     )
 
 
-@app.route("/logout")
-def logout():
-    session.pop(SESSION_AUTH_KEY, None)
-    if password_is_configured():
-        return redirect(url_for("login"))
-    return redirect(url_for("index"))
+def create_app() -> Flask:
+    app = Flask(__name__, template_folder=str(template_dir()))
+    app.secret_key = os.environ.get("KID_PC_MONITOR_SECRET") or secrets.token_hex(32)
 
+    @app.context_processor
+    def inject_panel_context() -> dict[str, Any]:
+        return {
+            "password_protected": password_is_configured(),
+            "panel_auth": session.get(SESSION_AUTH_KEY, False),
+            "panel_username": PANEL_USERNAME,
+            "format_minutes_duration": format_minutes_duration,
+            "format_seconds_duration": format_seconds_duration,
+        }
 
-@app.route("/set-password", methods=["GET", "POST"])
-def set_password():
-    if password_is_configured() and not session.get(SESSION_AUTH_KEY):
-        return redirect(url_for("login", next=request.path))
+    def login_required(view: Callable):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if password_is_configured() and not session.get(SESSION_AUTH_KEY):
+                return redirect(url_for("login", next=request.path))
+            return view(*args, **kwargs)
 
-    if request.method == "POST":
-        p1 = request.form.get("password", "")
-        p2 = request.form.get("password_confirm", "")
-        if len(p1) < 8:
-            flash("Password must be at least 8 characters.", "error")
-        elif p1 != p2:
-            flash("Passwords do not match.", "error")
-        else:
-            data = read_auth_file()
-            secret_key = data.get("secret_key")
-            if not isinstance(secret_key, str) or len(secret_key) < 16:
-                secret_key = secrets.token_hex(32)
-            data["secret_key"] = secret_key
-            data["password_hash"] = generate_password_hash(p1)
-            write_auth_file(data)
-            app.secret_key = secret_key
-            session.clear()
-            session[SESSION_AUTH_KEY] = True
-            flash("Password saved. Use it to sign in on other devices or browsers.", "success")
+        return wrapped
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        if not password_is_configured():
             return redirect(url_for("index"))
-
-    changing = password_is_configured()
-    return render_template(
-        "set_password.html",
-        changing=changing,
-        panel_username=PANEL_LOGIN_USERNAME,
-    )
-
-
-@app.route('/')
-def index():
-    """Main page showing all discovered PCs"""
-    for ip in list(discovered_pcs.keys()):
-        refresh_discovered_entry(ip, discovered_pcs[ip])
-
-    return render_template(
-        'index.html',
-        pcs=discovered_pcs,
-        last_scan=last_scan_time,
-        last_scan_network=last_scan_network,
-        default_subnet=str(get_default_scan_network()),
-        scan_subnet=request.args.get('subnet', ''),
-        scan_error=request.args.get('error'),
-        password_protected=password_is_configured(),
-        panel_auth=bool(session.get(SESSION_AUTH_KEY))
-    )
-
-
-@app.route('/scan', methods=['GET', 'POST'])
-def scan():
-    """Scan for PCs and redirect to main page"""
-    subnet = request.args.get('subnet') or request.form.get('subnet')
-    try:
-        scan_for_servers(subnet=subnet)
-    except ValueError as exc:
-        return redirect(url_for('index', error=str(exc), subnet=subnet or ''))
-    return redirect(url_for('index', subnet=subnet or ''))
-
-
-@app.route('/control/<ip>')
-def control(ip):
-    """Control page for a specific PC"""
-    if ip in discovered_pcs:
-        pc_info = discovered_pcs[ip]
-    else:
-        pc_info = {'hostname': 'Unknown', 'status': 'unknown'}
-    refresh_discovered_entry(ip, pc_info)
-    if ip in discovered_pcs:
-        discovered_pcs[ip] = pc_info
-
-    if not pc_info.get('reachable'):
+        if request.method == "POST":
+            record = load_auth_record()
+            password = request.form.get("password", "")
+            if record and _verify_password(record["password_hash"], password):
+                session[SESSION_AUTH_KEY] = True
+                next_url = request.form.get("next") or url_for("index")
+                return redirect(next_url)
+            flash("Incorrect password.", "error")
         return render_template(
-            'control.html',
-            ip=ip,
-            pc_info=pc_info,
-            password_protected=password_is_configured(),
-            panel_auth=bool(session.get(SESSION_AUTH_KEY)),
+            "login.html",
+            next=request.args.get("next", ""),
         )
 
-    usage_limit = get_usage_limit(ip)
-    pc_info['usage_limit'] = usage_limit
+    @app.route("/logout")
+    def logout():
+        session.pop(SESSION_AUTH_KEY, None)
+        return redirect(url_for("index"))
 
-    pc_info['manual_lock_active'] = get_manual_lock(ip)
+    @app.route("/set-password", methods=["GET", "POST"])
+    def set_password():
+        if password_is_configured() and not session.get(SESSION_AUTH_KEY):
+            return redirect(url_for("login", next=url_for("set_password")))
+        changing = password_is_configured()
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            confirm = request.form.get("password_confirm", "")
+            if len(password) < 8:
+                flash("Password must be at least 8 characters.", "error")
+            elif password != confirm:
+                flash("Passwords do not match.", "error")
+            else:
+                save_password(password)
+                session[SESSION_AUTH_KEY] = True
+                flash("Password saved.", "success")
+                return redirect(url_for("index"))
+        return render_template("set_password.html", changing=changing)
 
-    lock_times = get_lock_times(ip)
-    pc_info['lock_times'] = lock_times
+    @app.route("/")
+    @login_required
+    def index():
+        pcs = session.get("discovered_pcs", {})
+        return render_template(
+            "index.html",
+            pcs=pcs,
+            last_scan=session.get("last_scan"),
+            last_scan_network=session.get("last_scan_network"),
+            scan_subnet=session.get("scan_subnet", ""),
+            scan_error=session.get("scan_error"),
+            default_subnet=str(get_default_scan_network()),
+        )
 
-    wake_time = get_wake_time(ip)
-    pc_info['wake_time'] = wake_time
+    @app.route("/scan")
+    @login_required
+    def scan():
+        subnet_arg = request.args.get("subnet", "").strip()
+        session.pop("scan_error", None)
+        try:
+            _network, label = parse_scan_subnet(subnet_arg or None)
+            discovered = scan_for_servers(subnet=subnet_arg or None)
+            for ip, entry in discovered.items():
+                try:
+                    info = inspect_pc(ip)
+                    entry.update(info)
+                except ConnectionError:
+                    entry["reachable"] = True
+            session["discovered_pcs"] = discovered
+            session["last_scan"] = datetime.now()
+            session["last_scan_network"] = label
+            session["scan_subnet"] = subnet_arg
+        except ValueError as exc:
+            session["scan_error"] = str(exc)
+        return redirect(url_for("index"))
 
-    time_remaining = get_time_remaining(ip)
-    pc_info['time_remaining'] = time_remaining
+    @app.route("/control/<ip>")
+    @login_required
+    def control(ip: str):
+        pcs = session.get("discovered_pcs", {})
+        if ip in pcs:
+            refresh_discovered_entry(ip, pcs[ip])
+            session["discovered_pcs"] = pcs
+            pc_info = pcs[ip]
+            if pc_info.get("reachable", True):
+                try:
+                    pc_info = inspect_pc(ip)
+                    pcs[ip].update(pc_info)
+                    session["discovered_pcs"] = pcs
+                except ConnectionError:
+                    pc_info = pcs[ip]
+                    pc_info["reachable"] = False
+        else:
+            try:
+                pc_info = inspect_pc(ip)
+            except ConnectionError:
+                pc_info = {
+                    "hostname": f"PC at {ip}",
+                    "reachable": False,
+                }
+        return render_template("control.html", ip=ip, pc_info=pc_info)
 
-    return render_template('control.html', ip=ip, pc_info=pc_info,
-                           password_protected=password_is_configured(),
-                           panel_auth=bool(session.get(SESSION_AUTH_KEY)))
+    @app.route("/defaults/<ip>")
+    @login_required
+    def defaults(ip: str):
+        try:
+            pc_info = inspect_pc(ip)
+        except ConnectionError:
+            flash("Could not reach that PC.", "error")
+            return redirect(url_for("index"))
+        return render_template("defaults.html", ip=ip, pc_info=pc_info)
+
+    @app.route("/action", methods=["POST"])
+    @login_required
+    def action():
+        payload = request.get_json(silent=True) or {}
+        ip = payload.get("ip")
+        action_name = payload.get("action")
+        if not ip or not action_name:
+            return {"success": False, "response": "Missing ip or action"}
+
+        command = _action_to_command(action_name, payload)
+        if command is None:
+            return {"success": False, "response": f"Unknown action: {action_name}"}
+
+        ok, response = send_command(ip, command)
+        return {"success": ok, "response": response}
+
+    return app
 
 
-@app.route('/action', methods=['POST'])
-def action():
-    """Execute an action on a PC"""
-    data = request.json
-    ip = data.get('ip')
-    action_type = data.get('action')
-
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Action request: {action_type} for {ip}")
-
-    if action_type == 'lock':
-        success, response = send_command(ip, "LOCK")
-        if success and ip in discovered_pcs:
-            discovered_pcs[ip]['locked'] = True
-    elif action_type == 'shutdown':
-        success, response = send_command(ip, "SHUTDOWN")
-    elif action_type == 'message':
-        message = data.get('message', '')
-        success, response = send_command(ip, f"MESSAGE:{message}")
-    elif action_type == 'set_limit':
-        minutes = data.get('minutes', 120)
-        success, response = send_command(ip, f"SET_LIMIT:{minutes}")
-    elif action_type == 'add_lock_time':
-        lock_time = data.get('time', '21:00')
-        success, response = send_command(ip, f"ADD_LOCK_TIME:{lock_time}")
-    elif action_type == 'set_wake_time':
-        wake_time = data.get('time', '07:00')
-        success, response = send_command(ip, f"SET_WAKE_TIME:{wake_time}")
-    elif action_type == 'clear_usage_limit':
-        success, response = send_command(ip, "CLEAR_USAGE_LIMIT")
-    elif action_type == 'clear_lock_times':
-        success, response = send_command(ip, "CLEAR_LOCK_TIMES")
-    elif action_type == 'clear_manual_lock':
-        success, response = send_command(ip, "CLEAR_MANUAL_LOCK")
-    elif action_type == 'clear_all':
-        success, response = send_command(ip, "CLEAR_ALL")
-    else:
-        success, response = False, "Unknown action"
-
-    return jsonify({'success': success, 'response': response})
+def _action_to_command(action_name: str, payload: dict[str, Any]) -> str | None:
+    if action_name == "lock":
+        return "LOCK"
+    if action_name == "shutdown":
+        return "SHUTDOWN"
+    if action_name == "message":
+        return f"MESSAGE:{payload.get('message', '')}"
+    if action_name == "extend_time":
+        return f"EXTEND_TIME:{int(payload['minutes'])}"
+    if action_name == "clear_manual_lock":
+        return "CLEAR_MANUAL_LOCK"
+    if action_name == "clear_extensions":
+        return "CLEAR_EXTENSIONS"
+    if action_name == "set_daily_limit":
+        minutes = payload.get("minutes")
+        if minutes is None or minutes == "":
+            return "CLEAR_USAGE_LIMIT"
+        return f"SET_DAILY_LIMIT:{int(minutes)}"
+    if action_name == "set_bed_time":
+        return f"SET_BED_TIME:{payload['time']}"
+    if action_name == "clear_bed_time":
+        return "CLEAR_LOCK_TIMES"
+    if action_name == "set_wake_time":
+        return f"SET_WAKE_TIME:{payload['time']}"
+    if action_name == "clear_usage_limit":
+        return "CLEAR_USAGE_LIMIT"
+    if action_name == "clear_lock_times":
+        return "CLEAR_LOCK_TIMES"
+    if action_name == "clear_all":
+        return "CLEAR_ALL"
+    return None
 
 
 def main() -> None:
-    print("Performing initial scan...")
-    scan_for_servers()
-
-    print("\nWeb Control Panel starting...")
-    print(f"Access from your phone at: http://{get_local_ip()}:5000")
-    print("Or from this PC at: http://localhost:5000")
-
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    host = os.environ.get("KID_PC_MONITOR_HOST", "0.0.0.0")
+    port = int(os.environ.get("KID_PC_MONITOR_PORT", "5000"))
+    app = create_app()
+    print(f"Kid PC Monitor web panel on http://{host}:{port}")
+    app.run(host=host, port=port, debug=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
