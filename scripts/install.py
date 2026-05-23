@@ -95,6 +95,11 @@ def prompt_install_mode(current_user):
     return choice == "2"
 
 
+def _format_time_hhmm(raw: str) -> str:
+    parsed = parse_time_hhmm(raw)
+    return f"{parsed.hour:02d}:{parsed.minute:02d}"
+
+
 def prompt_wake_up_time():
     """Ask for the daily morning unlock time (local HH:MM)."""
     print("\n⏰ Wake-up time")
@@ -103,8 +108,37 @@ def prompt_wake_up_time():
     while True:
         raw = input("\nWake-up time (HH:MM, default 07:00): ").strip() or "07:00"
         try:
-            parsed = parse_time_hhmm(raw)
-            return f"{parsed.hour:02d}:{parsed.minute:02d}"
+            return _format_time_hhmm(raw)
+        except ValueError as exc:
+            print(f"❌ {exc}")
+
+
+def prompt_bed_time():
+    """Ask for the nightly lock time (local HH:MM)."""
+    print("\n🕐 Bedtime")
+    print("   The PC locks at this time and stays locked until wake-up.")
+    while True:
+        raw = input("\nBedtime (HH:MM, default 21:00): ").strip() or "21:00"
+        try:
+            return _format_time_hhmm(raw)
+        except ValueError as exc:
+            print(f"❌ {exc}")
+
+
+def prompt_daily_allowance():
+    """Ask for the daily screen-time cap in minutes (optional)."""
+    print("\n⏱️ Daily allowance")
+    print("   Maximum screen time per day in minutes.")
+    print("   Leave blank for no daily cap (bedtime lock still applies).")
+    while True:
+        raw = input("\nDaily allowance in minutes (blank for no limit): ").strip()
+        if not raw:
+            return None
+        try:
+            minutes = int(raw)
+            if minutes <= 0:
+                raise ValueError("Enter a positive number of minutes.")
+            return minutes
         except ValueError as exc:
             print(f"❌ {exc}")
 
@@ -165,7 +199,13 @@ def resolve_user_localappdata_dir(username: str) -> Path | None:
     return Path(out)
 
 
-def _merge_wake_time_into_defaults_file(defaults_path: Path, wake_time: str) -> None:
+def _merge_agent_defaults_into_file(
+    defaults_path: Path,
+    *,
+    wake_time: str,
+    bed_time: str,
+    daily_limit: int | None,
+) -> None:
     defaults: dict = {}
     if defaults_path.is_file():
         try:
@@ -173,6 +213,8 @@ def _merge_wake_time_into_defaults_file(defaults_path: Path, wake_time: str) -> 
         except (json.JSONDecodeError, OSError):
             defaults = {}
     defaults["wake_time"] = wake_time
+    defaults["bed_time"] = bed_time
+    defaults["daily_limit"] = daily_limit
     defaults_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = defaults_path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(defaults, indent=2), encoding="utf-8")
@@ -189,14 +231,27 @@ def _grant_user_modify_on_dir(username: str, directory: Path) -> None:
     )
 
 
-def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None:
-    """Write wake_time into the child's state file using an elevated PowerShell helper."""
+def write_agent_defaults_via_powershell(
+    username: str,
+    *,
+    wake_time: str,
+    bed_time: str,
+    daily_limit: int | None,
+) -> Path | None:
+    """Write agent defaults into the child's profile via an elevated PowerShell helper."""
     safe_user = username.replace("'", "''")
     safe_wake = wake_time.replace("'", "''")
+    safe_bed = bed_time.replace("'", "''")
+    if daily_limit is None:
+        daily_limit_ps = "$null"
+    else:
+        daily_limit_ps = str(int(daily_limit))
     ps = f"""
     $ErrorActionPreference = 'Stop'
     $name = '{safe_user}'
     $wake = '{safe_wake}'
+    $bed = '{safe_bed}'
+    $dailyLimit = {daily_limit_ps}
     $acct = New-Object System.Security.Principal.NTAccount($name)
     $sid = $acct.Translate([System.Security.Principal.SecurityIdentifier]).Value
     $key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\$sid"
@@ -216,6 +271,8 @@ def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None
         }}
     }}
     $defaults | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
+    $defaults | Add-Member -NotePropertyName bed_time -NotePropertyValue $bed -Force
+    $defaults | Add-Member -NotePropertyName daily_limit -NotePropertyValue $dailyLimit -Force
     $json = $defaults | ConvertTo-Json -Depth 5
     Set-Content -LiteralPath $defaultsPath -Value $json -Encoding UTF8
     Write-Output $defaultsPath
@@ -233,7 +290,7 @@ def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None
     if result.returncode != 0:
         err = (result.stderr or result.stdout or "").strip()
         if err:
-            print(f"\n⚠️  Could not write wake-up time to the child's profile: {err}")
+            print(f"\n⚠️  Could not write agent defaults to the child's profile: {err}")
         return None
 
     out = (result.stdout or "").strip().splitlines()
@@ -242,47 +299,80 @@ def write_wake_time_via_powershell(username: str, wake_time: str) -> Path | None
     return Path(out[-1])
 
 
-def write_program_data_defaults(target_user: str, wake_time: str) -> Path:
+def write_program_data_defaults(
+    target_user: str,
+    *,
+    wake_time: str,
+    bed_time: str,
+    daily_limit: int | None,
+) -> Path:
     """Write machine-wide install defaults (always writable during admin install)."""
     dest = Path(INSTALL_DIR_DEFAULT)
     dest.mkdir(parents=True, exist_ok=True)
     config_path = dest / INSTALL_CONFIG_FILE
-    payload = {"target_user": target_user, "wake_time": wake_time}
+    payload = {
+        "target_user": target_user,
+        "wake_time": wake_time,
+        "bed_time": bed_time,
+        "daily_limit": daily_limit,
+    }
     tmp = config_path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     os.replace(tmp, config_path)
     return config_path
 
 
-def write_wake_time_to_agent_state(username: str, wake_time: str, *, same_user: bool) -> tuple[Path | None, bool]:
+def write_agent_defaults_to_state(
+    username: str,
+    *,
+    wake_time: str,
+    bed_time: str,
+    daily_limit: int | None,
+    same_user: bool,
+) -> tuple[Path | None, bool]:
     """
-    Persist wake_time into the child's default_values.json (merge if present).
+    Persist schedule defaults into the child's default_values.json (merge if present).
 
     Returns (defaults_path, success). Also writes ProgramData default_values.json.
     """
-    config_path = write_program_data_defaults(username, wake_time)
+    config_path = write_program_data_defaults(
+        username,
+        wake_time=wake_time,
+        bed_time=bed_time,
+        daily_limit=daily_limit,
+    )
     print(f"   Install defaults: {config_path}")
 
     state_dir = agent_state_dir_for_user(username, same_user=same_user)
     defaults_path = state_dir / "default_values.json"
 
     try:
-        _merge_wake_time_into_defaults_file(defaults_path, wake_time)
+        _merge_agent_defaults_into_file(
+            defaults_path,
+            wake_time=wake_time,
+            bed_time=bed_time,
+            daily_limit=daily_limit,
+        )
         _grant_user_modify_on_dir(username, state_dir)
         return defaults_path, True
     except OSError as exc:
         print(f"\n⚠️  Direct write to {defaults_path} failed: {exc}")
 
     if not same_user:
-        ps_path = write_wake_time_via_powershell(username, wake_time)
+        ps_path = write_agent_defaults_via_powershell(
+            username,
+            wake_time=wake_time,
+            bed_time=bed_time,
+            daily_limit=daily_limit,
+        )
         if ps_path is not None:
             _grant_user_modify_on_dir(username, ps_path.parent)
             return ps_path, True
 
     print(
-        "\n⚠️  Wake-up time was saved to ProgramData only. The agent will apply it "
+        "\n⚠️  Schedule defaults were saved to ProgramData only. The agent will apply them "
         "on the child's next logon. If the child has never signed in, have them log "
-        "in once and re-run install, or add wake_time manually to their defaults file."
+        "in once and re-run install, or edit default_values.json in their profile."
     )
     return None, False
 
@@ -818,11 +908,21 @@ def run_install_flow():
             return False
 
     wake_time = prompt_wake_up_time()
-    defaults_path, state_ok = write_wake_time_to_agent_state(
-        target_user, wake_time, same_user=not cross_user
+    bed_time = prompt_bed_time()
+    daily_limit = prompt_daily_allowance()
+    defaults_path, state_ok = write_agent_defaults_to_state(
+        target_user,
+        wake_time=wake_time,
+        bed_time=bed_time,
+        daily_limit=daily_limit,
+        same_user=not cross_user,
     )
     if state_ok and defaults_path is not None:
-        print(f"\n✅ Wake-up time saved to {defaults_path}")
+        limit_label = f"{daily_limit} min/day" if daily_limit is not None else "no daily cap"
+        print(
+            f"\n✅ Schedule saved to {defaults_path}"
+            f"\n   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"
+        )
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()
