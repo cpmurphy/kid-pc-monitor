@@ -647,15 +647,15 @@ def prompt_allow_public_firewall():
     """
     Ask whether inbound agent traffic should be allowed on Public (untrusted) networks.
 
-    Default is no: only Private and Domain profiles (safer on coffee-shop Wi‑Fi).
+    Default is no: only Private and Domain profiles (safer on coffee-shop Wi-Fi).
     """
     print("\n🔒 Windows Firewall — remote control port")
     print(f"\n   The agent listens on TCP {AGENT_PORT}. By default, the installer")
     print("   allows inbound connections only on Private and Domain networks")
-    print("   (typical home Wi‑Fi when Windows trusts the network).")
-    print("\n   Public/untrusted networks are blocked so strangers on open Wi‑Fi")
+    print("   (typical home Wi-Fi when Windows trusts the network).")
+    print("\n   Public/untrusted networks are blocked so strangers on open Wi-Fi")
     print("   cannot reach the agent.")
-    print("\n   Problem: A child can disconnect Wi‑Fi and reconnect; Windows may")
+    print("\n   Problem: A child can disconnect Wi-Fi and reconnect; Windows may")
     print("   then treat your home network as Public, and you lose remote control")
     print("   until you fix the network profile or re-run this installer.")
     print("\n   Desktop PCs rarely join random networks; laptops are the main case.")
