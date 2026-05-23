@@ -6,7 +6,7 @@ import socket
 import threading
 import unittest
 
-from src.remote_client import is_pc_reachable, refresh_discovered_entry
+from kid_pc_monitor.remote_client import is_pc_reachable, refresh_discovered_entry
 
 
 class RemoteClientTests(unittest.TestCase):

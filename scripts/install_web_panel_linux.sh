@@ -7,8 +7,7 @@ set -euo pipefail
 UNIT_NAME="kid-pc-monitor-web-panel.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SRC_DIR="$(cd "${REPO_ROOT}/src" && pwd)"
-WEB_PANEL_PY="${SRC_DIR}/web_panel.py"
+SRC_DIR="${REPO_ROOT}/src"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 UNIT_PATH="${UNIT_DIR}/${UNIT_NAME}"
 
@@ -49,10 +48,10 @@ pick_python() {
         return
     fi
     for candidate in \
-        "${REPO_ROOT}/.venv/bin/python3" \
-        "${REPO_ROOT}/.venv/bin/python" \
         "${REPO_ROOT}/venv/bin/python3" \
-        "${REPO_ROOT}/venv/bin/python"; do
+        "${REPO_ROOT}/venv/bin/python" \
+        "${REPO_ROOT}/.venv/bin/python3" \
+        "${REPO_ROOT}/.venv/bin/python"; do
         if [[ -x "$candidate" ]]; then
             echo "$candidate"
             return
@@ -73,7 +72,14 @@ require_systemctl_user() {
 # Print a systemd user unit to stdout (paths must not contain shell metacharacters).
 render_unit() {
     local py="$1"
-    [[ -f "$WEB_PANEL_PY" ]] || die "Missing web panel script: $WEB_PANEL_PY"
+    local exec_start
+    if [[ -x "${REPO_ROOT}/venv/bin/kid-pc-web-panel" ]]; then
+        exec_start="${REPO_ROOT}/venv/bin/kid-pc-web-panel"
+    elif [[ -x "${REPO_ROOT}/.venv/bin/kid-pc-web-panel" ]]; then
+        exec_start="${REPO_ROOT}/.venv/bin/kid-pc-web-panel"
+    else
+        exec_start="${py} -m kid_pc_monitor.web_panel"
+    fi
     cat <<EOF
 [Unit]
 Description=Kid PC Monitor web panel (parent UI on port 5000)
@@ -81,9 +87,10 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=${SRC_DIR}
+WorkingDirectory=${REPO_ROOT}
 Environment=PYTHONUNBUFFERED=1
-ExecStart=${py} ${WEB_PANEL_PY}
+Environment=PYTHONPATH=${SRC_DIR}
+ExecStart=${exec_start}
 Restart=on-failure
 RestartSec=10
 

@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 
-from remote_client import (
+from kid_pc_monitor.remote_client import (
     DEFAULT_PORT,
     inspect_pc,
     parse_scan_subnet,

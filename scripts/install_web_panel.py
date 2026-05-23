@@ -16,7 +16,9 @@ def get_script_path():
     if choice == "1":
         script_path = os.path.abspath("web_panel.py")
     elif choice == "2":
-        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "web_panel.py")
+        script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "run_web_panel.py"
+        )
     else:
         while True:
             custom_path = input("\nEnter full path to web_panel.py: ").strip()

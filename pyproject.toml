@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kid-pc-monitor"
+version = "2.0.0"
+description = "DIY parental control system for parents who code"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "MIT" }
+dependencies = [
+    "flask>=2.0.0",
+    'pywin32>=300; sys_platform == "win32"',
+]
+
+[project.scripts]
+kid-pc-web-panel = "kid_pc_monitor.web_panel:main"
+kid-pc-agent = "kid_pc_monitor.pc_control:main"
+kid-pc-cli = "kid_pc_monitor.pc_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+kid_pc_monitor = ["templates/*.html"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

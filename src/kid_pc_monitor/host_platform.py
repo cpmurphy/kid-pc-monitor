@@ -53,10 +53,8 @@ class HostPlatform(ABC):
 def get_default_platform() -> HostPlatform:
     """Return the platform implementation for the running OS."""
     if sys.platform == "win32":
-        try:
-            from platforms.windows import WindowsHostPlatform
-        except ImportError:
-            from src.platforms.windows import WindowsHostPlatform
+        from kid_pc_monitor.platforms.windows import WindowsHostPlatform
+
         return WindowsHostPlatform()
 
     raise NotImplementedError(

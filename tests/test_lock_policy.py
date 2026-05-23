@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, time as dtime
 
-from src.lock_policy import (
+from kid_pc_monitor.lock_policy import (
     is_in_bedtime_curfew,
     lock_decision,
     minutes_until_lock,

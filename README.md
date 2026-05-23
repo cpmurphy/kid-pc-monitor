@@ -47,7 +47,7 @@ If these terms scare you, consider commercial alternatives like:
 - **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only)
 - **Network:** Kid PCs must accept inbound TCP **9999** from the machine running the web panel (usually the same LAN; cross-subnet works if routed and allowed by firewalls). The web panel listens on TCP **5000** for your browser or phone.
 
-Auto-discovery scans the `/24` subnet containing the parent machine's primary IPv4 address (see `scan_for_servers` in `src/web_panel.py`). If discovery misses a PC, you can still use it once the agent is reachable at its IP.
+Auto-discovery scans the `/24` subnet containing the parent machine's primary IPv4 address (see `scan_for_servers` in `src/kid_pc_monitor/web_panel.py`). If discovery misses a PC, you can still use it once the agent is reachable at its IP.
 
 ### Installation
 
@@ -86,9 +86,14 @@ For the cross-user mode:
 2. **On your PC (Windows or macOS; for Linux, see the Linux parent steps below):**
 ```bash
 git clone https://github.com/rookie7799/kid-pc-monitor.git
-cd kid-pc-monitor/src
-pip install -r ../requirements.txt
-python web_panel.py
+cd kid-pc-monitor
+pip install -r requirements.txt
+pip install -e .
+
+# Run the web panel (any of these work):
+kid-pc-web-panel
+# or: python -m kid_pc_monitor.web_panel
+# or: python scripts/run_web_panel.py
 
 # Open in browser: http://YOUR-PC-IP:5000
 ```
@@ -98,11 +103,11 @@ python web_panel.py
 ```bash
 git clone https://github.com/rookie7799/kid-pc-monitor.git
 cd kid-pc-monitor
-python3 -m venv .venv
-source .venv/bin/activate   # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cd src
-python3 web_panel.py
+python3 -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+./venv/bin/python3 -m pip install -r requirements.txt
+./venv/bin/python3 -m pip install -e .
+./venv/bin/kid-pc-web-panel
 ```
 
 Then open `http://YOUR-LINUX-IP:5000` from your phone or browser. Allow inbound TCP **5000** on the Linux host (example with UFW: `sudo ufw allow 5000/tcp`).
@@ -116,7 +121,7 @@ chmod +x scripts/install_web_panel_linux.sh
 # ./scripts/install_web_panel_linux.sh uninstall   # when you want it gone
 ```
 
-Use `./scripts/install_web_panel_linux.sh cat-unit` to preview the unit. Override the interpreter with `PYTHON=/path/to/python3 ./scripts/install_web_panel_linux.sh install` if you do not use a repo-root `.venv`. For the service to start at boot **before anyone logs in graphically**, run once: `sudo loginctl enable-linger "$USER"`.
+Use `./scripts/install_web_panel_linux.sh cat-unit` to preview the unit. Override the interpreter with `PYTHON=./venv/bin/python3 ./scripts/install_web_panel_linux.sh install` if needed. For the service to start at boot **before anyone logs in graphically**, run once: `sudo loginctl enable-linger "$USER"`.
 
 #### Option B: Single PC Setup
 
@@ -147,18 +152,19 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 ## 🖥️ Command-line client
 
-From the repo, run the CLI on your parent machine (Linux, macOS, or Windows):
+From the repo root, run the CLI on your parent machine (Linux, macOS, or Windows):
 
 ```bash
-cd kid-pc-monitor/src
-python3 pc_cli.py scan
-python3 pc_cli.py inspect 192.168.1.105
-python3 pc_cli.py set-limit 192.168.1.105 60
-python3 pc_cli.py add-lock-time 192.168.1.105 21:00
-python3 pc_cli.py lock 192.168.1.105
+cd kid-pc-monitor
+pip install -e .   # once, if you have not already
+kid-pc-cli scan
+kid-pc-cli inspect 192.168.1.105
+kid-pc-cli set-limit 192.168.1.105 60
+kid-pc-cli add-lock-time 192.168.1.105 21:00
+kid-pc-cli lock 192.168.1.105
 ```
 
-Use `python3 pc_cli.py --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `pc_cli.py scan --subnet 192.168.1.0/24`.
+Use `kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `kid-pc-cli scan --subnet 192.168.1.0/24`.
 
 ## 📖 Usage Guide
 
@@ -198,7 +204,7 @@ While remote unlock isn't possible for security, you can:
 ## ⚙️ Configuration
 
 ### Custom PC Names
-Edit `CUSTOM_PC_NAMES` in `src/remote_client.py` (used by the web panel and `pc_cli.py`):
+Edit `CUSTOM_PC_NAMES` in `src/kid_pc_monitor/remote_client.py` (used by the web panel and `kid-pc-cli`):
 ```python
 CUSTOM_PC_NAMES = {
     '192.168.1.105': 'Tommy\'s Laptop',
@@ -207,7 +213,7 @@ CUSTOM_PC_NAMES = {
 ```
 
 ### User-Specific Monitoring
-Monitor only specific Windows user accounts. Edit `src/pc_control.py`:
+Monitor only specific Windows user accounts. Edit `src/kid_pc_monitor/pc_control.py`:
 
 ```python
 # Option 1: Monitor ONLY these specific users
@@ -251,7 +257,7 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Check firewall allows port 5000 (web panel host) and port 9999 (each kid PC running the agent)
 - On Linux parents, ensure the host firewall allows inbound **5000/tcp** (e.g. `ufw allow 5000/tcp`)
 - Use the web panel machine's IP address, not localhost
-- Ensure `web_panel.py` is running
+- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`)
 
 ### "Lock status not updating"
 - Restart pc_control.py

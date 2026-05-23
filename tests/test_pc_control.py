@@ -8,8 +8,8 @@ import unittest
 from datetime import datetime, timedelta, time as dtime
 from pathlib import Path
 
-from src.host_platform import HostPlatform
-from src.pc_control import PCTimeControl
+from kid_pc_monitor.host_platform import HostPlatform
+from kid_pc_monitor.pc_control import PCTimeControl
 
 
 class FakeHostPlatform(HostPlatform):

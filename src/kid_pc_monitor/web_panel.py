@@ -6,21 +6,44 @@ import socket
 import threading
 import ipaddress
 import time
-from pathlib import Path
-
 from datetime import datetime
 from pathlib import Path
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-_APP_DIR = Path(__file__).resolve().parent
-_TEMPLATE_DIR = _APP_DIR / "templates"
+from kid_pc_monitor.paths import config_dir, template_dir
+from kid_pc_monitor.remote_client import (
+    get_default_scan_network,
+    get_local_ip,
+    get_lock_times,
+    get_wake_time,
+    get_manual_lock,
+    get_time_remaining,
+    get_usage_limit,
+    parse_scan_subnet,
+    refresh_discovered_entry,
+    scan_for_servers as discover_servers,
+    send_command,
+)
+
+_TEMPLATE_DIR = template_dir()
+_AUTH_DIR = config_dir()
 
 app = Flask(__name__, template_folder=str(_TEMPLATE_DIR))
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
-AUTH_FILE = _APP_DIR / "web_panel_auth.json"
+AUTH_FILE = _AUTH_DIR / "web_panel_auth.json"
+_LEGACY_AUTH_FILE = Path(__file__).resolve().parent.parent / "web_panel_auth.json"
+
+
+def _migrate_legacy_auth_file() -> None:
+    if _LEGACY_AUTH_FILE.is_file() and not AUTH_FILE.is_file():
+        AUTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+        AUTH_FILE.write_bytes(_LEGACY_AUTH_FILE.read_bytes())
+
+
+_migrate_legacy_auth_file()
 SESSION_AUTH_KEY = "panel_auth"
 PANEL_LOGIN_USERNAME = "Kids PC Control Panel"
 
@@ -69,20 +92,6 @@ def safe_next_path(next_param):
     if not n.startswith("/") or n.startswith("//"):
         return url_for("index")
     return n
-
-from remote_client import (
-    get_default_scan_network,
-    get_local_ip,
-    get_lock_times,
-    get_wake_time,
-    get_manual_lock,
-    get_time_remaining,
-    get_usage_limit,
-    parse_scan_subnet,
-    refresh_discovered_entry,
-    scan_for_servers as discover_servers,
-    send_command,
-)
 
 # Store discovered PCs
 discovered_pcs = {}
@@ -288,7 +297,8 @@ def action():
 
     return jsonify({'success': success, 'response': response})
 
-if __name__ == '__main__':
+
+def main() -> None:
     print("Performing initial scan...")
     scan_for_servers()
 
@@ -297,3 +307,7 @@ if __name__ == '__main__':
     print("Or from this PC at: http://localhost:5000")
 
     app.run(host='0.0.0.0', port=5000, debug=False)
+
+
+if __name__ == '__main__':
+    main()

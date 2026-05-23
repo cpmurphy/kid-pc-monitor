@@ -15,10 +15,7 @@ from tkinter import messagebox
 
 import getpass
 
-try:
-    from host_platform import HostPlatform
-except ImportError:
-    from src.host_platform import HostPlatform
+from kid_pc_monitor.host_platform import HostPlatform
 
 # Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
 _FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"

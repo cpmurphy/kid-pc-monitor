@@ -6,11 +6,12 @@ import glob
 import shutil
 from pathlib import Path
 
-try:
-    from src.lock_policy import parse_time_hhmm
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from src.lock_policy import parse_time_hhmm
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_SRC = _REPO_ROOT / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+from kid_pc_monitor.lock_policy import parse_time_hhmm
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
@@ -33,7 +34,9 @@ def get_script_path():
     if choice == "1":
         script_path = os.path.abspath("pc_control.py")
     elif choice == "2":
-        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pc_control.py")
+        script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "run_agent.py"
+        )
     else:
         while True:
             custom_path = input("\nEnter full path to pc_control.py: ").strip()
@@ -56,13 +59,31 @@ def get_script_path():
     return script_path
 
 
-def find_repo_pc_control():
-    """Locate pc_control.py shipping alongside this installer (../src/pc_control.py)."""
+def find_repo_package_dir():
+    """Locate the kid_pc_monitor package shipped with this repo."""
     here = Path(os.path.dirname(os.path.abspath(__file__)))
-    for candidate in [here / "pc_control.py", here.parent / "src" / "pc_control.py"]:
-        if candidate.exists():
-            return str(candidate)
+    candidate = here.parent / "src" / "kid_pc_monitor"
+    if candidate.is_dir():
+        return candidate
     return None
+
+
+AGENT_LAUNCHER = '''\
+"""Kid PC Monitor agent launcher (installed copy).
+
+The kid_pc_monitor package is installed alongside this file so the scheduled
+task can run the agent without a separate pip install step.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from kid_pc_monitor.pc_control import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+'''
 
 
 def prompt_install_mode(current_user):
@@ -339,29 +360,22 @@ def find_system_python():
     return None
 
 
-def install_to_programdata(target_user, source_script):
-    """Copy agent into C:\\ProgramData\\KidPCMonitor and grant the child read+execute."""
+def install_to_programdata(target_user, package_dir):
+    """Copy the agent package into C:\\ProgramData\\KidPCMonitor and grant the child read+execute."""
     dest = Path(INSTALL_DIR_DEFAULT)
     dest.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(source_script, dest / "pc_control.py")
-    source_dir = Path(source_script).resolve().parent
-    for helper in ["lock_policy.py", "host_platform.py"]:
-        helper_path = source_dir / helper
-        if helper_path.exists():
-            shutil.copy2(helper_path, dest / helper)
-        else:
-            print(f"\n⚠️  Optional helper not found next to pc_control.py: {helper}")
+    package_src = Path(package_dir)
+    package_dest = dest / "kid_pc_monitor"
+    if package_dest.exists():
+        shutil.rmtree(package_dest)
+    shutil.copytree(package_src, package_dest)
 
-    platforms_src = source_dir / "platforms"
-    if platforms_src.is_dir():
-        platforms_dest = dest / "platforms"
-        platforms_dest.mkdir(parents=True, exist_ok=True)
-        for platform_file in platforms_src.glob("*.py"):
-            shutil.copy2(platform_file, platforms_dest / platform_file.name)
+    launcher_path = dest / "pc_control.py"
+    launcher_path.write_text(AGENT_LAUNCHER, encoding="utf-8")
 
     # Optional: copy requirements.txt for reference
-    repo_root = source_dir.parent
+    repo_root = package_src.parent.parent
     req = repo_root / "requirements.txt"
     if req.exists():
         try:
@@ -379,7 +393,7 @@ def install_to_programdata(target_user, source_script):
         print(acl_result.stdout)
         print(acl_result.stderr)
 
-    return str(dest / "pc_control.py")
+    return str(launcher_path)
 
 
 def create_task_with_power_settings(target_user, script_path, python_path, cross_user):
@@ -786,14 +800,14 @@ def run_install_flow():
             return False
         print(f"\n🐍 Using system Python: {python_path}")
 
-        source_script = find_repo_pc_control()
-        if not source_script:
-            print("\n❌ Could not locate pc_control.py next to this installer.")
-            print("   Expected at ../src/pc_control.py relative to scripts/install.py.")
+        source_package = find_repo_package_dir()
+        if not source_package:
+            print("\n❌ Could not locate the kid_pc_monitor package next to this installer.")
+            print("   Expected at ../src/kid_pc_monitor relative to scripts/install.py.")
             return False
 
         print(f"\n📦 Installing agent to {INSTALL_DIR_DEFAULT} ...")
-        script_path = install_to_programdata(target_user, source_script)
+        script_path = install_to_programdata(target_user, source_package)
         print(f"   Granted {target_user} read+execute on the install directory.")
 
     else:

@@ -11,24 +11,14 @@ import json
 import logging
 from pathlib import Path
 
-try:
-    from host_platform import HostPlatform, get_default_platform
-    from lock_policy import (
-        DEFAULT_WAKE_TIME,
-        lock_decision,
-        minutes_until_lock,
-        should_monitor_user,
-        usage_period_date,
-    )
-except ImportError:
-    from src.host_platform import HostPlatform, get_default_platform
-    from src.lock_policy import (
-        DEFAULT_WAKE_TIME,
-        lock_decision,
-        minutes_until_lock,
-        should_monitor_user,
-        usage_period_date,
-    )
+from kid_pc_monitor.host_platform import HostPlatform, get_default_platform
+from kid_pc_monitor.lock_policy import (
+    DEFAULT_WAKE_TIME,
+    lock_decision,
+    minutes_until_lock,
+    should_monitor_user,
+    usage_period_date,
+)
 
 # ============================================
 # CONFIGURATION
@@ -860,7 +850,7 @@ class RemoteControlServer:
         self.stop_server()
 
 # Main
-if __name__ == "__main__":
+def main() -> int:
     script_path = os.path.abspath(__file__)
 
     def check_port_availability(port):
@@ -884,11 +874,11 @@ if __name__ == "__main__":
             "already running. Exiting duplicate startup.",
             AGENT_PORT,
         )
-        sys.exit(1)
+        return 1
 
     # Create control instance
     control = PCTimeControl(platform=platform)
-    
+
     # Enforce usage limits, bedtimes, and warnings (separate from the TCP server)
     enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
     enforcement_thread.start()
@@ -898,7 +888,7 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=remote.start_server, args=(control,))
     server_thread.daemon = True
     server_thread.start()
-    
+
     if not remote.listener_ready.wait(timeout=10):
         logger.error(
             "TCP listener did not start on port %s within 10s — check %s",
@@ -910,7 +900,7 @@ if __name__ == "__main__":
             "Check firewall settings and try again.",
             "Server Error"
         )
-        sys.exit(1)
+        return 1
 
     logger.info(
         "Agent running (enforcement + TCP %s on 0.0.0.0). "
@@ -918,7 +908,7 @@ if __name__ == "__main__":
         remote.port,
     )
     print("Server is running. Press Ctrl+C to stop.")
-    
+
     try:
         # Keep main thread alive while server runs
         while remote.running:
@@ -930,5 +920,9 @@ if __name__ == "__main__":
         print("Server stopped.")
     except Exception as e:
         print(f"Error: {e}")
-    finally:
-        sys.exit(0)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
