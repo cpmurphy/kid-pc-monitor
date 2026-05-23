@@ -331,7 +331,7 @@
             const action = type === 'manual' ? 'clear_manual_lock' : 'clear_extensions';
             const confirmMsg = type === 'manual'
                 ? 'Clear the manual lock?'
-                : 'Clear today\'s granted extensions?';
+                : 'Reset granted extensions to zero?';
             if (!confirm(confirmMsg)) {
                 return;
             }
