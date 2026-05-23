@@ -285,6 +285,7 @@ class PCTimeControl:
     def extend_time(self, minutes: int) -> None:
         """Add temporary extra allowance for the current usage period."""
         self.runtime.cumulative_extension_seconds += minutes * 60
+        self.runtime.manual_lock_active = False
 
     def clear_extensions(self) -> None:
         self.runtime.cumulative_extension_seconds = 0

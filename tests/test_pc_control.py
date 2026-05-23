@@ -126,6 +126,21 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertAlmostEqual(control.runtime.accumulated_seconds, 100.0)
             self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
 
+    def test_extend_time_clears_manual_lock(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.runtime.manual_lock_active = True
+            control.extend_time(15)
+            self.assertFalse(control.runtime.manual_lock_active)
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 900)
+            locked, _ = control.currently_in_lock_window()
+            self.assertFalse(locked)
+
     def test_currently_in_lock_window_manual_lock(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:
