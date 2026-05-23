@@ -45,7 +45,8 @@ def _platform_resolvers() -> list[Callable[[], str | None]]:
     if system == "Linux":
         return [_linux_primary_ipv4]
     if system == "Windows":
-        return [_windows_primary_ipv4, _hostname_ipv4]
+        # Prefer routing-table lookup: no subprocess, no visible console flash.
+        return [_ipv4_from_routing_socket, _hostname_ipv4]
     if system == "Darwin":
         return [_darwin_primary_ipv4, _hostname_ipv4]
     return [_hostname_ipv4]

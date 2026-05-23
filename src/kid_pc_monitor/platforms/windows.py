@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
+from ctypes import wintypes
 from tkinter import messagebox
 
 import getpass
@@ -19,6 +20,30 @@ from kid_pc_monitor.network import get_primary_ipv4
 
 # Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
 _FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
+_INVALID_HANDLE_VALUE = ctypes.c_size_t(-1).value
+_TH32CS_SNAPPROCESS = 0x00000002
+_MAX_PATH = 260
+
+
+class _PROCESSENTRY32W(ctypes.Structure):
+    _fields_ = [
+        ("dwSize", wintypes.DWORD),
+        ("cntUsage", wintypes.DWORD),
+        ("th32ProcessID", wintypes.DWORD),
+        ("th32DefaultHeapID", ctypes.POINTER(ctypes.c_ulong)),
+        ("th32ModuleID", wintypes.DWORD),
+        ("cntThreads", wintypes.DWORD),
+        ("th32ParentProcessID", wintypes.DWORD),
+        ("pcPriClassBase", wintypes.LONG),
+        ("dwFlags", wintypes.DWORD),
+        ("szExeFile", wintypes.WCHAR * _MAX_PATH),
+    ]
+
+
+def _subprocess_creationflags() -> int:
+    if sys.platform == "win32":
+        return 0x08000000  # CREATE_NO_WINDOW
+    return 0
 
 
 def _run_powershell_json(script: str) -> dict | list | None:
@@ -36,6 +61,7 @@ def _run_powershell_json(script: str) -> dict | list | None:
             text=True,
             stderr=subprocess.DEVNULL,
             timeout=15,
+            creationflags=_subprocess_creationflags(),
         ).strip()
         if not out:
             return None
@@ -43,6 +69,45 @@ def _run_powershell_json(script: str) -> dict | list | None:
     except (subprocess.SubprocessError, json.JSONDecodeError, ValueError) as exc:
         logging.getLogger("kid_pc_monitor").debug("PowerShell diagnostic failed: %s", exc)
         return None
+
+
+def _current_session_id() -> int | None:
+    kernel32 = ctypes.windll.kernel32
+    sid = wintypes.DWORD()
+    if not kernel32.ProcessIdToSessionId(
+        kernel32.GetCurrentProcessId(), ctypes.byref(sid)
+    ):
+        return None
+    return sid.value
+
+
+def _process_exists_in_session(image_name: str, session_id: int | None) -> bool:
+    """Return True when image_name is running in session_id (or any session if None)."""
+    kernel32 = ctypes.windll.kernel32
+    snapshot = kernel32.CreateToolhelp32Snapshot(_TH32CS_SNAPPROCESS, 0)
+    if snapshot in (0, _INVALID_HANDLE_VALUE):
+        return False
+
+    target = image_name.lower()
+    entry = _PROCESSENTRY32W()
+    entry.dwSize = ctypes.sizeof(_PROCESSENTRY32W)
+    try:
+        if not kernel32.Process32FirstW(snapshot, ctypes.byref(entry)):
+            return False
+        while True:
+            if entry.szExeFile.lower() == target:
+                if session_id is None:
+                    return True
+                pid_sid = wintypes.DWORD()
+                if kernel32.ProcessIdToSessionId(
+                    entry.th32ProcessID, ctypes.byref(pid_sid)
+                ) and pid_sid.value == session_id:
+                    return True
+            if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
+                break
+    finally:
+        kernel32.CloseHandle(snapshot)
+    return False
 
 
 class WindowsHostPlatform(HostPlatform):
@@ -53,21 +118,11 @@ class WindowsHostPlatform(HostPlatform):
         True if LogonUI.exe is running in this session.
 
         Filtering by session avoids false LOCKED when another user's session
-        is locked under fast user switching.
+        is locked under fast user switching. Uses Toolhelp APIs so the agent
+        does not spawn a visible console every monitoring tick.
         """
         try:
-            kernel32 = ctypes.windll.kernel32
-            sid = ctypes.c_ulong()
-            ok = kernel32.ProcessIdToSessionId(
-                kernel32.GetCurrentProcessId(), ctypes.byref(sid)
-            )
-            session_filter = f'/FI "SESSION eq {sid.value}" ' if ok else ""
-            out = subprocess.check_output(
-                f'tasklist /FI "IMAGENAME eq LogonUI.exe" {session_filter}/NH',
-                shell=True,
-                text=True,
-            )
-            return "LogonUI.exe" in out
+            return _process_exists_in_session("LogonUI.exe", _current_session_id())
         except Exception as exc:
             logging.getLogger("PCTimeControl").error(
                 "Error checking lock state (LogonUI): %s", exc, exc_info=True
