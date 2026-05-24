@@ -299,7 +299,6 @@ class PCTimeControl:
         try:
             self.is_locked = True
             self.platform.lock_workstation()
-            self.logger.info("PC locked successfully")
         except Exception as e:
             self.logger.error(f"Error locking PC: {e}")
             print(f"[{datetime.now():%H:%M:%S}] Error locking PC: {e}")
@@ -515,7 +514,7 @@ class RemoteControlServer:
                         client_id = self.client_id_counter
                         self.client_id_counter += 1
 
-                        self.logger.info(
+                        self.logger.debug(
                             "Client connected from %s (id=%s)",
                             client_address[0],
                             client_id,
@@ -607,10 +606,12 @@ class RemoteControlServer:
             if command == "LOCK":
                 self.pc_control.runtime.manual_lock_active = True
                 self.pc_control.save_state()
+                self.logger.info("Manual lock triggered")
                 self.pc_control.lock_pc()
                 return "Manual lock enabled; PC locked"
                 
             elif command == "SHUTDOWN":
+                self.logger.info("Shutdown triggered")
                 self.pc_control.shutdown_pc()
                 return "PC Shutting down"
                 
@@ -672,6 +673,7 @@ class RemoteControlServer:
                 
             elif command.startswith("MESSAGE:"):
                 msg = command.split(":", 1)[1]
+                self.logger.info("Message received")
                 self.pc_control.show_message(msg)
                 return "Message sent"
                 
@@ -684,6 +686,7 @@ class RemoteControlServer:
                     self.pc_control.runtime.cumulative_extension_seconds = 0
                     self.pc_control.last_tick_at = None
                     self.pc_control.warnings_sent.clear()
+                    self.logger.info(f"Setting legacy limit: {minutes} mins")
                     self.pc_control.save_state()
                     return f"Daily limit set to {minutes} minutes"
                 except ValueError:
@@ -692,6 +695,7 @@ class RemoteControlServer:
             elif command.startswith("SET_DAILY_LIMIT:"):
                 try:
                     minutes = int(command.split(":", 1)[1])
+                    self.logger.info(f"Setting daily limit: {minutes} mins")
                     self.pc_control.set_daily_limit(minutes)
                     self.pc_control.save_state()
                     return f"Daily limit set to {minutes} minutes"
@@ -702,9 +706,10 @@ class RemoteControlServer:
                 try:
                     time_str = command.split(":", 1)[1]
                     hour, minute = map(int, time_str.split(":"))
+                    self.logger.info(f"Setting legacy lock time to {hour:02d}:{minute:02d}")
                     self.pc_control.set_bed_time(hour, minute)
                     self.pc_control.save_state()
-                    return f"Bedtime set to {hour:02d}:{minute:02d}"
+                    return f"Legacy lock time set to {hour:02d}:{minute:02d}"
                 except ValueError:
                     return "Invalid time format (use HH:MM)"
 
@@ -713,6 +718,7 @@ class RemoteControlServer:
                     time_str = command.split(":", 1)[1]
                     hour, minute = map(int, time_str.split(":"))
                     self.pc_control.set_bed_time(hour, minute)
+                    self.logger.info(f"Setting bedtime to {hour:02d}:{minute:02d}")
                     self.pc_control.save_state()
                     return f"Bedtime set to {hour:02d}:{minute:02d}"
                 except ValueError:
@@ -724,6 +730,7 @@ class RemoteControlServer:
                     hour, minute = map(int, time_str.split(":"))
                     if not (0 <= hour <= 23 and 0 <= minute <= 59):
                         return "Invalid time (hour/minute out of range)"
+                    self.logger.info(f"Setting wake up time to {hour:02d}:{minute:02d}")
                     self.pc_control.set_wake_time(hour, minute)
                     self.pc_control.save_state()
                     return f"Wake-up time set to {hour:02d}:{minute:02d}"
@@ -733,6 +740,7 @@ class RemoteControlServer:
             elif command.startswith("EXTEND_TIME:"):
                 try:
                     minutes = int(command.split(":", 1)[1])
+                    self.logger.info(f"Extending time by {minutes} mins")
                     self.pc_control.extend_time(minutes)
                     self.pc_control.save_state()
                     return f"Extended time by {minutes} minutes"
@@ -740,12 +748,14 @@ class RemoteControlServer:
                     return "Invalid time value"
 
             elif command == "CLEAR_USAGE_LIMIT":
+                self.logger.info(f"Clearing usage limit")
                 self.pc_control.set_daily_limit(None)
                 self.pc_control.save_state()
                 self.logger.info("Daily limit cleared")
                 return "Daily limit cleared"
 
             elif command == "CLEAR_LOCK_TIMES":
+                self.logger.info(f"Clearing bedtime")
                 self.pc_control.clear_bed_time()
                 self.pc_control.warnings_sent.clear()
                 self.pc_control.save_state()
@@ -753,18 +763,21 @@ class RemoteControlServer:
                 return "Bedtime cleared"
 
             elif command == "CLEAR_EXTENSIONS":
+                self.logger.info(f"Clearing extensions")
                 self.pc_control.clear_extensions()
                 self.pc_control.save_state()
                 self.logger.info("Extensions cleared")
                 return "Extensions cleared"
 
             elif command == "CLEAR_MANUAL_LOCK":
+                self.logger.info(f"Clearing manual lock")
                 self.pc_control.runtime.manual_lock_active = False
                 self.pc_control.save_state()
                 self.logger.info("Manual lock cleared")
                 return "Manual lock cleared"
 
             elif command == "CLEAR_ALL":
+                self.logger.info(f"Clearing all locks")
                 self.pc_control.set_daily_limit(None)
                 self.pc_control.clear_bed_time()
                 self.pc_control.runtime.manual_lock_active = False
