@@ -4,21 +4,26 @@ import sys
 from pathlib import Path
 
 def get_script_path():
-    """Get the path to web_panel.py from user"""
-    print("Where is web_panel.py located?")
-    print("\nOptions:")
-    print("1. Current directory")
-    print("2. Same directory as this installer")
-    print("3. Enter custom path")
+    """Get the path to web_panel.py, trying the standard repo layout first."""
+    installer_dir = Path(__file__).resolve().parent
+    repo_root = installer_dir.parent
+    default_path = repo_root / "src" / "kid_pc_monitor" / "web_panel.py"
 
-    choice = input("\nChoice (1-3): ").strip()
+    if default_path.is_file():
+        script_path = str(default_path)
+        print(f"Found web_panel.py at: {script_path}")
+        return script_path
+
+    print("Could not find web_panel.py in the expected repo location.")
+    print(f"  (looked for {default_path})\n")
+    print("Options:")
+    print("1. Current directory")
+    print("2. Enter custom path")
+
+    choice = input("\nChoice (1-2): ").strip()
 
     if choice == "1":
         script_path = os.path.abspath("web_panel.py")
-    elif choice == "2":
-        script_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "run_web_panel.py"
-        )
     else:
         while True:
             custom_path = input("\nEnter full path to web_panel.py: ").strip()
@@ -31,7 +36,6 @@ def get_script_path():
             else:
                 print("File not found or not a .py file. Please try again.")
 
-    # Verify the file exists
     if not os.path.exists(script_path):
         print(f"\nError: Could not find {script_path}")
         print("Please make sure web_panel.py exists in the specified location.")
