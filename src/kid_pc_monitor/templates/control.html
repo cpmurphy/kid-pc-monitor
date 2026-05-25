@@ -161,7 +161,6 @@
                 <span class="readonly-value">
                 {% if pc_info.get('cumulative_extension_seconds', 0) > 0 %}
                     +{{ format_seconds_duration(pc_info.cumulative_extension_seconds) }}
-                    <button class="clear-inline" onclick="clearToday('extensions')">Clear</button>
                 {% else %}
                     <span class="muted">None</span>
                 {% endif %}
@@ -199,7 +198,7 @@
             <p class="stat-row">🔒 <strong>Manual lock:</strong>
                 {% if pc_info.get('manual_lock_active') %}
                     Active
-                    <button class="clear-inline" onclick="clearToday('manual')">Clear</button>
+                    <button class="clear-inline" onclick="clearManualLock()">Clear</button>
                 {% else %}
                     <span class="muted">Not active</span>
                 {% endif %}
@@ -327,11 +326,9 @@
             });
         }
 
-        function clearToday(type) {
-            const action = type === 'manual' ? 'clear_manual_lock' : 'clear_extensions';
-            const confirmMsg = type === 'manual'
-                ? 'Clear the manual lock?'
-                : 'Reset granted extensions to zero?';
+        function clearManualLock() {
+            const action = 'clear_manual_lock';
+            const confirmMsg = 'Clear the manual lock?';
             if (!confirm(confirmMsg)) {
                 return;
             }
