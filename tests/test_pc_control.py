@@ -88,8 +88,8 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=data_dir,
                 start_background_threads=False,
             )
-            self.assertEqual(reloaded.defaults.bed_time, dtime(21, 0))
-            self.assertEqual(reloaded.defaults.daily_limit, 90)
+            self.assertEqual(reloaded.daily.bed_time, dtime(21, 0))
+            self.assertEqual(reloaded.daily.limit, 90)
             self.assertTrue(reloaded.runtime.manual_lock_active)
             self.assertAlmostEqual(reloaded.runtime.accumulated_seconds, 120.0)
             self.assertEqual(reloaded.runtime.cumulative_extension_seconds, 900)
@@ -122,7 +122,7 @@ class PCTimeControlTests(unittest.TestCase):
             control.set_daily_limit(60)
             control.runtime.accumulated_seconds = 100.0
             control.extend_time(30)
-            self.assertEqual(control.defaults.daily_limit, 60)
+            self.assertEqual(control.daily.limit, 60)
             self.assertAlmostEqual(control.runtime.accumulated_seconds, 100.0)
             self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
 
@@ -166,13 +166,13 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertEqual(platform.lock_calls, 1)
             self.assertTrue(platform.locked)
 
-    def test_bootstraps_wake_time_from_program_data_defaults(self) -> None:
+    def test_bootstraps_wake_time_from_program_data_daily(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
             program_data = data_dir / "ProgramData" / "KidPCMonitor"
             program_data.mkdir(parents=True)
-            (program_data / "default_values.json").write_text(
+            (program_data / "daily_settings.json").write_text(
                 '{"target_user": "kid", "wake_time": "08:30"}',
                 encoding="utf-8",
             )
@@ -182,8 +182,8 @@ class PCTimeControlTests(unittest.TestCase):
                 from kid_pc_monitor import agent_state as agent_state_mod
                 from unittest.mock import patch
 
-                original = agent_state_mod.program_data_defaults_path
-                agent_state_mod.program_data_defaults_path = lambda: program_data / "default_values.json"
+                original = agent_state_mod.program_data_daily_path
+                agent_state_mod.program_data_daily_path = lambda: program_data / "daily_settings.json"
                 try:
                     with patch("getpass.getuser", return_value="kid"):
                         control = PCTimeControl(
@@ -192,12 +192,12 @@ class PCTimeControlTests(unittest.TestCase):
                             start_background_threads=False,
                         )
                 finally:
-                    agent_state_mod.program_data_defaults_path = original
+                    agent_state_mod.program_data_daily_path = original
             finally:
                 sys.platform = old_win
 
-            self.assertEqual(control.defaults.wake_time, dtime(8, 30))
-            self.assertTrue((data_dir / "profile" / "default_values.json").is_file())
+            self.assertEqual(control.daily.wake_time, dtime(8, 30))
+            self.assertTrue((data_dir / "profile" / "daily_settings.json").is_file())
 
     def test_check_if_locked_delegates_to_platform(self) -> None:
         platform = FakeHostPlatform(locked=True)

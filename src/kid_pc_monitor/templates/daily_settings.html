@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defaults — {{ pc_info.hostname }}</title>
+    <title>Daily settings — {{ pc_info.hostname }}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
         .container { max-width: 500px; margin: 0 auto; }
@@ -27,7 +27,7 @@
     <div class="container">
         <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
 
-        <h1>⚙️ Defaults</h1>
+        <h1>⚙️ Daily settings</h1>
         <p style="text-align: center; color: #666;">{{ pc_info.hostname }} · {{ ip }}</p>
         <p class="hint" style="text-align: center;">
             These settings apply every day. Changes take effect immediately on the kid's PC.

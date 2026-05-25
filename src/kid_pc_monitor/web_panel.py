@@ -242,15 +242,15 @@ def create_app() -> Flask:
                 }
         return render_template("control.html", ip=ip, pc_info=pc_info)
 
-    @app.route("/defaults/<ip>")
+    @app.route("/daily_settings/<ip>")
     @login_required
-    def defaults(ip: str):
+    def daily_settings(ip: str):
         try:
             pc_info = inspect_pc(ip)
         except ConnectionError:
             flash("Could not reach that PC.", "error")
             return redirect(url_for("index"))
-        return render_template("defaults.html", ip=ip, pc_info=pc_info)
+        return render_template("daily_settings.html", ip=ip, pc_info=pc_info)
 
     @app.route("/action", methods=["POST"])
     @login_required

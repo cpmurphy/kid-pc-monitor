@@ -12,7 +12,7 @@ from pathlib import Path
 
 from kid_pc_monitor.agent_state import (
     AgentStateStore,
-    DefaultValues,
+    DailySettings,
     RuntimeState,
     effective_daily_limit_minutes,
     reset_runtime_for_new_period,
@@ -113,10 +113,10 @@ class PCTimeControl:
         )
         self.exempt_users = EXEMPT_USERS if exempt_users is None else exempt_users
 
-        self.defaults = DefaultValues(
+        self.daily = DailySettings(
             bed_time=None,
             wake_time=DEFAULT_WAKE_UP_TIME,
-            daily_limit=None,
+            limit=None,
         )
         self.runtime = RuntimeState(
             timestamp=datetime.now(),
@@ -151,7 +151,7 @@ class PCTimeControl:
 
         # Load previous state if exists
         self.load_state()
-        self.warnings_date = usage_period_date(datetime.now(), self.defaults.wake_time)
+        self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
 
         if start_background_threads:
             self.monitor_thread = threading.Thread(
@@ -168,23 +168,23 @@ class PCTimeControl:
         )
 
     def load_state(self):
-        """Load saved defaults and runtime state from JSON files."""
+        """Load saved daily settings and runtime state from JSON files."""
         try:
-            self.defaults, self.runtime = self.state_store.load()
+            self.daily, self.runtime = self.state_store.load()
             bed_label = (
-                f"{self.defaults.bed_time.hour:02d}:{self.defaults.bed_time.minute:02d}"
-                if self.defaults.bed_time is not None
+                f"{self.daily.bed_time.hour:02d}:{self.daily.bed_time.minute:02d}"
+                if self.daily.bed_time is not None
                 else "none"
             )
-            effective = effective_daily_limit_minutes(self.defaults, self.runtime)
+            effective = effective_daily_limit_minutes(self.daily, self.runtime)
             self.logger.info(
                 "State applied: bed_time=%s wake_time=%02d:%02d daily_limit=%s "
                 "effective_limit=%s manual_lock=%s accumulated_min=%.1f "
                 "extension_sec=%s",
                 bed_label,
-                self.defaults.wake_time.hour,
-                self.defaults.wake_time.minute,
-                self.defaults.daily_limit,
+                self.daily.wake_time.hour,
+                self.daily.wake_time.minute,
+                self.daily.limit,
                 effective,
                 self.runtime.manual_lock_active,
                 self.runtime.accumulated_seconds / 60,
@@ -199,15 +199,15 @@ class PCTimeControl:
             print(f"[{datetime.now():%H:%M:%S}] Could not load previous state: {e}")
 
     def save_state(self):
-        """Save defaults and runtime state to JSON files."""
+        """Save daily settings and runtime state to JSON files."""
         try:
-            self.state_store.save(self.defaults, self.runtime)
+            self.state_store.save(self.daily, self.runtime)
             self.logger.debug("State saved")
         except Exception as e:
             self.logger.error("Error saving state: %s", e, exc_info=True)
 
     def _effective_usage_limit_minutes(self) -> float | None:
-        return effective_daily_limit_minutes(self.defaults, self.runtime)
+        return effective_daily_limit_minutes(self.daily, self.runtime)
 
     def check_if_locked(self) -> bool:
         """True when this session's workstation is locked (OS-specific)."""
@@ -224,7 +224,7 @@ class PCTimeControl:
         run_monitor.
         """
         now = datetime.now()
-        wake_time = self.defaults.wake_time
+        wake_time = self.daily.wake_time
 
         if not runtime_state_is_current(self.runtime, wake_time, now):
             self.logger.info(
@@ -268,19 +268,19 @@ class PCTimeControl:
 
     def set_bed_time(self, hour: int, minute: int) -> None:
         """Set the nightly bedtime curfew start."""
-        self.defaults.bed_time = dtime(hour, minute)
+        self.daily.bed_time = dtime(hour, minute)
 
     def clear_bed_time(self) -> None:
-        self.defaults.bed_time = None
+        self.daily.bed_time = None
 
     def set_wake_time(self, hour: int, minute: int) -> None:
         """Set the daily morning unlock time (end of bedtime curfew)."""
-        self.defaults.wake_time = dtime(hour, minute)
-        self.warnings_date = usage_period_date(datetime.now(), self.defaults.wake_time)
+        self.daily.wake_time = dtime(hour, minute)
+        self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
 
     def set_daily_limit(self, minutes: int | None) -> None:
         """Set the default daily screen-time allowance in minutes."""
-        self.defaults.daily_limit = minutes
+        self.daily.limit = minutes
 
     def extend_time(self, minutes: int) -> None:
         """Add temporary extra allowance for the current usage period."""
@@ -320,19 +320,19 @@ class PCTimeControl:
         """Calculate minutes remaining until lock. Returns None if no limit set."""
         return minutes_until_lock(
             now=datetime.now(),
-            bed_time=self.defaults.bed_time,
+            bed_time=self.daily.bed_time,
             effective_usage_limit_minutes=self._effective_usage_limit_minutes(),
             accumulated_minutes=self.runtime.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.runtime.manual_lock_active,
-            wake_time=self.defaults.wake_time,
+            wake_time=self.daily.wake_time,
         )
 
     def check_and_send_warnings(self):
         """Check if warnings should be sent and send them"""
         # Clear sent-warning memory at wake_time so the 15/5/1-minute warnings
         # fire again for the next usage period if the agent runs continuously.
-        today = usage_period_date(datetime.now(), self.defaults.wake_time)
+        today = usage_period_date(datetime.now(), self.daily.wake_time)
         if today != self.warnings_date:
             self.warnings_sent.clear()
             self.warnings_date = today
@@ -381,12 +381,12 @@ class PCTimeControl:
         """
         decision = lock_decision(
             now=datetime.now(),
-            bed_time=self.defaults.bed_time,
+            bed_time=self.daily.bed_time,
             effective_usage_limit_minutes=self._effective_usage_limit_minutes(),
             accumulated_minutes=self.runtime.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.runtime.manual_lock_active,
-            wake_time=self.defaults.wake_time,
+            wake_time=self.daily.wake_time,
         )
         return decision.should_lock, decision.reason
 
@@ -622,12 +622,12 @@ class RemoteControlServer:
                 return self.pc_control.current_user
 
             elif command == "GET_DAILY_LIMIT":
-                if self.pc_control.defaults.daily_limit is not None:
-                    return str(self.pc_control.defaults.daily_limit)
+                if self.pc_control.daily.limit is not None:
+                    return str(self.pc_control.daily.limit)
                 return "None"
 
             elif command == "GET_BED_TIME":
-                bed = self.pc_control.defaults.bed_time
+                bed = self.pc_control.daily.bed_time
                 if bed is not None:
                     return f"{bed.hour:02d}:{bed.minute:02d}"
                 return "None"
@@ -639,21 +639,21 @@ class RemoteControlServer:
                 return str(int(self.pc_control.runtime.accumulated_seconds))
 
             elif command == "GET_USAGE_LIMIT":
-                if self.pc_control.defaults.daily_limit is not None:
-                    return str(self.pc_control.defaults.daily_limit)
+                if self.pc_control.daily.limit is not None:
+                    return str(self.pc_control.daily.limit)
                 return "None"
 
             elif command == "GET_MANUAL_LOCK":
                 return "YES" if self.pc_control.runtime.manual_lock_active else "NO"
 
             elif command == "GET_LOCK_TIMES":
-                bed = self.pc_control.defaults.bed_time
+                bed = self.pc_control.daily.bed_time
                 if bed is not None:
                     return f"{bed.hour:02d}:{bed.minute:02d}"
                 return "None"
 
             elif command == "GET_WAKE_TIME":
-                wt = self.pc_control.defaults.wake_time
+                wt = self.pc_control.daily.wake_time
                 return f"{wt.hour:02d}:{wt.minute:02d}"
 
             elif command == "GET_TIME_REMAINING":
@@ -815,7 +815,7 @@ class RemoteControlServer:
                     "CLEAR_LOCK_TIMES - Remove bedtime default\n"
                     "CLEAR_EXTENSIONS - Remove today's granted extensions\n"
                     "CLEAR_MANUAL_LOCK - Remove manual lock enforcement\n"
-                    "CLEAR_ALL - Clear defaults, extensions, and manual lock"
+                    "CLEAR_ALL - Clear daily settings, extensions, and manual lock"
                 )
                 
             else:

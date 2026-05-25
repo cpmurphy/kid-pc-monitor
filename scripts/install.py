@@ -15,7 +15,7 @@ from kid_pc_monitor.lock_policy import parse_time_hhmm
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
-INSTALL_CONFIG_FILE = "default_values.json"
+INSTALL_CONFIG_FILE = "daily_settings.json"
 AGENT_PORT = 9999
 FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 FIREWALL_RULE_GROUP = "Kid PC Monitor"
@@ -199,26 +199,26 @@ def resolve_user_localappdata_dir(username: str) -> Path | None:
     return Path(out)
 
 
-def _merge_agent_defaults_into_file(
-    defaults_path: Path,
+def _merge_agent_daily_settings_into_file(
+    daily_path: Path,
     *,
     wake_time: str,
     bed_time: str,
     daily_limit: int | None,
 ) -> None:
-    defaults: dict = {}
-    if defaults_path.is_file():
+    daily_settings: dict = {}
+    if daily_path.is_file():
         try:
-            defaults = json.loads(defaults_path.read_text(encoding="utf-8"))
+            daily_settings = json.loads(daily_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
-            defaults = {}
-    defaults["wake_time"] = wake_time
-    defaults["bed_time"] = bed_time
-    defaults["daily_limit"] = daily_limit
-    defaults_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = defaults_path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(defaults, indent=2), encoding="utf-8")
-    os.replace(tmp, defaults_path)
+            daily_settings = {}
+    daily_settings["wake_time"] = wake_time
+    daily_settings["bed_time"] = bed_time
+    daily_settings["daily_limit"] = daily_limit
+    daily_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = daily_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(daily_settings, indent=2), encoding="utf-8")
+    os.replace(tmp, daily_path)
 
 
 def _grant_user_modify_on_dir(username: str, directory: Path) -> None:
@@ -231,14 +231,14 @@ def _grant_user_modify_on_dir(username: str, directory: Path) -> None:
     )
 
 
-def write_agent_defaults_via_powershell(
+def write_agent_daily_settings_via_powershell(
     username: str,
     *,
     wake_time: str,
     bed_time: str,
     daily_limit: int | None,
 ) -> Path | None:
-    """Write agent defaults into the child's profile via an elevated PowerShell helper."""
+    """Write agent daily settings into the child's profile via an elevated PowerShell helper."""
     safe_user = username.replace("'", "''")
     safe_wake = wake_time.replace("'", "''")
     safe_bed = bed_time.replace("'", "''")
@@ -261,21 +261,21 @@ def write_agent_defaults_via_powershell(
     $profile = (Get-ItemProperty -LiteralPath $key).ProfileImagePath
     $dir = Join-Path $profile 'AppData\\Local\\KidPCMonitor'
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
-    $defaultsPath = Join-Path $dir 'default_values.json'
-    $defaults = @{{}}
-    if (Test-Path -LiteralPath $defaultsPath) {{
-        $raw = Get-Content -LiteralPath $defaultsPath -Raw -Encoding UTF8
+    $dailyPath = Join-Path $dir 'daily_settings.json'
+    $daily = @{{}}
+    if (Test-Path -LiteralPath $dailyPath) {{
+        $raw = Get-Content -LiteralPath $dailyPath -Raw -Encoding UTF8
         if ($raw) {{
-            $defaults = $raw | ConvertFrom-Json
-            if ($defaults -is [System.Array]) {{ $defaults = @{{}} }}
+            $daily = $raw | ConvertFrom-Json
+            if ($daily -is [System.Array]) {{ $daily = @{{}} }}
         }}
     }}
-    $defaults | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
-    $defaults | Add-Member -NotePropertyName bed_time -NotePropertyValue $bed -Force
-    $defaults | Add-Member -NotePropertyName daily_limit -NotePropertyValue $dailyLimit -Force
-    $json = $defaults | ConvertTo-Json -Depth 5
-    Set-Content -LiteralPath $defaultsPath -Value $json -Encoding UTF8
-    Write-Output $defaultsPath
+    $daily | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
+    $daily | Add-Member -NotePropertyName bed_time -NotePropertyValue $bed -Force
+    $daily | Add-Member -NotePropertyName daily_limit -NotePropertyValue $dailyLimit -Force
+    $json = $daily | ConvertTo-Json -Depth 5
+    Set-Content -LiteralPath $dailyPath -Value $json -Encoding UTF8
+    Write-Output $dailyPath
     """
     try:
         result = subprocess.run(
@@ -290,7 +290,7 @@ def write_agent_defaults_via_powershell(
     if result.returncode != 0:
         err = (result.stderr or result.stdout or "").strip()
         if err:
-            print(f"\n⚠️  Could not write agent defaults to the child's profile: {err}")
+            print(f"\n⚠️  Could not write agent daily settings to the child's profile: {err}")
         return None
 
     out = (result.stdout or "").strip().splitlines()
@@ -299,14 +299,14 @@ def write_agent_defaults_via_powershell(
     return Path(out[-1])
 
 
-def write_program_data_defaults(
+def write_program_data_daily_settings(
     target_user: str,
     *,
     wake_time: str,
     bed_time: str,
     daily_limit: int | None,
 ) -> Path:
-    """Write machine-wide install defaults (always writable during admin install)."""
+    """Write machine-wide install daily settings (always writable during admin install)."""
     dest = Path(INSTALL_DIR_DEFAULT)
     dest.mkdir(parents=True, exist_ok=True)
     config_path = dest / INSTALL_CONFIG_FILE
@@ -322,7 +322,7 @@ def write_program_data_defaults(
     return config_path
 
 
-def write_agent_defaults_to_state(
+def write_agent_daily_settings_to_state(
     username: str,
     *,
     wake_time: str,
@@ -331,35 +331,35 @@ def write_agent_defaults_to_state(
     same_user: bool,
 ) -> tuple[Path | None, bool]:
     """
-    Persist schedule defaults into the child's default_values.json (merge if present).
+    Persist schedule daily settings into the child's daily_settings.json (merge if present).
 
-    Returns (defaults_path, success). Also writes ProgramData default_values.json.
+    Returns (daily_path, success). Also writes ProgramData daily_settings.json.
     """
-    config_path = write_program_data_defaults(
+    config_path = write_program_data_daily_settings(
         username,
         wake_time=wake_time,
         bed_time=bed_time,
         daily_limit=daily_limit,
     )
-    print(f"   Install defaults: {config_path}")
+    print(f"   Install daily_settings: {config_path}")
 
     state_dir = agent_state_dir_for_user(username, same_user=same_user)
-    defaults_path = state_dir / "default_values.json"
+    daily_path = state_dir / "daily_settings.json"
 
     try:
-        _merge_agent_defaults_into_file(
-            defaults_path,
+        _merge_agent_daily_settings_into_file(
+            daily_path,
             wake_time=wake_time,
             bed_time=bed_time,
             daily_limit=daily_limit,
         )
         _grant_user_modify_on_dir(username, state_dir)
-        return defaults_path, True
+        return daily_path, True
     except OSError as exc:
-        print(f"\n⚠️  Direct write to {defaults_path} failed: {exc}")
+        print(f"\n⚠️  Direct write to {daily_path} failed: {exc}")
 
     if not same_user:
-        ps_path = write_agent_defaults_via_powershell(
+        ps_path = write_agent_daily_settings_via_powershell(
             username,
             wake_time=wake_time,
             bed_time=bed_time,
@@ -370,9 +370,9 @@ def write_agent_defaults_to_state(
             return ps_path, True
 
     print(
-        "\n⚠️  Schedule defaults were saved to ProgramData only. The agent will apply them "
+        "\n⚠️  Schedule daily settings were saved to ProgramData only. The agent will apply them "
         "on the child's next logon. If the child has never signed in, have them log "
-        "in once and re-run install, or edit default_values.json in their profile."
+        "in once and re-run install, or edit daily_settings.json in their profile."
     )
     return None, False
 
@@ -910,17 +910,17 @@ def run_install_flow():
     wake_time = prompt_wake_up_time()
     bed_time = prompt_bed_time()
     daily_limit = prompt_daily_allowance()
-    defaults_path, state_ok = write_agent_defaults_to_state(
+    daily_path, state_ok = write_agent_daily_settings_to_state(
         target_user,
         wake_time=wake_time,
         bed_time=bed_time,
         daily_limit=daily_limit,
         same_user=not cross_user,
     )
-    if state_ok and defaults_path is not None:
+    if state_ok and daily_path is not None:
         limit_label = f"{daily_limit} min/day" if daily_limit is not None else "no daily cap"
         print(
-            f"\n✅ Schedule saved to {defaults_path}"
+            f"\n✅ Schedule saved to {daily_path}"
             f"\n   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"
         )
 

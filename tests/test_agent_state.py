@@ -11,7 +11,7 @@ from pathlib import Path
 
 from kid_pc_monitor.agent_state import (
     AgentStateStore,
-    DefaultValues,
+    DailySettings,
     RuntimeState,
     effective_daily_limit_minutes,
     migrate_legacy_state,
@@ -22,24 +22,24 @@ from kid_pc_monitor.agent_state import (
 
 class AgentStateTests(unittest.TestCase):
     def test_effective_daily_limit_includes_extensions(self) -> None:
-        defaults = DefaultValues(bed_time=None, wake_time=dtime(7, 0), daily_limit=120)
+        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), limit=120)
         runtime = RuntimeState(
             timestamp=datetime.now(),
             accumulated_seconds=0,
             manual_lock_active=False,
             cumulative_extension_seconds=1800,
         )
-        self.assertEqual(effective_daily_limit_minutes(defaults, runtime), 150)
+        self.assertEqual(effective_daily_limit_minutes(daily, runtime), 150)
 
     def test_effective_daily_limit_none_without_base_or_extension(self) -> None:
-        defaults = DefaultValues(bed_time=None, wake_time=dtime(7, 0), daily_limit=None)
+        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), limit=None)
         runtime = RuntimeState(
             timestamp=datetime.now(),
             accumulated_seconds=0,
             manual_lock_active=False,
             cumulative_extension_seconds=0,
         )
-        self.assertIsNone(effective_daily_limit_minutes(defaults, runtime))
+        self.assertIsNone(effective_daily_limit_minutes(daily, runtime))
 
     def test_runtime_state_is_current_uses_wake_time_period(self) -> None:
         wake = dtime(7, 0)
@@ -78,20 +78,20 @@ class AgentStateTests(unittest.TestCase):
             )
             migrated = migrate_legacy_state(legacy, current_user="kid")
             assert migrated is not None
-            defaults, runtime = migrated
-            self.assertEqual(defaults.bed_time, dtime(21, 0))
-            self.assertEqual(defaults.wake_time, dtime(8, 30))
-            self.assertEqual(defaults.daily_limit, 90)
+            daily, runtime = migrated
+            self.assertEqual(daily.bed_time, dtime(21, 0))
+            self.assertEqual(daily.wake_time, dtime(8, 30))
+            self.assertEqual(daily.limit, 90)
             self.assertTrue(runtime.manual_lock_active)
             self.assertAlmostEqual(runtime.accumulated_seconds, 120.0)
 
     def test_store_round_trip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = AgentStateStore(Path(tmp), current_user="kid")
-            defaults = DefaultValues(
+            daily = DailySettings(
                 bed_time=dtime(21, 0),
                 wake_time=dtime(7, 0),
-                daily_limit=120,
+                limit=120,
             )
             runtime = RuntimeState(
                 timestamp=datetime.now(),
@@ -99,20 +99,20 @@ class AgentStateTests(unittest.TestCase):
                 manual_lock_active=False,
                 cumulative_extension_seconds=900,
             )
-            store.save(defaults, runtime)
-            loaded_defaults, loaded_runtime = store.load()
-            self.assertEqual(loaded_defaults.bed_time, dtime(21, 0))
-            self.assertEqual(loaded_defaults.daily_limit, 120)
+            store.save(daily, runtime)
+            loaded_daily, loaded_runtime = store.load()
+            self.assertEqual(loaded_daily.bed_time, dtime(21, 0))
+            self.assertEqual(loaded_daily.limit, 120)
             self.assertAlmostEqual(loaded_runtime.accumulated_seconds, 300.0)
             self.assertEqual(loaded_runtime.cumulative_extension_seconds, 900)
 
     def test_store_resets_stale_runtime_on_load(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
-            defaults_path = data_dir / "default_values.json"
+            daily_path = data_dir / "daily_settings.json"
             state_path = data_dir / "state.json"
-            defaults_path.write_text(
-                json.dumps({"wake_time": "07:00", "bed_time": None, "daily_limit": 60}),
+            daily_path.write_text(
+                json.dumps({"wake_time": "07:00", "bed_time": None, "limit": 60}),
                 encoding="utf-8",
             )
             state_path.write_text(
@@ -127,7 +127,7 @@ class AgentStateTests(unittest.TestCase):
                 encoding="utf-8",
             )
             store = AgentStateStore(data_dir, current_user="kid")
-            _defaults, runtime = store.load()
+            _daily, runtime = store.load()
             self.assertFalse(runtime.manual_lock_active)
             self.assertEqual(runtime.accumulated_seconds, 0.0)
             self.assertEqual(runtime.cumulative_extension_seconds, 0)

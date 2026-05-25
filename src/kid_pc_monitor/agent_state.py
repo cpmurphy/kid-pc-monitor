@@ -1,4 +1,4 @@
-"""Persistent defaults and daily runtime state for the Kid PC Monitor agent."""
+"""Persistent daily settings and runtime state for the Kid PC Monitor agent."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 from kid_pc_monitor.lock_policy import DEFAULT_WAKE_TIME, parse_time_hhmm, usage_period_date
 
-DEFAULT_VALUES_FILE = "default_values.json"
+DEFAULT_VALUES_FILE = "daily_settings.json"
 STATE_FILE = "state.json"
 LEGACY_STATE_FILE = "pc_control_state.json"
 LEGACY_INSTALL_CONFIG = "install_config.json"
@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DefaultValues:
+class DailySettings:
     bed_time: dtime | None
     wake_time: dtime
-    daily_limit: int | None  # minutes; None = no screen-time cap
+    limit: int | None  # minutes; None = no screen-time cap
 
 
 @dataclass
@@ -44,14 +44,14 @@ def _parse_timestamp(raw: str) -> datetime:
     return datetime.fromisoformat(raw)
 
 
-def effective_daily_limit_minutes(defaults: DefaultValues, runtime: RuntimeState) -> float | None:
+def effective_daily_limit_minutes(daily: DailySettings, runtime: RuntimeState) -> float | None:
     """Return the enforced cap in minutes, or None when there is no usage cap."""
     extension_minutes = runtime.cumulative_extension_seconds / 60
-    if defaults.daily_limit is None:
+    if daily.limit is None:
         if extension_minutes <= 0:
             return None
         return extension_minutes
-    return defaults.daily_limit + extension_minutes
+    return daily.limit + extension_minutes
 
 
 def runtime_state_is_current(
@@ -83,13 +83,13 @@ def reset_runtime_for_new_period(runtime: RuntimeState, now: datetime | None = N
     runtime.cumulative_extension_seconds = 0
 
 
-def defaults_to_dict(defaults: DefaultValues) -> dict:
+def daily_to_dict(daily: DailySettings) -> dict:
     payload: dict = {
-        "wake_time": _format_time(defaults.wake_time),
-        "daily_limit": defaults.daily_limit,
+        "wake_time": _format_time(daily.wake_time),
+        "limit": daily.limit,
     }
-    if defaults.bed_time is not None:
-        payload["bed_time"] = _format_time(defaults.bed_time)
+    if daily.bed_time is not None:
+        payload["bed_time"] = _format_time(daily.bed_time)
     else:
         payload["bed_time"] = None
     return payload
@@ -104,7 +104,7 @@ def runtime_to_dict(runtime: RuntimeState) -> dict:
     }
 
 
-def load_defaults_from_dict(data: dict) -> DefaultValues:
+def load_daily_from_dict(data: dict) -> DailySettings:
     wake_raw = data.get("wake_time", _format_time(DEFAULT_WAKE_TIME))
     wake_time = parse_time_hhmm(str(wake_raw))
 
@@ -115,14 +115,14 @@ def load_defaults_from_dict(data: dict) -> DefaultValues:
     else:
         bed_time = parse_time_hhmm(str(bed_raw))
 
-    daily_limit = data.get("daily_limit")
-    if daily_limit is not None:
-        daily_limit = int(daily_limit)
+    limit = data.get("limit")
+    if limit is not None:
+        limit = int(limit)
 
-    return DefaultValues(
+    return DailySettings(
         bed_time=bed_time,
         wake_time=wake_time,
-        daily_limit=daily_limit,
+        limit=limit,
     )
 
 
@@ -138,7 +138,7 @@ def load_runtime_from_dict(data: dict) -> RuntimeState:
     )
 
 
-def program_data_defaults_path() -> Path | None:
+def program_data_daily_path() -> Path | None:
     if sys.platform != "win32":
         return None
     program_data = os.environ.get("ProgramData", r"C:\ProgramData")
@@ -182,7 +182,7 @@ def migrate_legacy_state(
     legacy_path: Path,
     *,
     current_user: str,
-) -> tuple[DefaultValues, RuntimeState] | None:
+) -> tuple[DailySettings, RuntimeState] | None:
     legacy = _read_json(legacy_path)
     if legacy is None:
         return None
@@ -192,14 +192,14 @@ def migrate_legacy_state(
         wake_time = parse_time_hhmm(legacy["wake_time"])
 
     bed_time = _legacy_lock_times_to_bed_time(legacy.get("lock_times"))
-    daily_limit = legacy.get("usage_limit")
-    if daily_limit is not None:
-        daily_limit = int(daily_limit)
+    limit = legacy.get("usage_limit")
+    if limit is not None:
+        limit = int(limit)
 
-    defaults = DefaultValues(
+    daily = DailySettings(
         bed_time=bed_time,
         wake_time=wake_time,
-        daily_limit=daily_limit,
+        limit=limit,
     )
 
     now = datetime.now()
@@ -229,11 +229,11 @@ def migrate_legacy_state(
         current_user,
         legacy_path,
     )
-    return defaults, runtime
+    return daily, runtime
 
 
-def _bootstrap_defaults_from_program_data(current_user: str) -> DefaultValues | None:
-    for path in (program_data_defaults_path(),):
+def _bootstrap_daily_from_program_data(current_user: str) -> DailySettings | None:
+    for path in (program_data_daily_path(),):
         if path is None:
             continue
         data = _read_json(path)
@@ -244,9 +244,9 @@ def _bootstrap_defaults_from_program_data(current_user: str) -> DefaultValues | 
             if target_user.lower() != current_user.lower():
                 continue
         try:
-            return load_defaults_from_dict(data)
+            return load_daily_from_dict(data)
         except ValueError as exc:
-            logger.warning("Invalid program-data defaults at %s: %s", path, exc)
+            logger.warning("Invalid program-data daily settings at %s: %s", path, exc)
 
     legacy_install = program_data_legacy_install_config_path()
     if legacy_install is not None:
@@ -260,10 +260,10 @@ def _bootstrap_defaults_from_program_data(current_user: str) -> DefaultValues | 
             if isinstance(wake_raw, str):
                 try:
                     wake_time = parse_time_hhmm(wake_raw)
-                    return DefaultValues(
+                    return DailySettings(
                         bed_time=None,
                         wake_time=wake_time,
-                        daily_limit=None,
+                        limit=None,
                     )
                 except ValueError:
                     pass
@@ -271,55 +271,55 @@ def _bootstrap_defaults_from_program_data(current_user: str) -> DefaultValues | 
 
 
 class AgentStateStore:
-    """Read/write default_values.json and state.json under the agent data directory."""
+    """Read/write daily_settings.json and state.json under the agent data directory."""
 
     def __init__(self, data_directory: Path, *, current_user: str) -> None:
         self.data_directory = data_directory
         self.current_user = current_user
-        self.defaults_path = data_directory / DEFAULT_VALUES_FILE
+        self.daily_path = data_directory / DEFAULT_VALUES_FILE
         self.state_path = data_directory / STATE_FILE
         self.legacy_state_path = data_directory / LEGACY_STATE_FILE
 
-    def load(self) -> tuple[DefaultValues, RuntimeState]:
-        defaults = self._load_defaults()
-        runtime = self._load_runtime(defaults.wake_time)
-        if not runtime_state_is_current(runtime, defaults.wake_time):
+    def load(self) -> tuple[DailySettings, RuntimeState]:
+        daily = self._load_daily()
+        runtime = self._load_runtime(daily.wake_time)
+        if not runtime_state_is_current(runtime, daily.wake_time):
             logger.info(
                 "Runtime state is from a previous usage period; resetting daily counters"
             )
             reset_runtime_for_new_period(runtime)
-        return defaults, runtime
+        return daily, runtime
 
-    def save(self, defaults: DefaultValues, runtime: RuntimeState) -> None:
+    def save(self, daily: DailySettings, runtime: RuntimeState) -> None:
         runtime.timestamp = datetime.now()
-        _write_json(self.defaults_path, defaults_to_dict(defaults))
+        _write_json(self.daily_path, daily_to_dict(daily))
         _write_json(self.state_path, runtime_to_dict(runtime))
 
-    def _load_defaults(self) -> DefaultValues:
-        data = _read_json(self.defaults_path)
+    def _load_daily(self) -> DailySettings:
+        data = _read_json(self.daily_path)
         if data is not None:
-            return load_defaults_from_dict(data)
+            return load_daily_from_dict(data)
 
         migrated = migrate_legacy_state(self.legacy_state_path, current_user=self.current_user)
         if migrated is not None:
-            defaults, runtime = migrated
-            self.save(defaults, runtime)
-            return defaults
+            daily, runtime = migrated
+            self.save(daily, runtime)
+            return daily
 
-        bootstrapped = _bootstrap_defaults_from_program_data(self.current_user)
+        bootstrapped = _bootstrap_daily_from_program_data(self.current_user)
         if bootstrapped is not None:
             runtime = fresh_runtime_state()
             self.save(bootstrapped, runtime)
             return bootstrapped
 
-        defaults = DefaultValues(
+        daily = DailySettings(
             bed_time=None,
             wake_time=DEFAULT_WAKE_TIME,
-            daily_limit=None,
+            limit=None,
         )
         runtime = fresh_runtime_state()
-        self.save(defaults, runtime)
-        return defaults
+        self.save(daily, runtime)
+        return daily
 
     def _load_runtime(self, wake_time: dtime) -> RuntimeState:
         data = _read_json(self.state_path)
@@ -331,8 +331,8 @@ class AgentStateStore:
 
         migrated = migrate_legacy_state(self.legacy_state_path, current_user=self.current_user)
         if migrated is not None:
-            defaults, runtime = migrated
-            self.save(defaults, runtime)
+            daily, runtime = migrated
+            self.save(daily, runtime)
             return runtime
 
         return fresh_runtime_state()
