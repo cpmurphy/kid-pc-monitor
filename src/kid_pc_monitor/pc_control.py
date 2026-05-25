@@ -659,7 +659,7 @@ class RemoteControlServer:
             elif command == "GET_TIME_REMAINING":
                 remaining = self.pc_control.get_time_remaining()
                 if remaining is not None:
-                    return f"{int(remaining)} minutes"
+                    return f"{round(remaining)} minutes"
                 return "No allowances set"
 
             elif command == "GET_STATUS":
