@@ -3,63 +3,54 @@ import os
 import sys
 from pathlib import Path
 
-def get_script_path():
-    """Get the path to web_panel.py, trying the standard repo layout first."""
+MODULE = "kid_pc_monitor.web_panel"
+
+
+def ensure_package_installed():
+    """pip-install the kid-pc-monitor package from the repo so imports work."""
     installer_dir = Path(__file__).resolve().parent
     repo_root = installer_dir.parent
-    default_path = repo_root / "src" / "kid_pc_monitor" / "web_panel.py"
+    pyproject = repo_root / "pyproject.toml"
 
-    if default_path.is_file():
-        script_path = str(default_path)
-        print(f"Found web_panel.py at: {script_path}")
-        return script_path
+    if not pyproject.is_file():
+        print(f"Error: could not find pyproject.toml at {pyproject}")
+        print("Run this script from a git checkout of kid-pc-monitor.")
+        return False
 
-    print("Could not find web_panel.py in the expected repo location.")
-    print(f"  (looked for {default_path})\n")
-    print("Options:")
-    print("1. Current directory")
-    print("2. Enter custom path")
+    try:
+        from kid_pc_monitor.web_panel import main as _unused  # noqa: F401
+        print("kid-pc-monitor package is already installed.")
+        return True
+    except ImportError:
+        pass
 
-    choice = input("\nChoice (1-2): ").strip()
+    print(f"Installing kid-pc-monitor from {repo_root} ...")
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", str(repo_root)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print("pip install failed:")
+        print(result.stdout)
+        print(result.stderr)
+        return False
 
-    if choice == "1":
-        script_path = os.path.abspath("web_panel.py")
-    else:
-        while True:
-            custom_path = input("\nEnter full path to web_panel.py: ").strip()
-            # Remove quotes if user copied from explorer
-            custom_path = custom_path.strip('"').strip("'")
-
-            if os.path.exists(custom_path) and custom_path.endswith('.py'):
-                script_path = os.path.abspath(custom_path)
-                break
-            else:
-                print("File not found or not a .py file. Please try again.")
-
-    if not os.path.exists(script_path):
-        print(f"\nError: Could not find {script_path}")
-        print("Please make sure web_panel.py exists in the specified location.")
-        return None
-
-    print(f"\nFound: {script_path}")
-    return script_path
+    print("Package installed successfully.")
+    return True
 
 def create_task_with_power_settings():
     """Create scheduled task that runs even on battery power"""
 
-    # Get script path from user
-    script_path = get_script_path()
-    if not script_path:
+    if not ensure_package_installed():
         return False
 
     pythonw_path = sys.executable.replace('python.exe', 'pythonw.exe')
     task_name = "KidPCMonitorWebPanel"
     current_user = os.getenv('USERNAME')
 
-    # Show what we're about to do
     print(f"\nTask Configuration:")
-    print(f"   Script: {script_path}")
-    print(f"   Python: {pythonw_path}")
+    print(f"   Command: {pythonw_path} -m {MODULE}")
     print(f"   Task Name: {task_name}")
     print(f"   User Account: {current_user}")
 
@@ -68,23 +59,18 @@ def create_task_with_power_settings():
         print("Setup cancelled.")
         return False
 
-    # PowerShell script to create task with specific power settings
     ps_script = f'''
     $ErrorActionPreference = 'Stop'
     try {{
-        # Create the action
-        $action = New-ScheduledTaskAction -Execute "{pythonw_path}" -Argument "{script_path}" -WorkingDirectory "{os.path.dirname(script_path)}"
+        $action = New-ScheduledTaskAction -Execute "{pythonw_path}" -Argument "-m {MODULE}"
 
-        # Create multiple triggers
         $triggers = @(
             (New-ScheduledTaskTrigger -AtStartup),
             (New-ScheduledTaskTrigger -AtLogon)
         )
 
-        # Create principal (run with current user)
         $principal = New-ScheduledTaskPrincipal -UserId "{current_user}" -LogonType Interactive -RunLevel Highest
 
-        # Create settings with power options
         $settings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries `
             -DontStopIfGoingOnBatteries `
@@ -94,7 +80,6 @@ def create_task_with_power_settings():
             -RestartInterval (New-TimeSpan -Minutes 1) `
             -ExecutionTimeLimit (New-TimeSpan -Hours 0)
 
-        # Register the task
         Register-ScheduledTask `
             -TaskName "{task_name}" `
             -Action $action `
@@ -103,14 +88,12 @@ def create_task_with_power_settings():
             -Settings $settings `
             -Force
 
-        # Verify task was actually created
         $task = Get-ScheduledTask -TaskName "{task_name}" -ErrorAction Stop
         Write-Host "SUCCESS: Task verified in Task Scheduler"
         Write-Host "Task Path: $($task.TaskPath)"
         Write-Host "Triggers: $($task.Triggers)"
         Write-Host "Principal: $($task.Principal)"
 
-        # Start the task now so the user doesn't have to reboot/re-logon
         Start-ScheduledTask -TaskName "{task_name}"
         Write-Host "Task started."
         exit 0
@@ -123,14 +106,12 @@ def create_task_with_power_settings():
     '''
 
     try:
-        # Run PowerShell script
         result = subprocess.run(
             ['powershell', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
             capture_output=True,
             text=True
         )
 
-        # Debug output
         print("\n=== PowerShell Output ===")
         print(result.stdout)
         if result.stderr:
@@ -138,7 +119,6 @@ def create_task_with_power_settings():
             print(result.stderr)
 
         if result.returncode == 0:
-            # Additional verification
             verify_cmd = f'schtasks /query /tn "{task_name}"'
             verify_result = subprocess.run(verify_cmd, shell=True, capture_output=True, text=True)
 
@@ -165,17 +145,14 @@ def create_task_with_power_settings():
 def create_task_simple_schtasks():
     """Alternative using schtasks with XML template"""
 
-    # Get script path from user
-    script_path = get_script_path()
-    if not script_path:
+    if not ensure_package_installed():
         return False
 
-    python_path = sys.executable
+    pythonw_path = sys.executable.replace('python.exe', 'pythonw.exe')
     task_name = "KidPCMonitorWebPanel"
 
     print(f"\nCreating task with XML method...")
 
-    # Create XML with proper power settings
     xml_content = f'''<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
@@ -217,19 +194,16 @@ def create_task_simple_schtasks():
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>{python_path}</Command>
-      <Arguments>"{script_path}"</Arguments>
-      <WorkingDirectory>{os.path.dirname(script_path)}</WorkingDirectory>
+      <Command>{pythonw_path}</Command>
+      <Arguments>-m {MODULE}</Arguments>
     </Exec>
   </Actions>
 </Task>'''
 
     try:
-        # Write XML to temp file
         with open('task_config.xml', 'w', encoding='utf-16') as f:
             f.write(xml_content)
 
-        # Import the task
         result = subprocess.run(
             f'schtasks /create /tn "{task_name}" /xml "task_config.xml" /f',
             shell=True,
@@ -237,7 +211,6 @@ def create_task_simple_schtasks():
             text=True
         )
 
-        # Clean up
         os.remove('task_config.xml')
 
         if result.returncode == 0:
@@ -261,7 +234,6 @@ def create_task_simple_schtasks():
 def verify_task_settings(task_name):
     """Verify the power settings of a task"""
 
-    # Query task and check settings
     query_cmd = f'schtasks /query /tn "{task_name}" /xml'
     result = subprocess.run(query_cmd, shell=True, capture_output=True, text=True)
 
@@ -319,7 +291,6 @@ if __name__ == "__main__":
     if choice == "1":
         print("\nCreating scheduled task with battery-friendly settings...\n")
 
-        # Try PowerShell method first (most reliable)
         if create_task_with_power_settings():
             print("\nSetup complete! Task will run even on laptops using battery.")
             print("\nAccess the web panel from any device on your network at:")
