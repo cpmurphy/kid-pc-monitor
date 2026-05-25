@@ -109,6 +109,10 @@ def create_task_with_power_settings():
         Write-Host "Task Path: $($task.TaskPath)"
         Write-Host "Triggers: $($task.Triggers)"
         Write-Host "Principal: $($task.Principal)"
+
+        # Start the task now so the user doesn't have to reboot/re-logon
+        Start-ScheduledTask -TaskName "{task_name}"
+        Write-Host "Task started."
         exit 0
     }}
     catch {{
@@ -239,6 +243,12 @@ def create_task_simple_schtasks():
         if result.returncode == 0:
             print("\nTask created successfully with battery settings!")
             verify_task_settings(task_name)
+            subprocess.run(
+                f'schtasks /run /tn "{task_name}"',
+                shell=True,
+                capture_output=True,
+            )
+            print("Task started.")
             return True
         else:
             print(f"\nError: {result.stderr}")
