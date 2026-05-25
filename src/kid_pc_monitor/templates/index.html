@@ -61,6 +61,25 @@
             font-size: 13px;
             margin: 8px 0 12px;
         }
+        .advanced-scan {
+            margin-bottom: 4px;
+        }
+        .advanced-scan > summary {
+            display: inline-block;
+            color: #2196F3;
+            cursor: pointer;
+            font-size: 14px;
+            list-style: none;
+        }
+        .advanced-scan > summary::-webkit-details-marker {
+            display: none;
+        }
+        .advanced-scan > summary:hover {
+            text-decoration: underline;
+        }
+        .advanced-scan[open] > summary {
+            margin-bottom: 10px;
+        }
         .scan-error {
             background-color: #f8d7da;
             color: #721c24;
@@ -157,15 +176,18 @@
             {% if scan_error %}
             <div class="scan-error">{{ scan_error }}</div>
             {% endif %}
-            <label for="subnet">Network to scan</label>
-            <input type="text" id="subnet" name="subnet"
-                   placeholder="Leave blank for default ({{ default_subnet }})"
-                   value="{{ scan_subnet }}">
-            <p class="scan-hint">
-                Default LAN: {{ default_subnet }}.
-                For a VM on another subnet, try <strong>192.168.123</strong> or
-                <strong>192.168.123.0/24</strong>.
-            </p>
+            <details class="advanced-scan"{% if scan_subnet or scan_error %} open{% endif %}>
+                <summary>Scan a different network (advanced)</summary>
+                <label for="subnet">Network to scan</label>
+                <input type="text" id="subnet" name="subnet"
+                       placeholder="Leave blank for default ({{ default_subnet }})"
+                       value="{{ scan_subnet }}">
+                <p class="scan-hint">
+                    Default LAN: {{ default_subnet }}.
+                    For a VM on another subnet, try <strong>192.168.123</strong> or
+                    <strong>192.168.123.0/24</strong>.
+                </p>
+            </details>
             <button type="submit" class="scan-btn">
                 🔍 Scan for PCs
             </button>
