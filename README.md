@@ -110,7 +110,7 @@ git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 pip install -r requirements.txt
 pip install -e .
-kid-pc-web-panel
+scripts\install_web_panel.py
 ```
 
 Then
@@ -146,8 +146,12 @@ Choose option 2, `Remove scheduled task`
 
 ### On the Parent’s PC
 
-No action needed because you didn't install anything. (You will need to
-remember to run the web panel again if you reboot.)
+```powershell
+cd kid-pc-monitor
+python scripts\install_web_panel.py
+```
+
+Choose option 2, `Remove scheduled task`
 
 ## 📸 Screenshots
 
@@ -269,7 +273,7 @@ kid-pc-web-panel
 After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`,
 or (the launch scripts switch to `venv/` automatically when it exists).
 
-#### Install as a Service (Advanced, Linux Only)
+#### Install as a Service (Linux Only)
 
 Assuming you have a system that runs systemd, you can run the web
 panel as a background service.
