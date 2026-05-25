@@ -1,17 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control {{ pc_info.hostname }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
-</head>
-<body class="page-control">
+{% extends "base.html" %}
+
+{% block title %}Control {{ pc_info.hostname }}{% endblock %}
+{% block body_class %}page-control{% endblock %}
+
+{% block content %}
     <div class="container">
         <div class="nav-row">
             <a href="/" class="back-btn">← Back to PCs</a>
         </div>
-        <p style="text-align:right;font-size:13px;margin:0 0 10px 0;">
+        <p class="account-links">
             {% if not password_protected %}
             <a href="{{ url_for('set_password') }}">Add password protection</a>
             {% elif panel_auth %}
@@ -24,9 +21,9 @@
         </p>
 
         <h1>💻 {{ pc_info.hostname }}</h1>
-        <p style="text-align: center; color: #666;">{{ ip }}</p>
+        <p class="subtitle">{{ ip }}</p>
         {% if pc_info.get('current_user') %}
-        <p style="text-align: center; color: #666;">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
+        <p class="subtitle">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
         {% endif %}
 
         {% if pc_info.get('reachable', true) %}
@@ -98,11 +95,11 @@
         {% endif %}
 
         {% if not pc_info.get('reachable', true) %}
-        <div class="status-message" style="display: block; background-color: #e2e3e5; color: #383d41;">
+        <div class="status-message banner info">
             ○ This computer is offline or unreachable. Scan again after it is powered on.
         </div>
         {% elif pc_info.locked %}
-        <div class="status-message" style="display: block; background-color: #fff3cd; color: #856404;">
+        <div class="status-message banner warning">
             🔒 This computer is currently LOCKED
         </div>
         {% endif %}
@@ -124,10 +121,10 @@
 
         <div class="action-group">
             <div class="action-title">➕ Grant Extension</div>
-            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+            <p class="note">
                 Adds extra time for today only. Does not change the daily allowance default.
             </p>
-            <div style="text-align: center;">
+            <div class="quick-limit-row">
                 <span class="quick-limit" onclick="setQuickExtension(15)">15 min</span>
                 <span class="quick-limit" onclick="setQuickExtension(30)">30 min</span>
                 <span class="quick-limit" onclick="setQuickExtension(60)">1 hour</span>
@@ -137,7 +134,9 @@
         </div>
         {% endif %}
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         function showStatus(message, isSuccess) {
             const statusEl = document.getElementById('status-message');
@@ -237,5 +236,4 @@
             });
         }
     </script>
-</body>
-</html>
+{% endblock %}

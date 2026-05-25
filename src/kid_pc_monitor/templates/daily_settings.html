@@ -1,19 +1,15 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily settings — {{ pc_info.hostname }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
-</head>
-<body class="page-daily">
+{% block title %}Daily settings — {{ pc_info.hostname }}{% endblock %}
+{% block body_class %}page-daily{% endblock %}
+
+{% block content %}
     <div class="container">
         <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
 
         <h1>⚙️ Daily settings</h1>
-        <p style="text-align: center; color: #666;">{{ pc_info.hostname }} · {{ ip }}</p>
-        <p class="hint" style="text-align: center;">
+        <p class="subtitle">{{ pc_info.hostname }} · {{ ip }}</p>
+        <p class="hint center">
             These settings apply every day. Changes take effect immediately on the kid's PC.
         </p>
 
@@ -48,7 +44,9 @@
             <button class="btn btn-save" onclick="saveWakeTime()">Save wake-up time</button>
         </div>
     </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         function showStatus(message, isSuccess) {
             const statusEl = document.getElementById('status-message');
@@ -110,5 +108,4 @@
             postAction({ action: 'set_wake_time', time: time });
         }
     </script>
-</body>
-</html>
+{% endblock %}

@@ -1,19 +1,18 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kids PC Control Panel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
+{% block title %}Kids PC Control Panel{% endblock %}
+{% block body_class %}page-home{% endblock %}
+
+{% block head %}
     <script>
         // Auto-refresh every 30 seconds
         setTimeout(function() {
             location.reload();
         }, 30000);
     </script>
-</head>
-<body class="page-home">
+{% endblock %}
+
+{% block content %}
     <div class="container">
         <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
 
@@ -21,13 +20,13 @@
           {% if messages %}
             {% for category, message in messages %}
               {% if category == 'success' %}
-              <p style="background:#d4edda;color:#155724;padding:10px;border-radius:8px;text-align:center;">{{ message }}</p>
+              <p class="flash flash-success">{{ message }}</p>
               {% endif %}
             {% endfor %}
           {% endif %}
         {% endwith %}
 
-        <p style="text-align:center;font-size:14px;margin:0 0 10px 0;">
+        <p class="account-links">
             {% if not password_protected %}
             <a href="{{ url_for('set_password') }}">Add password protection</a> (optional)
             {% elif panel_auth %}
@@ -38,7 +37,7 @@
             <a href="{{ url_for('login', next=request.path) }}">Log in</a>
             {% endif %}
         </p>
-        
+
         <form class="scan-form" method="get" action="/scan">
             {% if scan_error %}
             <div class="scan-error">{{ scan_error }}</div>
@@ -59,7 +58,7 @@
                 🔍 Scan for PCs
             </button>
         </form>
-        
+
         {% if pcs %}
             <h2>Available PCs:</h2>
             {% for ip, info in pcs.items() %}
@@ -79,11 +78,11 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="text-align: center; color: #666;">
+            <p class="subtitle">
                 No PCs found. Click "Scan for PCs" to search.
             </p>
         {% endif %}
-        
+
         {% if last_scan %}
         <div class="last-scan">
             Last scan: {{ last_scan.strftime('%I:%M %p') }}
@@ -93,5 +92,4 @@
         </div>
         {% endif %}
     </div>
-</body>
-</html>
+{% endblock %}

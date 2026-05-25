@@ -141,6 +141,21 @@ h1 {
     color: #721c24;
 }
 
+/* Server-rendered status banners (vs. the JS-driven toast which starts hidden) */
+.status-message.banner {
+    display: block;
+}
+
+.status-message.info {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.status-message.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
 /* Inputs in control/daily (light border, vertical margin) */
 .page-control input[type="text"],
 .page-control input[type="number"],
@@ -169,6 +184,16 @@ h1 {
 
 .quick-limit:hover {
     background-color: #d0d0d0;
+}
+
+.quick-limit-row {
+    text-align: center;
+}
+
+.note {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 10px 0;
 }
 
 .readonly-value { color: #333; }
@@ -201,6 +226,48 @@ h1 {
     font-size: 14px;
     margin: 0 0 10px 0;
     line-height: 1.4;
+}
+
+.hint.center {
+    text-align: center;
+}
+
+/* ============================================================
+   Shared content helpers
+   ============================================================ */
+
+/* Centered gray sub-heading text (e.g. IP under hostname). */
+.subtitle {
+    text-align: center;
+    color: #666;
+}
+
+/* The auth-state link line ("Log in" / "Change password" / etc.).
+   Differs slightly per page; the base just owns the margin. */
+.account-links {
+    margin: 0 0 10px 0;
+}
+
+.page-home .account-links {
+    text-align: center;
+    font-size: 14px;
+}
+
+.page-control .account-links {
+    text-align: right;
+    font-size: 13px;
+}
+
+/* Flash messages on the home page. */
+.flash {
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.flash-success {
+    background: #d4edda;
+    color: #155724;
 }
 
 /* ============================================================

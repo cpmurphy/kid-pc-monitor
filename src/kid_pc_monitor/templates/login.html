@@ -1,13 +1,9 @@
+{% extends "base.html" %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in — Kids PC Control Panel</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
-</head>
-<body class="page-login">
+{% block title %}Sign in — Kids PC Control Panel{% endblock %}
+{% block body_class %}page-login{% endblock %}
+
+{% block content %}
     <div class="box">
         <h1>Sign in</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -29,5 +25,4 @@
         </form>
         <p class="hint">The account label helps Safari and other browsers save this password. It is not used to sign in.</p>
     </div>
-</body>
-</html>
+{% endblock %}
