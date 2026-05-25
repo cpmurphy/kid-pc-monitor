@@ -155,9 +155,9 @@ Choose option 2, `Remove scheduled task`
 
 ## 📸 Screenshots
 
-![Web Interface](screenshots/screenshot_1.png)
-![Screenshot 2](screenshots/screenshot_2.png)
-![Screenshot 3](screenshots/screenshot_3.png)
+![Main control panel](screenshots/main-control-panel.png)
+![View of an individual PC](screenshots/individual-pc.png)
+![Daily settings](screenshots/daily-settings.png)
 
 ## Prerequisites
 
