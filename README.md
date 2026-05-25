@@ -330,7 +330,7 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 ### Changing Daily Settings
 1. Select a PC
-2. Use the button "Change Daily Settings"
+2. Follow the link "Daily settings"
 2. Edit or remove daily allowance, bedtime and wake-up time.
 4. PC will lock automatically at bedtime and stay locked until the wake-up time.
 

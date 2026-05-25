@@ -121,9 +121,6 @@
     <div class="container">
         <div class="nav-row">
             <a href="/" class="back-btn">← Back to PCs</a>
-            {% if pc_info.get('reachable', true) %}
-            <a href="{{ url_for('daily_settings', ip=ip) }}" class="link-btn">Daily settings →</a>
-            {% endif %}
         </div>
         <p style="text-align:right;font-size:13px;margin:0 0 10px 0;">
             {% if not password_protected %}
@@ -203,6 +200,11 @@
                     <span class="muted">Not active</span>
                 {% endif %}
             </p>
+            {% if pc_info.get('reachable', true) %}
+            <p>
+            <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
+            </p>
+            {% endif %}
         </div>
         {% endif %}
 
