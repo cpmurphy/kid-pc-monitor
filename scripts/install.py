@@ -907,8 +907,8 @@ def run_install_flow():
         if not script_path:
             return False
 
-    wake_time = prompt_wake_up_time()
     bed_time = prompt_bed_time()
+    wake_time = prompt_wake_up_time()
     allowance = prompt_daily_allowance()
     daily_path, state_ok = write_agent_daily_settings_to_state(
         target_user,

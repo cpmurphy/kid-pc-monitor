@@ -1,6 +1,6 @@
 # Kid PC Monitor
 
-DIY parental control system for parents who code. If you know what 'pip install' means, this is for you!
+DIY parental control system for tech-savvy parents. If you know what 'pip install' means, this could be for you!
 
 ![Python](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -20,13 +20,10 @@ DIY parental control system for parents who code. If you know what 'pip install'
 - **👤 User-specific restrictions** - Monitor only specific Windows accounts
 - **📊 Real-time status** - See current limits and time remaining
 
-## 📸 Screenshots
+Note: this is a fork from rookie7799's implementation.  I'd like to thank
+them for all the work providing the starting point.  As it is a fork, they have no
+responsibility for any problems with this version.
 
-![Web Interface](screenshots/screenshot_1.png)
-![Screenshot 2](screenshots/screenshot_2.png)
-![Screenshot 3](screenshots/screenshot_3.png)
-
-## 🚀 Quick Start
 
 ## ⚠️ Technical Skills Required
 
@@ -34,122 +31,273 @@ This is NOT a one-click solution. You'll need to:
 - Install Python
 - Use a terminal / command prompt
 - Understand IP addresses
-- Open firewall ports where needed (Windows on kid PCs; on Linux parents, e.g. `ufw` or your distro's firewall)
-- On kid PCs: set up a Windows scheduled task (the installer does this)
+- Open firewall ports where needed
+- Set up a Windows scheduled task (the installer does this)
 
-If these terms scare you, consider commercial alternatives like:
+If these terms are unfamiliar or you don't want to spend the time, consider commercial alternatives like:
 - Qustodio
 - Net Nanny
 - Windows Family Safety
 
-### Prerequisites
-- **Kid PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
-- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only)
-- **Network:** Kid PCs must accept inbound TCP **9999** from the machine running the web panel (usually the same LAN; cross-subnet works if routed and allowed by firewalls). The web panel listens on TCP **5000** for your browser or phone.
+## Quick Setup
 
-Auto-discovery scans the `/24` subnet containing the parent machine's primary IPv4 address (see `scan_for_servers` in `src/kid_pc_monitor/web_panel.py`). If discovery misses a PC, you can still use it once the agent is reachable at its IP.
+This is the most common scenario.  For others, see below.
 
-### Python virtual environment (Linux)
+You need:
 
-Modern Debian, Ubuntu, and similar distributions block `pip install` into the system Python (you may see `externally-managed-environment`). **Create a project venv first**, then install into it:
+* One or more Windows PCs used by your child
+* One parent Windows PC (For Mac/Linux see below)
+* Both on the same home network
 
-```bash
-cd kid-pc-monitor
-python3 -m venv venv
-# If venv creation fails: sudo apt install python3-venv python3-pip
-./venv/bin/python3 -m pip install -r requirements.txt
-./venv/bin/python3 -m pip install -e .
+
+* [Git](https://git-scm.com/install/)
+
+### Before You Start
+
+On every computer you will need:
+
+1. [Python](https://www.python.org/downloads/)
+
+
+During installation on Windows:
+
+- Check "Add Python to PATH"
+- Choose "Install for all users"
+
+Test it:
+
+```powershell
+python --version
 ```
 
-After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`, or `./scripts/run_web_panel.py` (the launch scripts switch to `venv/` automatically when it exists).
+2.  [Git](https://git-scm.com/install/)
 
-### Installation
 
-There are two ways to set up Kid PC Monitor:
+Test it:
 
-#### Windows agent firewall (kid PCs)
+```powershell
+git --version
+```
 
-When you run `scripts/install.py` as administrator, it creates a Windows Firewall inbound rule for TCP **9999** scoped to the scheduled `pythonw.exe`. By default the rule applies only on **Private** and **Domain** networks—not **Public**—so strangers on open Wi‑Fi cannot reach the agent.
+### On the kid’s PC
 
-After the scheduled task is created, the installer asks whether to allow **Public** networks too. Say **yes** if you use a laptop and a child might disconnect and reconnect Wi‑Fi; Windows can then treat your home network as Public and block remote control until you fix the network profile or re-run the installer. Desktop PCs on a trusted home LAN usually keep the default (**no**). Only enable Public if you accept the extra exposure on genuinely untrusted networks.
+Log in as the kid and open PowerShell as an Admin user.
 
-**Troubleshooting:** If scans find no PCs but Minecraft works, check `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` on the kid PC—the agent logs network profile and firewall state at startup. See [docs/FAQ.md](docs/FAQ.md) for the full checklist.
+Run:
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
+cd kid-pc-monitor
+pip install -r requirements.txt
+python scripts\install.py
+```
 
-#### Option A: Separate Parent PC (Recommended)
+The install script walks you through the installation.
+For this setup, you want to:
 
-Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
+ 1. You would like the first option, `Create/Update scheduled task`
+ 2. You're running as admin, so choose (2) the monitoring agent should run
+    under a different user.
+ 3. Enter the kid's username when asked.
+ 4. Enter the regular bed time, wake-up time and daily time allowance.
+ 5. When prompted about public networks, you should allow it unless you
+    really are concerned about your home network being insecure.
+ 
 
-1. **On each kid's PC:**
-```bash
-git clone https://github.com/rookie7799/kid-pc-monitor.git
+### On the parent PC
+
+ 1. Install Python from python.org
+ 2. Open PowerShell
+
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
+cd kid-pc-monitor
+pip install -r requirements.txt
+pip install -e .
+kid-pc-web-panel
+```
+
+Then
+
+Open this on your phone or laptop:
+
+http://`<IP address of parent's PC>`:5000
+
+#### How to Find Your PC's IP Address
+
+Open Powershell and type:
+
+```powershell
+ipconfig
+```
+
+You'll want the line that says `IPv4 Address`,
+
+```powershell
+IPv4 Address . . . . . . . . . . : 192.168.x.x
+```
+
+## To Uninstall
+
+### On the Kid’s PC
+
+```powershell
+cd kid-pc-monitor
+python scripts\install.py
+```
+
+Choose option 2, `Remove scheduled task`
+
+### On the Parent’s PC
+
+No action needed because you didn't install anything. (You will need to
+remember to run the web panel again if you reboot.)
+
+## 📸 Screenshots
+
+![Web Interface](screenshots/screenshot_1.png)
+![Screenshot 2](screenshots/screenshot_2.png)
+![Screenshot 3](screenshots/screenshot_3.png)
+
+## Prerequisites
+
+To use this tool effectively, you'll want to have a separate parent/admin
+machine to run the web interface.
+
+- **Kid's PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
+- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only) The web panel listens on TCP **5000** for your browser or phone.
+
+## Network Consideratinos
+
+The kids' PCs must accept inbound TCP **9999** from the machine running
+the web panel (usually the same LAN; cross-subnet works if routed and
+allowed by firewalls).
+
+The parent computer and kid computers usually need to be:
+
+* on the same home Wi-Fi network
+* able to reach each other directly
+
+<details>
+<summary>Scanning for PCs (Technical Details)</summary>
+By default the `/24` subnet containing the parent
+machine's primary IPv4 address is scanned. (See `scan_for_servers` in
+`src/kid_pc_monitor/web_panel.py`). If discovery misses a PC, you can
+still use it once the agent is reachable at its IP.  If you need to
+scan an entirely different network (rare), you can enter a different
+`/24` to scan.
+</details>
+
+## Installation
+
+Installation is in two parts.  You install the agent on the kid's PC (as
+many PCs and as many accounts as needed) and you install the admin UI on
+a computer you control.
+
+## Option A -- Separate Kid and Parent PCs
+
+### Kid's PC
+
+Only Windows is supported currently.
+
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 pip install -r requirements.txt
 
-# Run installer as administrator
-python scripts/install.py
+<# Run installer as administrator #>
+python scripts\install.py
 ```
 
-The installer asks whether to install for **this account** (the simple path — works when the kid's account is the only one on the PC, even if it has admin rights) or for **a different user account** (cross-user install: a parent/admin runs the installer and provides the child's username; the agent then launches in the child's session at their logon).
+The installer asks whether to install for **this account** (the simple
+path — works when the kid's account is the only one on the PC, even
+if it has admin rights) or for **a different user account** (cross-user
+install: a parent/admin runs the installer and provides the child's
+username; the agent then launches in the child's session at their logon).
 
-For the cross-user mode:
+For cross-user mode:
 - Files install to `C:\ProgramData\KidPCMonitor` and the child account is granted read+execute.
 - Python must be installed **for all users** (not the per-user `%LOCALAPPDATA%\Programs\Python\…` install) so the child's task can launch `pythonw.exe`. The installer refuses with a clear message if only a per-user Python is found.
 - The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid).
 - The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile.
 
-2. **On your PC (Windows or macOS; for Linux, see the Linux parent steps below):**
-```bash
-git clone https://github.com/rookie7799/kid-pc-monitor.git
+#### Windows agent firewall
+
+When you run `scripts/install.py` as administrator, it creates a
+Windows Firewall inbound rule for TCP **9999** scoped to the scheduled
+`pythonw.exe`. By default the rule applies only on **Private** and
+**Domain** networks—not **Public**—so strangers on open Wi‑Fi
+cannot reach the agent.
+
+After the scheduled task is created, the installer asks whether to
+allow **Public** networks too. Say **yes** if you use a laptop and a
+child might disconnect and reconnect Wi‑Fi; Windows can then treat
+your home network as Public and block remote control until you fix the
+network profile or re-run the installer. Desktop PCs on a trusted home
+LAN usually keep the default (**no**). Only enable Public if you accept
+the extra exposure on genuinely untrusted networks.
+
+### Parent's PC
+
+Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
+
+2. **On your PC (Windows for MacOS/Linux, see the Linux parent steps below):**
+
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 pip install -r requirements.txt
 pip install -e .
 
-# Run the web panel (any of these work):
+<# Run the web panel (any of these work): #>
 kid-pc-web-panel
-# or: python -m kid_pc_monitor.web_panel
-# or: python scripts/run_web_panel.py
+<# or: python -m kid_pc_monitor.web_panel #>
+<# or: python scripts/run_web_panel.py #>
 
-# Open in browser: http://YOUR-PC-IP:5000
+<# Open in browser: http://YOUR-PC-IP:5000 #>
 ```
 
-**Linux parent machine:** The web panel does not require `pywin32`; `requirements.txt` installs it only on Windows. On Debian/Ubuntu you must use a venv (see [Python virtual environment (Linux)](#python-virtual-environment-linux) above). From the repo root:
+After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`,
+or (the launch scripts switch to `venv/` automatically when it exists).
+
+#### MacOS/Linux
 
 ```bash
-git clone https://github.com/rookie7799/kid-pc-monitor.git
 cd kid-pc-monitor
 python3 -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
-./venv/bin/python3 -m pip install -r requirements.txt
-./venv/bin/python3 -m pip install -e .
-./venv/bin/kid-pc-web-panel
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+kid-pc-web-panel
 ```
+#### Install as a Service (Advanced, Linux Only)
 
-Then open `http://YOUR-LINUX-IP:5000` from your phone or browser. Allow inbound TCP **5000** on the Linux host (example with UFW: `sudo ufw allow 5000/tcp`).
+Assuming you have a system that runs systemd, you can run the web
+panel as a background service.
 
-**Install as a user service (survives reboot when user lingering is enabled):** from the repo root, after creating the venv and running `./venv/bin/python3 -m pip install -r requirements.txt`:
+After creating the venv and running
+`./venv/bin/python3 -m pip install -r requirements.txt`:
+
 
 ```bash
-chmod +x scripts/install_web_panel_linux.sh
 ./scripts/install_web_panel_linux.sh install   # writes ~/.config/systemd/user/kid-pc-monitor-web-panel.service
 ./scripts/install_web_panel_linux.sh status
 # ./scripts/install_web_panel_linux.sh uninstall   # when you want it gone
 ```
 
-Use `./scripts/install_web_panel_linux.sh cat-unit` to preview the unit. Override the interpreter with `PYTHON=./venv/bin/python3 ./scripts/install_web_panel_linux.sh install` if needed. For the service to start at boot **before anyone logs in graphically**, run once: `sudo loginctl enable-linger "$USER"`.
+## Option B: Single PC Setup
 
-#### Option B: Single PC Setup
-
-Run everything on the kid's PC and access the admin panel from your phone. Convenient if you don't have a separate PC always running.
+Run everything on the kid's PC and access the admin panel from your
+phone. Convenient if you don't have a separate PC always running.
 
 1. **On the kid's PC (as administrator):**
-```bash
-git clone https://github.com/rookie7799/kid-pc-monitor.git
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 pip install -r requirements.txt
 
-# Install both services
-python scripts/install.py           # Installs pc_control
-python scripts/install_web_panel.py # Installs web panel
+<# Install both services #>
+python scripts/install.py           <# Installs pc_control #>
+python scripts/install_web_panel.py <# Installs web panel #>
 ```
 
 2. **On your phone:**
@@ -163,23 +311,6 @@ Both services run invisibly in the background using `pythonw.exe`.
 ---
 
 *Side note: if your kid is "good" with computers, consider copying the scripts somewhere less obvious.*
-
-## 🖥️ Command-line client
-
-From the repo root, run the CLI on your parent machine (Linux, macOS, or Windows). On Linux, create a venv first if you have not already (see [Python virtual environment (Linux)](#python-virtual-environment-linux)):
-
-```bash
-cd kid-pc-monitor
-python3 -m venv venv          # Linux (Debian/Ubuntu): required
-./venv/bin/python3 -m pip install -e .
-./venv/bin/kid-pc-cli scan
-./venv/bin/kid-pc-cli inspect 192.168.1.105
-./venv/bin/kid-pc-cli set-limit 192.168.1.105 60
-./venv/bin/kid-pc-cli add-lock-time 192.168.1.105 21:00
-./venv/bin/kid-pc-cli lock 192.168.1.105
-```
-
-Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
 
 ## 📖 Usage Guide
 
@@ -197,7 +328,7 @@ Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `ext
 3. Under **Set Wake-up Time**, choose when locks lift and the daily limit resets (e.g., 7:00 AM)
 4. PC will lock automatically at that time and stay locked until the **wake-up time** set during install (default 7:00 AM) — if the child signs back in after bedtime or before wake-up, the agent re-locks immediately. Early-morning use before wake-up is still blocked.
 
-   Wake-up time is stored in `C:\ProgramData\KidPCMonitor\install_config.json` and copied into the child's `%LOCALAPPDATA%\KidPCMonitor\pc_control_state.json` when possible. For cross-user installs, the child account should **sign in at least once** before install so their profile path exists.
+   Wake-up time is stored in `C:\ProgramData\KidPCMonitor\install_config.json` and copied into the child's `%LOCALAPPDATA%\KidPCMonitor\state.json` when possible. For cross-user installs, the child account should **sign in at least once** before install so their profile path exists.
 5. See the scheduled lock in "Current Settings"
 
 Note: when a usage limit, bedtime, or manual lock is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password. The **Lock Computer Now** button enables a manual lock that remains active until you clear all limits.
@@ -244,18 +375,41 @@ MONITORED_USERS = []
 EXEMPT_USERS = []
 ```
 
-**Use Case:** If multiple family members share one PC, you can restrict only the children's accounts while leaving parent accounts unrestricted.
+**Use Case:** If multiple family members share one PC, you can restrict
+only the children's accounts while leaving parent accounts unrestricted.
 
 ### Persistent State
-Settings are automatically saved to `pc_control_state.json` including:
+
+Settings are automatically saved to `state.json` including:
 - Daily usage limits
 - Scheduled lock times
 - Start time for usage tracking
 
 This means restrictions **survive PC restarts** - kids can't bypass by rebooting!
 
+## 🖥️ Command-line client
+
+From the repo root, run the CLI on your parent machine (Linux, macOS,
+or Windows). On Linux, create a venv first if you have not already (see
+[Python virtual environment (Linux)](#python-virtual-environment-linux)):
+
+```bash
+cd kid-pc-monitor
+python3 -m venv venv          # only needed on Linux (Debian/Ubuntu)
+./venv/bin/python3 -m pip install -e .
+./venv/bin/kid-pc-cli scan
+./venv/bin/kid-pc-cli inspect 192.168.1.105
+./venv/bin/kid-pc-cli set-limit 192.168.1.105 60
+./venv/bin/kid-pc-cli add-lock-time 192.168.1.105 21:00
+./venv/bin/kid-pc-cli lock 192.168.1.105
+```
+
+Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
+
 
 ## 🔧 Troubleshooting
+
+See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 
 ### "PC shows as Unknown"
 - Add custom names in configuration
@@ -275,7 +429,7 @@ This means restrictions **survive PC restarts** - kids can't bypass by rebooting
 - Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`)
 
 ### "Lock status not updating"
-- Restart pc_control.py
+- Restart `pc_control.py`
 - Check if LogonUI.exe detection works
 - See logs in console window
 
@@ -320,4 +474,4 @@ Created by parents, for parents. Special thanks to all contributors who help mak
 
 ---
 
-**Need Help?** Open an [issue](https://github.com/rookie7799/kid-pc-monitor/issues) or check our [FAQ](docs/FAQ.md)
+**Need Help?** Open an [issue](https://github.com/cpmurphy/kid-pc-monitor/issues) or check our [FAQ](docs/FAQ.md)
