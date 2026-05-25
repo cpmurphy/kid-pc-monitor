@@ -163,7 +163,7 @@ machine to run the web interface.
 - **Kid's PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
 - **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only) The web panel listens on TCP **5000** for your browser or phone.
 
-## Network Consideratinos
+## Network Considerations
 
 The kids' PCs must accept inbound TCP **9999** from the machine running
 the web panel (usually the same LAN; cross-subnet works if routed and
@@ -222,12 +222,12 @@ For cross-user mode:
 When you run `scripts/install.py` as administrator, it creates a
 Windows Firewall inbound rule for TCP **9999** scoped to the scheduled
 `pythonw.exe`. By default the rule applies only on **Private** and
-**Domain** networks—not **Public**—so strangers on open Wi‑Fi
+**Domain** networks—not **Public**—so strangers on open Wi-Fi
 cannot reach the agent.
 
 After the scheduled task is created, the installer asks whether to
 allow **Public** networks too. Say **yes** if you use a laptop and a
-child might disconnect and reconnect Wi‑Fi; Windows can then treat
+child might disconnect and reconnect Wi-Fi; Windows can then treat
 your home network as Public and block remote control until you fix the
 network profile or re-run the installer. Desktop PCs on a trusted home
 LAN usually keep the default (**no**). Only enable Public if you accept
@@ -250,13 +250,10 @@ pip install -e .
 <# Run the web panel (any of these work): #>
 kid-pc-web-panel
 <# or: python -m kid_pc_monitor.web_panel #>
-<# or: python scripts/run_web_panel.py #>
+<# or: python scripts\run_web_panel.py #>
 
 <# Open in browser: http://YOUR-PC-IP:5000 #>
 ```
-
-After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`,
-or (the launch scripts switch to `venv/` automatically when it exists).
 
 #### MacOS/Linux
 
@@ -268,6 +265,10 @@ pip install -r requirements.txt
 pip install -e .
 kid-pc-web-panel
 ```
+
+After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`,
+or (the launch scripts switch to `venv/` automatically when it exists).
+
 #### Install as a Service (Advanced, Linux Only)
 
 Assuming you have a system that runs systemd, you can run the web
@@ -275,7 +276,6 @@ panel as a background service.
 
 After creating the venv and running
 `./venv/bin/python3 -m pip install -r requirements.txt`:
-
 
 ```bash
 ./scripts/install_web_panel_linux.sh install   # writes ~/.config/systemd/user/kid-pc-monitor-web-panel.service
@@ -383,7 +383,7 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 ### Scan finds no PCs (agent may still be running)
 - On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` — startup logs network profile and firewall rule.
 - **Public network profile** is a common cause: the installer allows inbound TCP 9999 on **Private/Domain** only unless you opted into **Public**. Minecraft works; parent scan does not.
-- Set home Wi‑Fi to **Private**, or re-run `scripts/install.py` and allow Public for port 9999.
+- Set home Wi-Fi to **Private**, or re-run `scripts/install.py` and allow Public for port 9999.
 - Ensure parent and kid are on the same subnet (or scan the kid's subnet explicitly).
 
 ### "Can't connect from phone"
