@@ -204,7 +204,7 @@ def _merge_agent_daily_settings_into_file(
     *,
     wake_time: str,
     bed_time: str,
-    daily_limit: int | None,
+    allowance: int | None,
 ) -> None:
     daily_settings: dict = {}
     if daily_path.is_file():
@@ -214,7 +214,7 @@ def _merge_agent_daily_settings_into_file(
             daily_settings = {}
     daily_settings["wake_time"] = wake_time
     daily_settings["bed_time"] = bed_time
-    daily_settings["daily_limit"] = daily_limit
+    daily_settings["allowance"] = allowance
     daily_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = daily_path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(daily_settings, indent=2), encoding="utf-8")
@@ -236,22 +236,22 @@ def write_agent_daily_settings_via_powershell(
     *,
     wake_time: str,
     bed_time: str,
-    daily_limit: int | None,
+    allowance: int | None,
 ) -> Path | None:
     """Write agent daily settings into the child's profile via an elevated PowerShell helper."""
     safe_user = username.replace("'", "''")
     safe_wake = wake_time.replace("'", "''")
     safe_bed = bed_time.replace("'", "''")
-    if daily_limit is None:
-        daily_limit_ps = "$null"
+    if allowance is None:
+        allowance = "$null"
     else:
-        daily_limit_ps = str(int(daily_limit))
+        allowance_ps = str(int(allowance))
     ps = f"""
     $ErrorActionPreference = 'Stop'
     $name = '{safe_user}'
     $wake = '{safe_wake}'
     $bed = '{safe_bed}'
-    $dailyLimit = {daily_limit_ps}
+    $dailyLimit = {allowance_ps}
     $acct = New-Object System.Security.Principal.NTAccount($name)
     $sid = $acct.Translate([System.Security.Principal.SecurityIdentifier]).Value
     $key = "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\$sid"
@@ -272,7 +272,7 @@ def write_agent_daily_settings_via_powershell(
     }}
     $daily | Add-Member -NotePropertyName wake_time -NotePropertyValue $wake -Force
     $daily | Add-Member -NotePropertyName bed_time -NotePropertyValue $bed -Force
-    $daily | Add-Member -NotePropertyName daily_limit -NotePropertyValue $dailyLimit -Force
+    $daily | Add-Member -NotePropertyName allowance -NotePropertyValue $dailyLimit -Force
     $json = $daily | ConvertTo-Json -Depth 5
     Set-Content -LiteralPath $dailyPath -Value $json -Encoding UTF8
     Write-Output $dailyPath
@@ -304,7 +304,7 @@ def write_program_data_daily_settings(
     *,
     wake_time: str,
     bed_time: str,
-    daily_limit: int | None,
+    allowance: int | None,
 ) -> Path:
     """Write machine-wide install daily settings (always writable during admin install)."""
     dest = Path(INSTALL_DIR_DEFAULT)
@@ -314,7 +314,7 @@ def write_program_data_daily_settings(
         "target_user": target_user,
         "wake_time": wake_time,
         "bed_time": bed_time,
-        "daily_limit": daily_limit,
+        "allowance": allowance,
     }
     tmp = config_path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -327,7 +327,7 @@ def write_agent_daily_settings_to_state(
     *,
     wake_time: str,
     bed_time: str,
-    daily_limit: int | None,
+    allowance: int | None,
     same_user: bool,
 ) -> tuple[Path | None, bool]:
     """
@@ -339,7 +339,7 @@ def write_agent_daily_settings_to_state(
         username,
         wake_time=wake_time,
         bed_time=bed_time,
-        daily_limit=daily_limit,
+        allowance=allowance,
     )
     print(f"   Install daily_settings: {config_path}")
 
@@ -351,7 +351,7 @@ def write_agent_daily_settings_to_state(
             daily_path,
             wake_time=wake_time,
             bed_time=bed_time,
-            daily_limit=daily_limit,
+            allowance=allowance
         )
         _grant_user_modify_on_dir(username, state_dir)
         return daily_path, True
@@ -363,7 +363,7 @@ def write_agent_daily_settings_to_state(
             username,
             wake_time=wake_time,
             bed_time=bed_time,
-            daily_limit=daily_limit,
+            allowance=allowance,
         )
         if ps_path is not None:
             _grant_user_modify_on_dir(username, ps_path.parent)
@@ -909,16 +909,16 @@ def run_install_flow():
 
     wake_time = prompt_wake_up_time()
     bed_time = prompt_bed_time()
-    daily_limit = prompt_daily_allowance()
+    allowance = prompt_daily_allowance()
     daily_path, state_ok = write_agent_daily_settings_to_state(
         target_user,
         wake_time=wake_time,
         bed_time=bed_time,
-        daily_limit=daily_limit,
+        allowance=allowance,
         same_user=not cross_user,
     )
     if state_ok and daily_path is not None:
-        limit_label = f"{daily_limit} min/day" if daily_limit is not None else "no daily cap"
+        limit_label = f"{allowance} min/day" if allowance is not None else "no daily cap"
         print(
             f"\n✅ Schedule saved to {daily_path}"
             f"\n   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"

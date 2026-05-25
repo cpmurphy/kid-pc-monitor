@@ -14,7 +14,7 @@ from kid_pc_monitor.agent_state import (
     AgentStateStore,
     DailySettings,
     RuntimeState,
-    effective_daily_limit_minutes,
+    effective_daily_allowance_minutes,
     reset_runtime_for_new_period,
     runtime_state_is_current,
 )
@@ -116,7 +116,7 @@ class PCTimeControl:
         self.daily = DailySettings(
             bed_time=None,
             wake_time=DEFAULT_WAKE_UP_TIME,
-            limit=None,
+            allowance=None,
         )
         self.runtime = RuntimeState(
             timestamp=datetime.now(),
@@ -176,15 +176,15 @@ class PCTimeControl:
                 if self.daily.bed_time is not None
                 else "none"
             )
-            effective = effective_daily_limit_minutes(self.daily, self.runtime)
+            effective = effective_daily_allowance_minutes(self.daily, self.runtime)
             self.logger.info(
-                "State applied: bed_time=%s wake_time=%02d:%02d daily_limit=%s "
-                "effective_limit=%s manual_lock=%s accumulated_min=%.1f "
+                "State applied: bed_time=%s wake_time=%02d:%02d daily_allowance=%s "
+                "effective_allowance=%s manual_lock=%s accumulated_min=%.1f "
                 "extension_sec=%s",
                 bed_label,
                 self.daily.wake_time.hour,
                 self.daily.wake_time.minute,
-                self.daily.limit,
+                self.daily.allowance,
                 effective,
                 self.runtime.manual_lock_active,
                 self.runtime.accumulated_seconds / 60,
@@ -206,8 +206,8 @@ class PCTimeControl:
         except Exception as e:
             self.logger.error("Error saving state: %s", e, exc_info=True)
 
-    def _effective_usage_limit_minutes(self) -> float | None:
-        return effective_daily_limit_minutes(self.daily, self.runtime)
+    def _effective_usage_allowance_minutes(self) -> float | None:
+        return effective_daily_allowance_minutes(self.daily, self.runtime)
 
     def check_if_locked(self) -> bool:
         """True when this session's workstation is locked (OS-specific)."""
@@ -278,9 +278,9 @@ class PCTimeControl:
         self.daily.wake_time = dtime(hour, minute)
         self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
 
-    def set_daily_limit(self, minutes: int | None) -> None:
+    def set_daily_allowance(self, minutes: int | None) -> None:
         """Set the default daily screen-time allowance in minutes."""
-        self.daily.limit = minutes
+        self.daily.allowance = minutes
 
     def extend_time(self, minutes: int) -> None:
         """Add temporary extra allowance for the current usage period."""
@@ -317,11 +317,11 @@ class PCTimeControl:
         self.platform.cancel_shutdown()
 
     def get_time_remaining(self):
-        """Calculate minutes remaining until lock. Returns None if no limit set."""
+        """Calculate minutes remaining until lock. Returns None if no allowance set."""
         return minutes_until_lock(
             now=datetime.now(),
             bed_time=self.daily.bed_time,
-            effective_usage_limit_minutes=self._effective_usage_limit_minutes(),
+            effective_usage_allowance_minutes=self._effective_usage_allowance_minutes(),
             accumulated_minutes=self.runtime.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.runtime.manual_lock_active,
@@ -376,13 +376,13 @@ class PCTimeControl:
         Return (locked, reason) for whether the agent should currently be
         enforcing a lock. Treats each scheduled lock_time as the start of a
         window that runs until wake_time, so a child who signs in after bedtime
-        or before wake is still locked out. Usage-limit enforcement is a
-        simple "minutes-used >= limit" check for the current wake-to-wake day.
+        or before wake is still locked out. Usage-allowance enforcement is a
+        simple "minutes-used >= allowance" check for the current wake-to-wake day.
         """
         decision = lock_decision(
             now=datetime.now(),
             bed_time=self.daily.bed_time,
-            effective_usage_limit_minutes=self._effective_usage_limit_minutes(),
+            effective_usage_allowance_minutes=self._effective_usage_allowance_minutes(),
             accumulated_minutes=self.runtime.accumulated_seconds / 60,
             monitor_user=self.should_monitor_user(),
             manual_lock_active=self.runtime.manual_lock_active,
@@ -622,8 +622,8 @@ class RemoteControlServer:
                 return self.pc_control.current_user
 
             elif command == "GET_DAILY_LIMIT":
-                if self.pc_control.daily.limit is not None:
-                    return str(self.pc_control.daily.limit)
+                if self.pc_control.daily.allowance is not None:
+                    return str(self.pc_control.daily.allowance)
                 return "None"
 
             elif command == "GET_BED_TIME":
@@ -639,8 +639,8 @@ class RemoteControlServer:
                 return str(int(self.pc_control.runtime.accumulated_seconds))
 
             elif command == "GET_USAGE_LIMIT":
-                if self.pc_control.daily.limit is not None:
-                    return str(self.pc_control.daily.limit)
+                if self.pc_control.daily.allowance is not None:
+                    return str(self.pc_control.daily.allowance)
                 return "None"
 
             elif command == "GET_MANUAL_LOCK":
@@ -660,7 +660,7 @@ class RemoteControlServer:
                 remaining = self.pc_control.get_time_remaining()
                 if remaining is not None:
                     return f"{int(remaining)} minutes"
-                return "No limits set"
+                return "No allowances set"
 
             elif command == "GET_STATUS":
                 actual_locked = self.pc_control.check_if_locked()
@@ -680,27 +680,27 @@ class RemoteControlServer:
             elif command.startswith("SET_LIMIT:"):
                 try:
                     minutes = int(command.split(":", 1)[1])
-                    self.pc_control.set_daily_limit(minutes)
-                    # Legacy: setting a new limit gives the kid a fresh budget from now.
+                    self.pc_control.set_daily_allowance(minutes)
+                    # Legacy: setting a new allowance gives the kid a fresh budget from now.
                     self.pc_control.runtime.accumulated_seconds = 0.0
                     self.pc_control.runtime.cumulative_extension_seconds = 0
                     self.pc_control.last_tick_at = None
                     self.pc_control.warnings_sent.clear()
-                    self.logger.info(f"Setting legacy limit: {minutes} mins")
+                    self.logger.info(f"Setting legacy allowance: {minutes} mins")
                     self.pc_control.save_state()
-                    return f"Daily limit set to {minutes} minutes"
+                    return f"Daily allowance set to {minutes} minutes"
                 except ValueError:
-                    return "Invalid limit value"
+                    return "Invalid allowance value"
 
             elif command.startswith("SET_DAILY_LIMIT:"):
                 try:
                     minutes = int(command.split(":", 1)[1])
-                    self.logger.info(f"Setting daily limit: {minutes} mins")
-                    self.pc_control.set_daily_limit(minutes)
+                    self.logger.info(f"Setting daily allowance: {minutes} mins")
+                    self.pc_control.set_daily_allowance(minutes)
                     self.pc_control.save_state()
-                    return f"Daily limit set to {minutes} minutes"
+                    return f"Daily allowance set to {minutes} minutes"
                 except ValueError:
-                    return "Invalid limit value"
+                    return "Invalid allowance value"
 
             elif command.startswith("ADD_LOCK_TIME:"):
                 try:
@@ -748,11 +748,11 @@ class RemoteControlServer:
                     return "Invalid time value"
 
             elif command == "CLEAR_USAGE_LIMIT":
-                self.logger.info(f"Clearing usage limit")
-                self.pc_control.set_daily_limit(None)
+                self.logger.info(f"Clearing usage allowance")
+                self.pc_control.set_daily_allowance(None)
                 self.pc_control.save_state()
-                self.logger.info("Daily limit cleared")
-                return "Daily limit cleared"
+                self.logger.info("Daily allowance cleared")
+                return "Daily allowance cleared"
 
             elif command == "CLEAR_LOCK_TIMES":
                 self.logger.info(f"Clearing bedtime")
@@ -778,14 +778,14 @@ class RemoteControlServer:
 
             elif command == "CLEAR_ALL":
                 self.logger.info(f"Clearing all locks")
-                self.pc_control.set_daily_limit(None)
+                self.pc_control.set_daily_allowance(None)
                 self.pc_control.clear_bed_time()
                 self.pc_control.runtime.manual_lock_active = False
                 self.pc_control.clear_extensions()
                 self.pc_control.warnings_sent.clear()
                 self.pc_control.save_state()
-                self.logger.info("All limits and locks cleared")
-                return "All limits and locks cleared"
+                self.logger.info("All allowances and locks cleared")
+                return "All allowances and locks cleared"
 
             elif command == "HELP":
                 return (
@@ -806,7 +806,7 @@ class RemoteControlServer:
                     "GET_TIME_REMAINING - Get time until next lock\n"
                     "MESSAGE:<text> - Show popup message\n"
                     "SET_DAILY_LIMIT:<minutes> - Set default daily allowance\n"
-                    "SET_LIMIT:<minutes> - Legacy: set daily limit and reset usage\n"
+                    "SET_LIMIT:<minutes> - Legacy: set daily allowance and reset usage\n"
                     "SET_BED_TIME:HH:MM - Set bedtime curfew\n"
                     "ADD_LOCK_TIME:HH:MM - Legacy alias for SET_BED_TIME\n"
                     "SET_WAKE_TIME:HH:MM - Set morning wake-up time\n"
@@ -864,7 +864,7 @@ def main() -> int:
     # Create control instance
     control = PCTimeControl(platform=platform)
 
-    # Enforce usage limits, bedtimes, and warnings (separate from the TCP server)
+    # Enforce usage allowance, bedtime, and warnings (separate from the TCP server)
     enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
     enforcement_thread.start()
 

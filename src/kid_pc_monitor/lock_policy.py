@@ -88,7 +88,7 @@ def lock_decision(
     *,
     now: datetime,
     bed_time: dtime | None,
-    effective_usage_limit_minutes: float | None,
+    effective_usage_allowance_minutes: float | None,
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
@@ -98,8 +98,8 @@ def lock_decision(
     Decide whether the agent should enforce a lock at now.
 
     bed_time starts a curfew that lasts until wake_time (not midnight).
-    Usage limits lock once accumulated_minutes for the current wake-to-wake period
-    reaches effective_usage_limit_minutes (daily allowance plus any extensions).
+    Usage allowances lock once accumulated_minutes for the current wake-to-wake period
+    reaches effective_usage_allowance_minutes (daily allowance plus any extensions).
     """
     if not monitor_user:
         return LockDecision(False)
@@ -119,15 +119,15 @@ def lock_decision(
         )
 
     if (
-        effective_usage_limit_minutes is not None
-        and accumulated_minutes >= effective_usage_limit_minutes
+        effective_usage_allowance_minutes is not None
+        and accumulated_minutes >= effective_usage_allowance_minutes
     ):
-        limit_label = int(effective_usage_limit_minutes)
-        if effective_usage_limit_minutes != limit_label:
-            limit_label = round(effective_usage_limit_minutes, 1)
+        allowance_label = int(effective_usage_allowance_minutes)
+        if effective_usage_allowance_minutes != allowance_label:
+            allowance_label = round(effective_usage_allowance_minutes, 1)
         return LockDecision(
             True,
-            f"Daily allowance of {limit_label} minutes reached",
+            f"Daily allowance of {allowance_label} minutes reached",
         )
 
     return LockDecision(False)
@@ -137,7 +137,7 @@ def minutes_until_lock(
     *,
     now: datetime,
     bed_time: dtime | None,
-    effective_usage_limit_minutes: float | None,
+    effective_usage_allowance_minutes: float | None,
     accumulated_minutes: float,
     monitor_user: bool = True,
     manual_lock_active: bool = False,
@@ -150,7 +150,7 @@ def minutes_until_lock(
     if lock_decision(
         now=now,
         bed_time=bed_time,
-        effective_usage_limit_minutes=effective_usage_limit_minutes,
+        effective_usage_allowance_minutes=effective_usage_allowance_minutes,
         accumulated_minutes=accumulated_minutes,
         monitor_user=monitor_user,
         manual_lock_active=manual_lock_active,
@@ -174,8 +174,8 @@ def minutes_until_lock(
         minutes_remaining = (bed_datetime - now).total_seconds() / 60
         min_remaining = minutes_remaining
 
-    if effective_usage_limit_minutes is not None:
-        minutes_remaining = effective_usage_limit_minutes - accumulated_minutes
+    if effective_usage_allowance_minutes is not None:
+        minutes_remaining = effective_usage_allowance_minutes - accumulated_minutes
         if min_remaining is None or minutes_remaining < min_remaining:
             min_remaining = minutes_remaining
 

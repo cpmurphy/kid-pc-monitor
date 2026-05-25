@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class DailySettings:
     bed_time: dtime | None
     wake_time: dtime
-    limit: int | None  # minutes; None = no screen-time cap
+    allowance: int | None  # minutes; None = no screen-time cap
 
 
 @dataclass
@@ -44,14 +44,14 @@ def _parse_timestamp(raw: str) -> datetime:
     return datetime.fromisoformat(raw)
 
 
-def effective_daily_limit_minutes(daily: DailySettings, runtime: RuntimeState) -> float | None:
+def effective_daily_allowance_minutes(daily: DailySettings, runtime: RuntimeState) -> float | None:
     """Return the enforced cap in minutes, or None when there is no usage cap."""
     extension_minutes = runtime.cumulative_extension_seconds / 60
-    if daily.limit is None:
+    if daily.allowance is None:
         if extension_minutes <= 0:
             return None
         return extension_minutes
-    return daily.limit + extension_minutes
+    return daily.allowance + extension_minutes
 
 
 def runtime_state_is_current(
@@ -86,7 +86,7 @@ def reset_runtime_for_new_period(runtime: RuntimeState, now: datetime | None = N
 def daily_to_dict(daily: DailySettings) -> dict:
     payload: dict = {
         "wake_time": _format_time(daily.wake_time),
-        "limit": daily.limit,
+        "allowance": daily.allowance,
     }
     if daily.bed_time is not None:
         payload["bed_time"] = _format_time(daily.bed_time)
@@ -115,14 +115,14 @@ def load_daily_from_dict(data: dict) -> DailySettings:
     else:
         bed_time = parse_time_hhmm(str(bed_raw))
 
-    limit = data.get("limit")
-    if limit is not None:
-        limit = int(limit)
+    allowance = data.get("allowance")
+    if allowance is not None:
+        allowance = int(allowance)
 
     return DailySettings(
         bed_time=bed_time,
         wake_time=wake_time,
-        limit=limit,
+        allowance=allowance,
     )
 
 
@@ -192,14 +192,14 @@ def migrate_legacy_state(
         wake_time = parse_time_hhmm(legacy["wake_time"])
 
     bed_time = _legacy_lock_times_to_bed_time(legacy.get("lock_times"))
-    limit = legacy.get("usage_limit")
-    if limit is not None:
-        limit = int(limit)
+    allowance = legacy.get("usage_allowance")
+    if allowance is not None:
+        allowance = int(allowance)
 
     daily = DailySettings(
         bed_time=bed_time,
         wake_time=wake_time,
-        limit=limit,
+        allowance=allowance,
     )
 
     now = datetime.now()
@@ -263,7 +263,7 @@ def _bootstrap_daily_from_program_data(current_user: str) -> DailySettings | Non
                     return DailySettings(
                         bed_time=None,
                         wake_time=wake_time,
-                        limit=None,
+                        allowance=None,
                     )
                 except ValueError:
                     pass
@@ -315,7 +315,7 @@ class AgentStateStore:
         daily = DailySettings(
             bed_time=None,
             wake_time=DEFAULT_WAKE_TIME,
-            limit=None,
+            allowance=None,
         )
         runtime = fresh_runtime_state()
         self.save(daily, runtime)

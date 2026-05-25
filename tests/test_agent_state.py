@@ -13,7 +13,7 @@ from kid_pc_monitor.agent_state import (
     AgentStateStore,
     DailySettings,
     RuntimeState,
-    effective_daily_limit_minutes,
+    effective_daily_allowance_minutes,
     migrate_legacy_state,
     reset_runtime_for_new_period,
     runtime_state_is_current,
@@ -21,25 +21,25 @@ from kid_pc_monitor.agent_state import (
 
 
 class AgentStateTests(unittest.TestCase):
-    def test_effective_daily_limit_includes_extensions(self) -> None:
-        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), limit=120)
+    def test_effective_daily_allowance_includes_extensions(self) -> None:
+        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), allowance=120)
         runtime = RuntimeState(
             timestamp=datetime.now(),
             accumulated_seconds=0,
             manual_lock_active=False,
             cumulative_extension_seconds=1800,
         )
-        self.assertEqual(effective_daily_limit_minutes(daily, runtime), 150)
+        self.assertEqual(effective_daily_allowance_minutes(daily, runtime), 150)
 
-    def test_effective_daily_limit_none_without_base_or_extension(self) -> None:
-        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), limit=None)
+    def test_effective_daily_allowance_none_without_base_or_extension(self) -> None:
+        daily = DailySettings(bed_time=None, wake_time=dtime(7, 0), allowance=None)
         runtime = RuntimeState(
             timestamp=datetime.now(),
             accumulated_seconds=0,
             manual_lock_active=False,
             cumulative_extension_seconds=0,
         )
-        self.assertIsNone(effective_daily_limit_minutes(daily, runtime))
+        self.assertIsNone(effective_daily_allowance_minutes(daily, runtime))
 
     def test_runtime_state_is_current_uses_wake_time_period(self) -> None:
         wake = dtime(7, 0)
@@ -68,7 +68,7 @@ class AgentStateTests(unittest.TestCase):
                     {
                         "lock_times": ["21:00"],
                         "wake_time": "08:30",
-                        "usage_limit": 90,
+                        "usage_allowance": 90,
                         "manual_lock_active": True,
                         "accumulated_seconds": 120,
                         "accumulated_date": datetime.now().date().isoformat(),
@@ -81,7 +81,7 @@ class AgentStateTests(unittest.TestCase):
             daily, runtime = migrated
             self.assertEqual(daily.bed_time, dtime(21, 0))
             self.assertEqual(daily.wake_time, dtime(8, 30))
-            self.assertEqual(daily.limit, 90)
+            self.assertEqual(daily.allowance, 90)
             self.assertTrue(runtime.manual_lock_active)
             self.assertAlmostEqual(runtime.accumulated_seconds, 120.0)
 
@@ -91,7 +91,7 @@ class AgentStateTests(unittest.TestCase):
             daily = DailySettings(
                 bed_time=dtime(21, 0),
                 wake_time=dtime(7, 0),
-                limit=120,
+                allowance=120,
             )
             runtime = RuntimeState(
                 timestamp=datetime.now(),
@@ -102,7 +102,7 @@ class AgentStateTests(unittest.TestCase):
             store.save(daily, runtime)
             loaded_daily, loaded_runtime = store.load()
             self.assertEqual(loaded_daily.bed_time, dtime(21, 0))
-            self.assertEqual(loaded_daily.limit, 120)
+            self.assertEqual(loaded_daily.allowance, 120)
             self.assertAlmostEqual(loaded_runtime.accumulated_seconds, 300.0)
             self.assertEqual(loaded_runtime.cumulative_extension_seconds, 900)
 
@@ -112,7 +112,7 @@ class AgentStateTests(unittest.TestCase):
             daily_path = data_dir / "daily_settings.json"
             state_path = data_dir / "state.json"
             daily_path.write_text(
-                json.dumps({"wake_time": "07:00", "bed_time": None, "limit": 60}),
+                json.dumps({"wake_time": "07:00", "bed_time": None, "allowance": 60}),
                 encoding="utf-8",
             )
             state_path.write_text(

@@ -77,7 +77,7 @@ class PCTimeControlTests(unittest.TestCase):
                 start_background_threads=False,
             )
             control.set_bed_time(21, 0)
-            control.set_daily_limit(90)
+            control.set_daily_allowance(90)
             control.runtime.manual_lock_active = True
             control.runtime.accumulated_seconds = 120.0
             control.runtime.cumulative_extension_seconds = 900
@@ -89,7 +89,7 @@ class PCTimeControlTests(unittest.TestCase):
                 start_background_threads=False,
             )
             self.assertEqual(reloaded.daily.bed_time, dtime(21, 0))
-            self.assertEqual(reloaded.daily.limit, 90)
+            self.assertEqual(reloaded.daily.allowance, 90)
             self.assertTrue(reloaded.runtime.manual_lock_active)
             self.assertAlmostEqual(reloaded.runtime.accumulated_seconds, 120.0)
             self.assertEqual(reloaded.runtime.cumulative_extension_seconds, 900)
@@ -119,10 +119,10 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=Path(tmp),
                 start_background_threads=False,
             )
-            control.set_daily_limit(60)
+            control.set_daily_allowance(60)
             control.runtime.accumulated_seconds = 100.0
             control.extend_time(30)
-            self.assertEqual(control.daily.limit, 60)
+            self.assertEqual(control.daily.allowance, 60)
             self.assertAlmostEqual(control.runtime.accumulated_seconds, 100.0)
             self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
 

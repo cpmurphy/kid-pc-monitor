@@ -26,7 +26,7 @@ class LockPolicyTests(unittest.TestCase):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 21, 5),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
         )
 
@@ -37,7 +37,7 @@ class LockPolicyTests(unittest.TestCase):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 15, 45),
             bed_time=None,
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
             manual_lock_active=True,
         )
@@ -49,7 +49,7 @@ class LockPolicyTests(unittest.TestCase):
         decision = lock_decision(
             now=datetime(2026, 5, 18, 0, 5),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
             wake_time=dtime(7, 0),
         )
@@ -61,7 +61,7 @@ class LockPolicyTests(unittest.TestCase):
         decision = lock_decision(
             now=datetime(2026, 5, 18, 8, 0),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
             wake_time=dtime(7, 0),
         )
@@ -88,32 +88,32 @@ class LockPolicyTests(unittest.TestCase):
             is_in_bedtime_curfew(datetime(2026, 5, 18, 10, 0), dtime(21, 0), dtime(7, 0))
         )
 
-    def test_usage_limit_locks_once_accumulated_reaches_limit(self):
+    def test_usage_allowance_locks_once_accumulated_reaches_allowance(self):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 10, 45),
             bed_time=None,
-            effective_usage_limit_minutes=30,
+            effective_usage_allowance_minutes=30,
             accumulated_minutes=30,
         )
 
         self.assertTrue(decision.should_lock)
         self.assertIn("30", decision.reason)
 
-    def test_usage_limit_includes_extension_in_effective_cap(self):
+    def test_usage_allowance_includes_extension_in_effective_cap(self):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 10, 45),
             bed_time=None,
-            effective_usage_limit_minutes=150,
+            effective_usage_allowance_minutes=150,
             accumulated_minutes=150,
         )
 
         self.assertTrue(decision.should_lock)
 
-    def test_usage_limit_does_not_lock_below_limit(self):
+    def test_usage_allowance_does_not_lock_below_allowance(self):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 18, 0),
             bed_time=None,
-            effective_usage_limit_minutes=30,
+            effective_usage_allowance_minutes=30,
             accumulated_minutes=12,
         )
 
@@ -123,7 +123,7 @@ class LockPolicyTests(unittest.TestCase):
         decision = lock_decision(
             now=datetime(2026, 5, 17, 21, 5),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=30,
+            effective_usage_allowance_minutes=30,
             accumulated_minutes=99,
             monitor_user=False,
             manual_lock_active=True,
@@ -135,7 +135,7 @@ class LockPolicyTests(unittest.TestCase):
         remaining = minutes_until_lock(
             now=datetime(2026, 5, 17, 21, 5),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
         )
 
@@ -145,7 +145,7 @@ class LockPolicyTests(unittest.TestCase):
         remaining = minutes_until_lock(
             now=datetime(2026, 1, 31, 20, 0),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=None,
+            effective_usage_allowance_minutes=None,
             accumulated_minutes=0,
         )
 
@@ -155,7 +155,7 @@ class LockPolicyTests(unittest.TestCase):
         remaining = minutes_until_lock(
             now=datetime(2026, 5, 17, 20, 0),
             bed_time=dtime(21, 0),
-            effective_usage_limit_minutes=30,
+            effective_usage_allowance_minutes=30,
             accumulated_minutes=25,
         )
 
