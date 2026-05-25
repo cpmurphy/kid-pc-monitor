@@ -49,9 +49,6 @@ You need:
 * One parent Windows PC (For Mac/Linux see below)
 * Both on the same home network
 
-
-* [Git](https://git-scm.com/install/)
-
 ### Before You Start
 
 On every computer you will need:
@@ -79,9 +76,9 @@ Test it:
 git --version
 ```
 
-### On the kid’s PC
+### On the Kid’s PC
 
-Log in as the kid and open PowerShell as an Admin user.
+Log in  as an Admin user and open PowerShell.
 
 Run:
 ```powershell
@@ -240,7 +237,9 @@ the extra exposure on genuinely untrusted networks.
 
 Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
 
-2. **On your PC (Windows for MacOS/Linux, see the Linux parent steps below):**
+#### On your Windows PC
+
+(For MacOS/Linux, see below.)
 
 ```powershell
 git clone https://github.com/cpmurphy/kid-pc-monitor.git
@@ -314,38 +313,32 @@ Both services run invisibly in the background using `pythonw.exe`.
 
 ## 📖 Usage Guide
 
-### Setting Up Daily Limits
+### Ad-hoc Changes
 1. Open the web interface on your phone
 2. Click on a PC
 3. View current settings in the "📊 Current Settings" section
-4. Use quick buttons: "30 min", "1 hour", "2 hours"
-5. Or set a custom time limit
-6. Page auto-refreshes to show the new limit
 
-### Setting Bedtime and Wake-up
+#### Granting More Time
+1. Use quick buttons to extend the time allowance for today: "30 min", "1 hour", "2 hours"
+2. Or enter number of minutes for a custom time extension
+3. Page refreshes to show the new time
+
+#### Manual Lock
+1. Use the "Lock Computer Now" button to do that.
+2. A more extreme option, "Shutdown Computer" is also available.
+3. Use the "Clear" button next to Manual lock to unlock.
+
+### Changing Daily Settings
 1. Select a PC
-2. Under **Set Bedtime Lock**, choose bedtime (e.g., 9:00 PM)
-3. Under **Set Wake-up Time**, choose when locks lift and the daily limit resets (e.g., 7:00 AM)
-4. PC will lock automatically at that time and stay locked until the **wake-up time** set during install (default 7:00 AM) — if the child signs back in after bedtime or before wake-up, the agent re-locks immediately. Early-morning use before wake-up is still blocked.
+2. Use the button "Change Daily Settings"
+2. Edit or remove daily allowance, bedtime and wake-up time.
+4. PC will lock automatically at bedtime and stay locked until the wake-up time.
 
-   Wake-up time is stored in `C:\ProgramData\KidPCMonitor\install_config.json` and copied into the child's `%LOCALAPPDATA%\KidPCMonitor\state.json` when possible. For cross-user installs, the child account should **sign in at least once** before install so their profile path exists.
-5. See the scheduled lock in "Current Settings"
-
-Note: when a usage limit, bedtime, or manual lock is active, the agent re-issues the lock whenever it detects the screen has been unlocked, so the child can't bypass it by typing their Windows password. The **Lock Computer Now** button enables a manual lock that remains active until you clear all limits.
-
-### Clearing/Removing Limits
-1. View the "📊 Current Settings" section
-2. Click the **❌ Clear** button next to any limit you want to remove
-3. Or click **🗑️ Clear All Limits** to remove everything
-4. Changes take effect immediately
-
-### Emergency Unlock
-While remote unlock isn't possible for security, you can:
-- Clear the usage limit to grant unlimited time
-- Clear scheduled locks to prevent automatic locking
-- Clear all limits to release a manual **Lock Computer Now** lock
-- Send a message to request unlock
-- Restart the PC (if no password)
+Note: when a usage limit, bedtime, or manual lock is active, the agent
+re-issues the lock whenever it detects the screen has been unlocked, so
+the child can't bypass it by typing their Windows password. The **Lock
+Computer Now** button enables a manual lock that remains active until
+you clear all limits.
 
 ## ⚙️ Configuration
 
@@ -358,36 +351,7 @@ CUSTOM_PC_NAMES = {
 }
 ```
 
-### User-Specific Monitoring
-Monitor only specific Windows user accounts. Edit `src/kid_pc_monitor/pc_control.py`:
-
-```python
-# Option 1: Monitor ONLY these specific users
-MONITORED_USERS = ['Tommy', 'Sarah']  # Only these kids are restricted
-EXEMPT_USERS = []
-
-# Option 2: Monitor everyone EXCEPT these users
-MONITORED_USERS = []
-EXEMPT_USERS = ['pavel', 'Mom', 'Dad']  # Parents are exempt
-
-# Option 3: Monitor ALL users (default)
-MONITORED_USERS = []
-EXEMPT_USERS = []
-```
-
-**Use Case:** If multiple family members share one PC, you can restrict
-only the children's accounts while leaving parent accounts unrestricted.
-
-### Persistent State
-
-Settings are automatically saved to `state.json` including:
-- Daily usage limits
-- Scheduled lock times
-- Start time for usage tracking
-
-This means restrictions **survive PC restarts** - kids can't bypass by rebooting!
-
-## 🖥️ Command-line client
+## 🖥️ Command-line client (Advanced, Experimental)
 
 From the repo root, run the CLI on your parent machine (Linux, macOS,
 or Windows). On Linux, create a venv first if you have not already (see
@@ -395,7 +359,7 @@ or Windows). On Linux, create a venv first if you have not already (see
 
 ```bash
 cd kid-pc-monitor
-python3 -m venv venv          # only needed on Linux (Debian/Ubuntu)
+python3 -m venv venv
 ./venv/bin/python3 -m pip install -e .
 ./venv/bin/kid-pc-cli scan
 ./venv/bin/kid-pc-cli inspect 192.168.1.105
