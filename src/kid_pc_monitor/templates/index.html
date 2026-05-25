@@ -5,140 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kids PC Control Panel</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        .scan-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 20px 0;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .scan-btn:hover {
-            background-color: #45a049;
-        }
-        .scan-form {
-            background: white;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .scan-form label {
-            display: block;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        .scan-form input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        .scan-hint {
-            color: #666;
-            font-size: 13px;
-            margin: 8px 0 12px;
-        }
-        .advanced-scan {
-            margin-bottom: 4px;
-        }
-        .advanced-scan > summary {
-            display: inline-block;
-            color: #2196F3;
-            cursor: pointer;
-            font-size: 14px;
-            list-style: none;
-        }
-        .advanced-scan > summary::-webkit-details-marker {
-            display: none;
-        }
-        .advanced-scan > summary:hover {
-            text-decoration: underline;
-        }
-        .advanced-scan[open] > summary {
-            margin-bottom: 10px;
-        }
-        .scan-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .pc-card {
-            background: white;
-            padding: 20px;
-            margin: 10px 0;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .pc-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-        .pc-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-        }
-        .pc-ip {
-            color: #666;
-            font-size: 14px;
-        }
-        .status {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-        .status.online {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .status.locked {
-            background-color: #ff9800;
-            color: white;
-        }
-        .status.offline {
-            background-color: #9e9e9e;
-            color: white;
-        }
-        .pc-card.offline {
-            opacity: 0.85;
-        }
-        .last-scan {
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
     <script>
         // Auto-refresh every 30 seconds
         setTimeout(function() {
@@ -146,7 +13,7 @@
         }, 30000);
     </script>
 </head>
-<body>
+<body class="page-home">
     <div class="container">
         <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
 

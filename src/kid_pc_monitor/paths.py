@@ -23,3 +23,7 @@ def config_dir() -> Path:
 
 def template_dir() -> Path:
     return package_dir() / "templates"
+
+
+def static_dir() -> Path:
+    return package_dir() / "static"

@@ -23,7 +23,7 @@ kid-pc-cli = "kid_pc_monitor.pc_cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-kid_pc_monitor = ["templates/*.html"]
+kid_pc_monitor = ["templates/*.html", "static/*.css"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

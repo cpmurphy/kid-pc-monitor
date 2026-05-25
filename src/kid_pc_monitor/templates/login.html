@@ -5,19 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in — Kids PC Control Panel</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
-        .box { max-width: 400px; margin: 40px auto; background: white; padding: 24px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { font-size: 20px; color: #333; text-align: center; margin-top: 0; }
-        label { display: block; margin-top: 12px; color: #444; font-size: 14px; }
-        input[type="text"], input[type="password"] { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .hint { font-size: 13px; color: #666; margin-top: 14px; line-height: 1.4; }
-        button { width: 100%; margin-top: 20px; padding: 14px; background: #4CAF50; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-        button:hover { background: #45a049; }
-        .err { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 12px; font-size: 14px; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
 </head>
-<body>
+<body class="page-login">
     <div class="box">
         <h1>Sign in</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}

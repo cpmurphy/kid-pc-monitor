@@ -21,7 +21,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from kid_pc_monitor.paths import config_dir, package_dir, template_dir
+from kid_pc_monitor.paths import config_dir, package_dir, static_dir, template_dir
 from kid_pc_monitor.remote_client import (
     format_minutes_duration,
     format_seconds_duration,
@@ -108,7 +108,11 @@ def save_password(password: str) -> None:
 
 
 def create_app() -> Flask:
-    app = Flask(__name__, template_folder=str(template_dir()))
+    app = Flask(
+        __name__,
+        template_folder=str(template_dir()),
+        static_folder=str(static_dir()),
+    )
     record = load_auth_record()
     app.secret_key = (
         os.environ.get("KID_PC_MONITOR_SECRET")

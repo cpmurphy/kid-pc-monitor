@@ -1,0 +1,401 @@
+/* ============================================================
+   Web Panel — shared base styles
+   Loaded by every page in templates/. Per-page tweaks are
+   scoped under .page-* selectors set on <body>.
+   ============================================================ */
+
+/* ----- Reset / page chrome ----- */
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+    text-align: center;
+}
+
+/* ----- Layout containers ----- */
+
+.container {
+    margin: 0 auto;
+    max-width: 500px;
+}
+
+.page-home .container {
+    max-width: 600px;
+}
+
+.box {
+    background: white;
+    padding: 24px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.page-login .box {
+    max-width: 400px;
+    margin: 40px auto;
+}
+
+.page-password .box {
+    max-width: 440px;
+    margin: 30px auto;
+}
+
+/* ----- Page-specific heading sizes ----- */
+
+.page-control h1,
+.page-daily h1 {
+    font-size: 24px;
+}
+
+.page-login h1,
+.page-password h1 {
+    font-size: 20px;
+    margin-top: 0;
+}
+
+/* ============================================================
+   Control + Daily-settings: cards, buttons, status banners
+   ============================================================ */
+
+.action-group {
+    background: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.action-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.back-btn,
+.link-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #666;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.link-btn {
+    background-color: #607d8b;
+    font-size: 14px;
+    padding: 8px 14px;
+    margin-left: 8px;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.page-control .btn {
+    transition: background-color 0.3s;
+}
+
+.btn-lock     { background-color: #ff9800; color: white; }
+.btn-lock:hover     { background-color: #e68900; }
+.btn-shutdown { background-color: #f44336; color: white; }
+.btn-shutdown:hover { background-color: #da190b; }
+.btn-message  { background-color: #2196F3; color: white; }
+.btn-message:hover  { background-color: #0b7dda; }
+.btn-limit    { background-color: #9c27b0; color: white; }
+.btn-limit:hover    { background-color: #7b1fa2; }
+.btn-save     { background-color: #2196F3; color: white; }
+.btn-save:hover     { background-color: #0b7dda; }
+.btn-clear    { background-color: #f44336; color: white; }
+
+.status-message {
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+}
+
+.status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Inputs in control/daily (light border, vertical margin) */
+.page-control input[type="text"],
+.page-control input[type="number"],
+.page-daily input[type="number"],
+.page-daily input[type="time"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+/* ----- Control page only ----- */
+
+.quick-limit {
+    display: inline-block;
+    padding: 8px 15px;
+    margin: 5px;
+    background-color: #e0e0e0;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.quick-limit:hover {
+    background-color: #d0d0d0;
+}
+
+.readonly-value { color: #333; }
+.muted          { color: #999; }
+.stat-row       { margin: 8px 0; line-height: 1.5; }
+
+.clear-inline {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ----- Daily-settings hint ----- */
+
+.page-daily .hint {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 10px 0;
+    line-height: 1.4;
+}
+
+/* ============================================================
+   Home page (PC scan)
+   ============================================================ */
+
+.scan-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 20px 0;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.scan-btn:hover {
+    background-color: #45a049;
+}
+
+.scan-form {
+    background: white;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.scan-form label {
+    display: block;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.scan-form input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.scan-hint {
+    color: #666;
+    font-size: 13px;
+    margin: 8px 0 12px;
+}
+
+.advanced-scan { margin-bottom: 4px; }
+
+.advanced-scan > summary {
+    display: inline-block;
+    color: #2196F3;
+    cursor: pointer;
+    font-size: 14px;
+    list-style: none;
+}
+
+.advanced-scan > summary::-webkit-details-marker { display: none; }
+.advanced-scan > summary:hover { text-decoration: underline; }
+.advanced-scan[open] > summary { margin-bottom: 10px; }
+
+.scan-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.pc-card {
+    background: white;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.pc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.pc-card.offline { opacity: 0.85; }
+
+.pc-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.pc-ip {
+    color: #666;
+    font-size: 14px;
+}
+
+.status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.status.online  { background-color: #4CAF50; color: white; }
+.status.locked  { background-color: #ff9800; color: white; }
+.status.offline { background-color: #9e9e9e; color: white; }
+
+.last-scan {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+/* ============================================================
+   Login + Set-password (auth pages)
+   ============================================================ */
+
+.page-login label,
+.page-password label {
+    display: block;
+    color: #444;
+    font-size: 14px;
+}
+
+.page-login label    { margin-top: 12px; }
+.page-password label { margin-top: 14px; }
+
+.page-login input[type="text"],
+.page-login input[type="password"],
+.page-password input[type="text"],
+.page-password input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.page-login button,
+.page-password button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.page-login button         { background: #4CAF50; }
+.page-login button:hover   { background: #45a049; }
+.page-password button       { background: #2196F3; }
+.page-password button:hover { background: #0b7dda; }
+
+.page-login .hint,
+.page-password .hint {
+    font-size: 13px;
+    color: #666;
+    margin-top: 14px;
+    line-height: 1.4;
+}
+
+.err {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.ok {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+a.back {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: #666;
+}

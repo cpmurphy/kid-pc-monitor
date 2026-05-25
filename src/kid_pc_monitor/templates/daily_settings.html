@@ -5,25 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily settings — {{ pc_info.hostname }}</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f0f0f0; }
-        .container { max-width: 500px; margin: 0 auto; }
-        h1 { color: #333; text-align: center; font-size: 24px; }
-        .back-btn { display: inline-block; padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 5px; margin-bottom: 20px; }
-        .action-group { background: white; padding: 20px; margin: 15px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .action-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #333; }
-        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-        .btn-save { background-color: #2196F3; color: white; }
-        .btn-save:hover { background-color: #0b7dda; }
-        .btn-clear { background-color: #f44336; color: white; }
-        input[type="number"], input[type="time"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .hint { color: #666; font-size: 14px; margin: 0 0 10px 0; line-height: 1.4; }
-        .status-message { padding: 15px; margin: 15px 0; border-radius: 5px; text-align: center; display: none; }
-        .status-message.success { background-color: #d4edda; color: #155724; }
-        .status-message.error { background-color: #f8d7da; color: #721c24; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='panel.css') }}">
 </head>
-<body>
+<body class="page-daily">
     <div class="container">
         <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
 
