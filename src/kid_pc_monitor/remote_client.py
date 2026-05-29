@@ -152,35 +152,23 @@ def get_settings(host: str, port: int = DEFAULT_PORT) -> dict[str, Any] | None:
     return resp.settings if resp.ok else None
 
 
-# Web-panel action names not yet expressible in the v1 protocol, mapped to the
-# legacy line commands. Kept temporarily until the protocol grows these verbs.
-def _legacy_panel_command(action_name: str, payload: dict[str, Any]) -> str | None:
-    if action_name == "shutdown":
-        return "SHUTDOWN"
-    if action_name == "message":
-        return f"MESSAGE:{payload.get('message', '')}"
-    if action_name == "extend_time":
-        return f"EXTEND_TIME:{int(payload['minutes'])}"
-    if action_name == "clear_all":
-        return "CLEAR_ALL"
-    return None
-
-
 def perform_action(
     host: str,
     action_name: str,
     payload: dict[str, Any] | None = None,
     port: int = DEFAULT_PORT,
 ) -> tuple[bool, str]:
-    """Run a web-panel action over the structured protocol where possible.
-
-    Falls back to the legacy line protocol for actions the v1 protocol does not
-    yet cover (message, shutdown, extend_time, clear_all).
-    """
+    """Run a web-panel action over the structured (version 1) protocol."""
     p = payload or {}
     try:
         if action_name == "lock":
             return request_text(host, "lock", port=port)
+        if action_name == "shutdown":
+            return request_text(host, "shutdown", port=port)
+        if action_name == "message":
+            return request_text(host, "message", val=p.get("message", ""), port=port)
+        if action_name == "extend_time":
+            return request_text(host, "extend", val=int(p["minutes"]), port=port)
         if action_name == "clear_manual_lock":
             return request_text(host, "clear", var="manual_lock", port=port)
         if action_name == "clear_extensions":
@@ -201,9 +189,6 @@ def perform_action(
     except (ValueError, KeyError, TypeError) as exc:
         return False, f"Invalid value for {action_name}: {exc}"
 
-    legacy = _legacy_panel_command(action_name, p)
-    if legacy is not None:
-        return send_command(host, legacy, port=port)
     return False, f"Unknown action: {action_name}"
 
 

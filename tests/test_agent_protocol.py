@@ -167,7 +167,9 @@ class ResponseBuildingTests(unittest.TestCase):
 
     def test_capabilities_response(self) -> None:
         nodes = {n.name: n for n in proto.parse(proto.capabilities_response("abc"))}
-        self.assertIn("get", nodes["actions"].child_map())
+        actions = nodes["actions"].child_map()
+        self.assertIn("get", actions)
+        self.assertIn("extend", actions)
         self.assertIn("daily_limit", nodes["values"].child_map())
 
 
@@ -276,6 +278,38 @@ class DispatchTests(unittest.TestCase):
             resp = self._handle(control, action="clear", var="status")
             self.assertFalse(resp.ok)
             self.assertEqual(resp.error_code, proto.FORBIDDEN)
+
+    def test_extend_adds_to_extension_without_resetting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            control.runtime.cumulative_extension_seconds = 600
+            control.runtime.accumulated_seconds = 300.0
+            resp = self._handle(control, action="extend", val=15)
+            self.assertTrue(resp.ok)
+            # Extension grows; usage already accumulated is left untouched.
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 600 + 15 * 60)
+            self.assertEqual(control.runtime.accumulated_seconds, 300.0)
+
+    def test_extend_requires_value(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            resp = self._handle(control, action="extend")
+            self.assertFalse(resp.ok)
+            self.assertEqual(resp.error_code, proto.INVALID_REQUEST)
+
+    def test_message_shows_popup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            resp = self._handle(control, action="message", val="dinner time")
+            self.assertTrue(resp.ok)
+            self.assertIn(("PC Time Control", "dinner time"), control.platform.messages)
+
+    def test_shutdown_default_and_explicit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            self.assertTrue(self._handle(control, action="shutdown").ok)
+            self.assertTrue(self._handle(control, action="shutdown", val=30).ok)
+            self.assertEqual(control.platform.shutdown_calls, [60, 30])
 
     def test_list_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

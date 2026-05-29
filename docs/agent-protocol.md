@@ -61,7 +61,16 @@ One of
 - `clear` with by a single variable
 - `lock`
 - `unlock`
+- `extend` with `val` set to a number of minutes to add to today's allowance.
+  This accumulates; it never resets the usage already counted today.
+- `message` with `val` set to the text to show on the PC
+- `shutdown` with an optional `val` giving the warning period in seconds
+  (defaults to 60)
 - `list_capabilities`
+
+Note there is deliberately no "reset" action: `accumulated_seconds` and
+`cumulative_extension` accumulate until the daily `wake_time` rollover and are
+not zeroed by setting a new limit.
 
 ## Values
 
@@ -93,6 +102,9 @@ actions {
  clear "clear a single variable"
  lock "immediately lock (considered a manual lock)"
  unlock "immediately release a manual lock"
+ extend "add minutes of extra allowance for today (val=minutes)"
+ message "show a popup message on the PC (val=text)"
+ shutdown "shut down the PC after a warning (val=seconds, default 60)"
 }
 values {
  name "read-only, name of computer"

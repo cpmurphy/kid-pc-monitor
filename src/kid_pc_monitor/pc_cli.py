@@ -108,34 +108,30 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
-# CLI actions the v1 protocol covers, mapped to (action, var) pairs. A value,
-# when needed, is pulled from the parsed args below.
-_STRUCTURED_ACTIONS: dict[str, tuple[str, str | None]] = {
-    "lock": ("lock", None),
-    "add-lock-time": ("set", "bed_time"),
-    "set-wake-time": ("set", "wake_time"),
-    "clear-usage-limit": ("clear", "daily_limit"),
-    "clear-lock-times": ("clear", "bed_time"),
-    "clear-manual-lock": ("clear", "manual_lock"),
-}
-
-
-def _legacy_cli_command(name: str, args: argparse.Namespace) -> str | None:
-    """Map CLI actions not yet in the v1 protocol to legacy line commands."""
+def _structured_call(
+    name: str, args: argparse.Namespace
+) -> tuple[str, str | None, object] | None:
+    """Map a CLI action to a (action, var, val) structured request, or None."""
+    if name == "lock":
+        return "lock", None, None
     if name == "shutdown":
-        return "SHUTDOWN"
-    if name == "clear-all":
-        return "CLEAR_ALL"
-    if name == "help":
-        return "HELP"
+        return "shutdown", None, None
+    if name == "clear-usage-limit":
+        return "clear", "daily_limit", None
+    if name == "clear-lock-times":
+        return "clear", "bed_time", None
+    if name == "clear-manual-lock":
+        return "clear", "manual_lock", None
     if name == "message":
-        return f"MESSAGE:{args.text}"
-    if name == "set-limit":  # legacy reset semantics; no v1 equivalent yet
-        return f"SET_LIMIT:{args.minutes}"
+        return "message", None, args.text
     if name == "extend-time":
-        return f"EXTEND_TIME:{args.minutes}"
-    if name == "raw":
-        return args.command
+        return "extend", None, args.minutes
+    if name == "set-limit":  # set the daily limit (does not reset today's usage)
+        return "set", "daily_limit", args.minutes
+    if name == "add-lock-time":
+        return "set", "bed_time", args.time
+    if name == "set-wake-time":
+        return "set", "wake_time", args.time
     return None
 
 
@@ -144,14 +140,20 @@ def _cmd_action(args: argparse.Namespace) -> int:
     host = args.host
     port = args.port
 
-    if name in _STRUCTURED_ACTIONS:
-        action, var = _STRUCTURED_ACTIONS[name]
-        val = args.time if var in ("bed_time", "wake_time") else None
+    structured = _structured_call(name, args)
+    if structured is not None:
+        action, var, val = structured
         ok, response = request_text(host, action, var=var, val=val, port=port)
         return _emit(ok, response, args.json)
 
-    command = _legacy_cli_command(name, args)
-    if command is None:
+    # Remaining legacy line commands: clear-all, HELP (human-readable), and raw.
+    if name == "clear-all":
+        command = "CLEAR_ALL"
+    elif name == "help":
+        command = "HELP"
+    elif name == "raw":
+        command = args.command
+    else:
         print(f"Unknown action: {name}", file=sys.stderr)
         return 2
     ok, response = send_command(host, command, port=port)
@@ -215,7 +217,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_action(
         "set-limit",
-        "Set daily usage limit and reset the usage timer",
+        "Set the daily usage limit in minutes",
         minutes={"type": int, "metavar": "MINUTES", "help": "Minutes allowed today"},
     )
     add_action(

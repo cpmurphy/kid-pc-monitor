@@ -43,8 +43,14 @@ ACTIONS: dict[str, str] = {
     "clear": "clear a single variable",
     "lock": "immediately lock",
     "unlock": "release a manual lock",
+    "extend": "add minutes of extra allowance for today (val=minutes)",
+    "message": "show a popup message on the PC (val=text)",
+    "shutdown": "shut down the PC after a warning (val=seconds, default 60)",
     "list_capabilities": "describe supported actions and variables",
 }
+
+# Default warning period before shutdown, in seconds.
+DEFAULT_SHUTDOWN_SECONDS = 60
 
 # Every readable variable, in display order, with a human description.
 VARIABLES: dict[str, str] = {
@@ -409,6 +415,10 @@ def parse_request(body: str) -> Request:
             raise ProtocolError(UNKNOWN_VARIABLE, f"unknown variable: {var}", req_id)
         if action == "set" and val is None:
             raise ProtocolError(INVALID_REQUEST, "set requires a value", req_id)
+    elif action == "extend" and val is None:
+        raise ProtocolError(INVALID_REQUEST, "extend requires minutes", req_id)
+    elif action == "message" and val is None:
+        raise ProtocolError(INVALID_REQUEST, "message requires text", req_id)
 
     return Request(PROTOCOL_VERSION, req_id, action, var, val)
 
@@ -631,6 +641,26 @@ def _do_clear(control: Any, req: Request) -> str:
     return ok_response(req_id, "cleared")
 
 
+def _do_extend(control: Any, req: Request) -> str:
+    minutes = _parse_int(req.val, req.id)
+    control.extend_time(minutes)
+    control.save_state()
+    return ok_response(req.id, minutes)
+
+
+def _do_message(control: Any, req: Request) -> str:
+    control.show_message(str(req.val))
+    return ok_response(req.id, "message sent")
+
+
+def _do_shutdown(control: Any, req: Request) -> str:
+    seconds = DEFAULT_SHUTDOWN_SECONDS if req.val is None else _parse_int(req.val, req.id)
+    if seconds < 0:
+        raise ProtocolError(INVALID_VALUE, "seconds must not be negative", req.id)
+    control.shutdown_pc(seconds)
+    return ok_response(req.id, seconds)
+
+
 def dispatch(control: Any, req: Request) -> str:
     """Execute a validated request against ``control`` and return a response body."""
     if req.action == "list_capabilities":
@@ -641,6 +671,12 @@ def dispatch(control: Any, req: Request) -> str:
         return _do_set(control, req)
     if req.action == "clear":
         return _do_clear(control, req)
+    if req.action == "extend":
+        return _do_extend(control, req)
+    if req.action == "message":
+        return _do_message(control, req)
+    if req.action == "shutdown":
+        return _do_shutdown(control, req)
     if req.action == "lock":
         control.runtime.manual_lock_active = True
         control.lock_pc()
