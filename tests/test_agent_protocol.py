@@ -90,7 +90,7 @@ class FramingTests(unittest.TestCase):
         status, _body, _rest = proto.inspect_frame(b"35")
         self.assertEqual(status, proto.INCOMPLETE)
 
-    def test_inspect_legacy_command_is_not_frame(self) -> None:
+    def test_inspect_non_numeric_is_not_frame(self) -> None:
         status, _body, _rest = proto.inspect_frame(b"GET_STATUS")
         self.assertEqual(status, proto.NOT_FRAME)
 
@@ -360,21 +360,6 @@ class ServerIntegrationTests(unittest.TestCase):
                 resp = proto.parse_response(proto.read_frame(client_end))
                 self.assertTrue(resp.ok)
                 self.assertEqual(control.daily.allowance, 75)
-            finally:
-                client_end.close()
-                thread.join(timeout=2)
-
-    def test_legacy_command_still_works(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            control = PCTimeControl(
-                platform=FakeHostPlatform(),
-                data_directory=Path(tmp),
-                start_background_threads=False,
-            )
-            client_end, thread = self._serve(control)
-            try:
-                client_end.sendall(b"GET_STATUS")
-                self.assertEqual(client_end.recv(4096).decode().strip(), "UNLOCKED")
             finally:
                 client_end.close()
                 thread.join(timeout=2)

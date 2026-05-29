@@ -569,295 +569,31 @@ class RemoteControlServer:
         self.logger.info("Server stopped")
 
     def handle_client(self, client_socket, client_address, client_id):
-        """Handle communication with a connected client.
-
-        Supports both the version-1 length-framed structured protocol and the
-        legacy line protocol on the same port. A message whose head is a
-        numeric length prefix is treated as a structured frame; anything else
-        is a legacy command line.
-        """
-        buffer = b""
-        # None until the first message reveals which protocol this client speaks.
-        structured: bool | None = None
+        """Handle communication with a connected client using protocol v1."""
         try:
             while self.running:
                 try:
-                    status, body, rest = agent_protocol.inspect_frame(buffer)
+                    body = agent_protocol.read_frame(client_socket)
                 except agent_protocol.ProtocolError as e:
                     self.logger.warning("Client %s framing error: %s", client_id, e)
                     break
-
-                if status == agent_protocol.COMPLETE:
-                    buffer = rest
-                    structured = True
-                    self.logger.debug(
-                        "Structured request from %s (ID: %s)", client_address, client_id
-                    )
-                    response = agent_protocol.handle_request(self.pc_control, body)
-                    client_socket.sendall(agent_protocol.encode_frame(response))
-                    continue
-
-                if status == agent_protocol.NOT_FRAME and buffer:
-                    # Legacy line protocol: the whole buffer is one command.
-                    structured = False
-                    command = buffer.decode(errors="replace").strip()
-                    buffer = b""
-                    self.logger.debug(
-                        "Command from %s (ID: %s): %s", client_address, client_id, command
-                    )
-                    response = self.process_command(command)
-                    if response is not None:
-                        client_socket.sendall(response.encode())
-                    continue
-
-                # INCOMPLETE, or empty buffer: read more from the socket.
+                self.logger.debug(
+                    "Structured request from %s (ID: %s)", client_address, client_id
+                )
+                response = agent_protocol.handle_request(self.pc_control, body)
                 try:
-                    chunk = client_socket.recv(4096)
-                except socket.timeout:
-                    # Legacy clients expect periodic keepalives; structured
-                    # clients would mistake "ALIVE" for a corrupt frame.
-                    if structured is False:
-                        client_socket.sendall(b"ALIVE")
-                    continue
-                except Exception as e:
-                    self.logger.error(
-                        "Client %s error: %s", client_id, e, exc_info=True
+                    client_socket.sendall(agent_protocol.encode_frame(response))
+                except OSError as e:
+                    self.logger.warning(
+                        "Client %s send error: %s", client_id, e
                     )
                     break
-                if not chunk:
-                    break  # Client disconnected
-                buffer += chunk
 
         finally:
             client_socket.close()
             if client_id in self.clients:
                 del self.clients[client_id]
             self.logger.debug("Client %s (ID: %s) disconnected", client_address, client_id)
-
-    def process_command(self, command):
-        """Process incoming commands and return responses."""
-        try:
-            if command == "LOCK":
-                self.pc_control.runtime.manual_lock_active = True
-                self.pc_control.save_state()
-                self.logger.info("Manual lock triggered")
-                self.pc_control.lock_pc()
-                return "Manual lock enabled; PC locked"
-                
-            elif command == "SHUTDOWN":
-                self.logger.info("Shutdown triggered")
-                self.pc_control.shutdown_pc()
-                return "PC Shutting down"
-                
-            elif command == "GET_NAME":
-                return self.pc_control.platform.get_hostname()
-
-            elif command == "GET_CURRENT_USER":
-                return self.pc_control.current_user
-
-            elif command == "GET_DAILY_LIMIT":
-                if self.pc_control.daily.allowance is not None:
-                    return str(self.pc_control.daily.allowance)
-                return "None"
-
-            elif command == "GET_BED_TIME":
-                bed = self.pc_control.daily.bed_time
-                if bed is not None:
-                    return f"{bed.hour:02d}:{bed.minute:02d}"
-                return "None"
-
-            elif command == "GET_CUMULATIVE_EXTENSION":
-                return str(self.pc_control.runtime.cumulative_extension_seconds)
-
-            elif command == "GET_ACCUMULATED_SECONDS":
-                return str(int(self.pc_control.runtime.accumulated_seconds))
-
-            elif command == "GET_USAGE_LIMIT":
-                if self.pc_control.daily.allowance is not None:
-                    return str(self.pc_control.daily.allowance)
-                return "None"
-
-            elif command == "GET_MANUAL_LOCK":
-                return "YES" if self.pc_control.runtime.manual_lock_active else "NO"
-
-            elif command == "GET_LOCK_TIMES":
-                bed = self.pc_control.daily.bed_time
-                if bed is not None:
-                    return f"{bed.hour:02d}:{bed.minute:02d}"
-                return "None"
-
-            elif command == "GET_WAKE_TIME":
-                wt = self.pc_control.daily.wake_time
-                return f"{wt.hour:02d}:{wt.minute:02d}"
-
-            elif command == "GET_TIME_REMAINING":
-                remaining = self.pc_control.get_time_remaining()
-                if remaining is not None:
-                    return f"{round(remaining)} minutes"
-                return "No allowances set"
-
-            elif command == "GET_STATUS":
-                actual_locked = self.pc_control.check_if_locked()
-                if actual_locked != self.pc_control.is_locked:
-                    self.pc_control.is_locked = actual_locked
-                    self.logger.debug(
-                        "Status query: %s", 'LOCKED' if actual_locked else 'UNLOCKED'
-                    )
-                return "LOCKED" if actual_locked else "UNLOCKED"
-                
-            elif command.startswith("MESSAGE:"):
-                msg = command.split(":", 1)[1]
-                self.logger.info("Message received")
-                self.pc_control.show_message(msg)
-                return "Message sent"
-                
-            elif command.startswith("SET_LIMIT:"):
-                try:
-                    minutes = int(command.split(":", 1)[1])
-                    self.pc_control.set_daily_allowance(minutes)
-                    # Legacy: setting a new allowance gives the kid a fresh budget from now.
-                    self.pc_control.runtime.accumulated_seconds = 0.0
-                    self.pc_control.runtime.cumulative_extension_seconds = 0
-                    self.pc_control.last_tick_at = None
-                    self.pc_control.warnings_sent.clear()
-                    self.logger.info(f"Setting legacy allowance: {minutes} mins")
-                    self.pc_control.save_state()
-                    return f"Daily allowance set to {minutes} minutes"
-                except ValueError:
-                    return "Invalid allowance value"
-
-            elif command.startswith("SET_DAILY_LIMIT:"):
-                try:
-                    minutes = int(command.split(":", 1)[1])
-                    self.logger.info(f"Setting daily allowance: {minutes} mins")
-                    self.pc_control.set_daily_allowance(minutes)
-                    self.pc_control.save_state()
-                    return f"Daily allowance set to {minutes} minutes"
-                except ValueError:
-                    return "Invalid allowance value"
-
-            elif command.startswith("ADD_LOCK_TIME:"):
-                try:
-                    time_str = command.split(":", 1)[1]
-                    hour, minute = map(int, time_str.split(":"))
-                    self.logger.info(f"Setting legacy lock time to {hour:02d}:{minute:02d}")
-                    self.pc_control.set_bed_time(hour, minute)
-                    self.pc_control.save_state()
-                    return f"Legacy lock time set to {hour:02d}:{minute:02d}"
-                except ValueError:
-                    return "Invalid time format (use HH:MM)"
-
-            elif command.startswith("SET_BED_TIME:"):
-                try:
-                    time_str = command.split(":", 1)[1]
-                    hour, minute = map(int, time_str.split(":"))
-                    self.pc_control.set_bed_time(hour, minute)
-                    self.logger.info(f"Setting bedtime to {hour:02d}:{minute:02d}")
-                    self.pc_control.save_state()
-                    return f"Bedtime set to {hour:02d}:{minute:02d}"
-                except ValueError:
-                    return "Invalid time format (use HH:MM)"
-
-            elif command.startswith("SET_WAKE_TIME:"):
-                try:
-                    time_str = command.split(":", 1)[1]
-                    hour, minute = map(int, time_str.split(":"))
-                    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-                        return "Invalid time (hour/minute out of range)"
-                    self.logger.info(f"Setting wake up time to {hour:02d}:{minute:02d}")
-                    self.pc_control.set_wake_time(hour, minute)
-                    self.pc_control.save_state()
-                    return f"Wake-up time set to {hour:02d}:{minute:02d}"
-                except ValueError:
-                    return "Invalid time format (use HH:MM)"
-                    
-            elif command.startswith("EXTEND_TIME:"):
-                try:
-                    minutes = int(command.split(":", 1)[1])
-                    self.logger.info(f"Extending time by {minutes} mins")
-                    self.pc_control.extend_time(minutes)
-                    self.pc_control.save_state()
-                    return f"Extended time by {minutes} minutes"
-                except ValueError:
-                    return "Invalid time value"
-
-            elif command == "CLEAR_USAGE_LIMIT":
-                self.logger.info(f"Clearing usage allowance")
-                self.pc_control.set_daily_allowance(None)
-                self.pc_control.save_state()
-                self.logger.info("Daily allowance cleared")
-                return "Daily allowance cleared"
-
-            elif command == "CLEAR_LOCK_TIMES":
-                self.logger.info(f"Clearing bedtime")
-                self.pc_control.clear_bed_time()
-                self.pc_control.warnings_sent.clear()
-                self.pc_control.save_state()
-                self.logger.info("Bedtime cleared")
-                return "Bedtime cleared"
-
-            elif command == "CLEAR_EXTENSIONS":
-                self.logger.info(f"Clearing extensions")
-                self.pc_control.clear_extensions()
-                self.pc_control.save_state()
-                self.logger.info("Extensions cleared")
-                return "Extensions cleared"
-
-            elif command == "CLEAR_MANUAL_LOCK":
-                self.logger.info(f"Clearing manual lock")
-                self.pc_control.runtime.manual_lock_active = False
-                self.pc_control.save_state()
-                self.logger.info("Manual lock cleared")
-                return "Manual lock cleared"
-
-            elif command == "CLEAR_ALL":
-                self.logger.info(f"Clearing all locks")
-                self.pc_control.set_daily_allowance(None)
-                self.pc_control.clear_bed_time()
-                self.pc_control.runtime.manual_lock_active = False
-                self.pc_control.clear_extensions()
-                self.pc_control.warnings_sent.clear()
-                self.pc_control.save_state()
-                self.logger.info("All allowances and locks cleared")
-                return "All allowances and locks cleared"
-
-            elif command == "HELP":
-                return (
-                    "Available commands:\n"
-                    "LOCK - Lock the PC and keep it locked until cleared\n"
-                    "SHUTDOWN - Shutdown the PC\n"
-                    "GET_NAME - Get PC name\n"
-                    "GET_CURRENT_USER - Get current Windows username\n"
-                    "GET_STATUS - Check if PC is locked\n"
-                    "GET_DAILY_LIMIT - Get default daily allowance (minutes)\n"
-                    "GET_BED_TIME - Get bedtime curfew start\n"
-                    "GET_CUMULATIVE_EXTENSION - Extra seconds granted today\n"
-                    "GET_ACCUMULATED_SECONDS - Active-use seconds today\n"
-                    "GET_USAGE_LIMIT - Legacy alias for GET_DAILY_LIMIT\n"
-                    "GET_MANUAL_LOCK - Check if manual lock enforcement is active\n"
-                    "GET_LOCK_TIMES - Legacy alias for GET_BED_TIME\n"
-                    "GET_WAKE_TIME - Get morning wake-up / unlock time\n"
-                    "GET_TIME_REMAINING - Get time until next lock\n"
-                    "MESSAGE:<text> - Show popup message\n"
-                    "SET_DAILY_LIMIT:<minutes> - Set default daily allowance\n"
-                    "SET_LIMIT:<minutes> - Legacy: set daily allowance and reset usage\n"
-                    "SET_BED_TIME:HH:MM - Set bedtime curfew\n"
-                    "ADD_LOCK_TIME:HH:MM - Legacy alias for SET_BED_TIME\n"
-                    "SET_WAKE_TIME:HH:MM - Set morning wake-up time\n"
-                    "EXTEND_TIME:<minutes> - Grant extra time for today\n"
-                    "CLEAR_USAGE_LIMIT - Remove daily allowance default\n"
-                    "CLEAR_LOCK_TIMES - Remove bedtime default\n"
-                    "CLEAR_EXTENSIONS - Remove today's granted extensions\n"
-                    "CLEAR_MANUAL_LOCK - Remove manual lock enforcement\n"
-                    "CLEAR_ALL - Clear daily settings, extensions, and manual lock"
-                )
-                
-            else:
-                return "Unknown command (try HELP)"
-                
-        except Exception as e:
-            self.logger.error("Command processing error: %s", e, exc_info=True)
-            return f"Error processing command: {e}"
 
     def stop_server(self):
         """Stop the server and clean up resources."""

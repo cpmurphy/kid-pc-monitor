@@ -18,8 +18,7 @@ var daily_limit
 val 120
 ```
 
-The `v` is for protocol version.  We start at 1.  (The existing ad-hoc
-protocol is version zero.
+The `v` is for protocol version.  We start at 1.
 
 Example successful response body:
 ```

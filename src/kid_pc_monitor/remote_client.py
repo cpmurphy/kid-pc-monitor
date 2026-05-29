@@ -82,25 +82,6 @@ def parse_scan_subnet(subnet_arg: str | None) -> tuple[ipaddress.IPv4Network, st
     return network, str(network)
 
 
-def send_command(host: str, command: str, port: int = DEFAULT_PORT) -> tuple[bool, str]:
-    """Send a raw protocol command and return (success, response text)."""
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
-            client.settimeout(CONNECT_TIMEOUT)
-            client.connect((host, port))
-            client.send(command.encode())
-            response = client.recv(4096)
-        return True, response.decode(errors="replace").strip()
-    except OSError as exc:
-        return False, str(exc)
-
-
-def query_command(host: str, command: str, port: int = DEFAULT_PORT) -> str | None:
-    """Run a read-only command; return response text or None on failure."""
-    ok, response = send_command(host, command, port=port)
-    return response if ok else None
-
-
 # ---------------------------------------------------------------------------
 # Structured protocol (version 1) client helpers
 # ---------------------------------------------------------------------------
@@ -190,15 +171,6 @@ def perform_action(
         return False, f"Invalid value for {action_name}: {exc}"
 
     return False, f"Unknown action: {action_name}"
-
-
-def _parse_optional_int(raw: str | None) -> int | None:
-    if raw is None or raw == "None":
-        return None
-    try:
-        return int(raw)
-    except ValueError:
-        return None
 
 
 def is_pc_reachable(host: str, port: int = DEFAULT_PORT, timeout: float = QUERY_TIMEOUT) -> bool:
@@ -311,51 +283,6 @@ def get_current_user(ip: str, port: int = DEFAULT_PORT) -> str | None:
     if resp.ok and resp.result is not None:
         return str(resp.result)
     return None
-
-
-def get_daily_limit(ip: str, port: int = DEFAULT_PORT) -> int | None:
-    return _parse_optional_int(query_command(ip, "GET_DAILY_LIMIT", port=port))
-
-
-def get_usage_limit(ip: str, port: int = DEFAULT_PORT) -> int | None:
-    """Legacy alias for get_daily_limit."""
-    return get_daily_limit(ip, port=port)
-
-
-def get_bed_time(ip: str, port: int = DEFAULT_PORT) -> str | None:
-    raw = query_command(ip, "GET_BED_TIME", port=port)
-    if raw is None or raw == "None":
-        return None
-    return raw
-
-
-def get_manual_lock(ip: str, port: int = DEFAULT_PORT) -> bool:
-    return query_command(ip, "GET_MANUAL_LOCK", port=port) == "YES"
-
-
-def get_lock_times(ip: str, port: int = DEFAULT_PORT) -> list[str] | None:
-    """Legacy: returns a single bedtime as a one-item list."""
-    bed = get_bed_time(ip, port=port)
-    if bed is None:
-        return None
-    return [bed]
-
-
-def get_wake_time(ip: str, port: int = DEFAULT_PORT) -> str | None:
-    """Return wake-up time as HH:MM, or None if the agent did not respond."""
-    return query_command(ip, "GET_WAKE_TIME", port=port)
-
-
-def get_cumulative_extension_seconds(ip: str, port: int = DEFAULT_PORT) -> int | None:
-    return _parse_optional_int(query_command(ip, "GET_CUMULATIVE_EXTENSION", port=port))
-
-
-def get_accumulated_seconds(ip: str, port: int = DEFAULT_PORT) -> int | None:
-    return _parse_optional_int(query_command(ip, "GET_ACCUMULATED_SECONDS", port=port))
-
-
-def get_time_remaining(ip: str, port: int = DEFAULT_PORT) -> str | None:
-    return query_command(ip, "GET_TIME_REMAINING", port=port)
 
 
 def inspect_pc(host: str, port: int = DEFAULT_PORT) -> dict[str, Any]:

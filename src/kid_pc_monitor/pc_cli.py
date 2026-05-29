@@ -13,7 +13,6 @@ from kid_pc_monitor.remote_client import (
     parse_scan_subnet,
     request_text,
     scan_for_servers,
-    send_command,
 )
 
 
@@ -140,24 +139,27 @@ def _cmd_action(args: argparse.Namespace) -> int:
     host = args.host
     port = args.port
 
+    if name == "help":
+        ok, response = request_text(host, "list_capabilities", port=port)
+        return _emit(ok, response, args.json)
+
+    if name == "clear-all":
+        results = []
+        for var in ("daily_limit", "bed_time", "manual_lock", "cumulative_extension"):
+            ok, response = request_text(host, "clear", var=var, port=port)
+            if not ok:
+                return _emit(ok, response, args.json)
+            results.append(response)
+        return _emit(True, "All allowances and locks cleared", args.json)
+
     structured = _structured_call(name, args)
     if structured is not None:
         action, var, val = structured
         ok, response = request_text(host, action, var=var, val=val, port=port)
         return _emit(ok, response, args.json)
 
-    # Remaining legacy line commands: clear-all, HELP (human-readable), and raw.
-    if name == "clear-all":
-        command = "CLEAR_ALL"
-    elif name == "help":
-        command = "HELP"
-    elif name == "raw":
-        command = args.command
-    else:
-        print(f"Unknown action: {name}", file=sys.stderr)
-        return 2
-    ok, response = send_command(host, command, port=port)
-    return _emit(ok, response, args.json)
+    print(f"Unknown action: {name}", file=sys.stderr)
+    return 2
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -239,15 +241,7 @@ def _build_parser() -> argparse.ArgumentParser:
     add_action("clear-lock-times", "Remove all scheduled bedtime locks")
     add_action("clear-manual-lock", "Remove manual lock enforcement")
     add_action("clear-all", "Remove usage limit, bedtime locks, and manual lock")
-    add_action("help", "Show commands supported by the agent")
-
-    p_raw = sub.add_parser(
-        "raw",
-        help="Send a raw protocol command (e.g. GET_STATUS)",
-    )
-    _add_host_port(p_raw)
-    p_raw.add_argument("command", help="Command string sent to the agent")
-    p_raw.set_defaults(func=_cmd_action, action_name="raw")
+    add_action("help", "Show actions and variables supported by the agent")
 
     return parser
 

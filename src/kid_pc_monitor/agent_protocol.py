@@ -7,9 +7,7 @@ nested nodes, used for ``error``, ``settings``, and ``list_capabilities``
 responses.  The subset deliberately omits comments, type annotations, floating
 point numbers, and KDL's multi-line string syntax.
 
-The previous ad-hoc line protocol (``GET_STATUS`` etc.) is treated as version
-zero; both live side by side during the transition.  See
-``docs/agent-protocol.md`` for the full design.
+See ``docs/agent-protocol.md`` for the full design.
 """
 
 from __future__ import annotations
@@ -294,7 +292,7 @@ def inspect_frame(buffer: bytes) -> tuple[str, str | None, bytes]:
     Returns ``(status, body, rest)``:
     - ``COMPLETE``: ``body`` is the decoded frame, ``rest`` is leftover bytes.
     - ``INCOMPLETE``: a valid prefix but not all body bytes have arrived yet.
-    - ``NOT_FRAME``: the head is not a numeric length prefix (legacy command).
+    - ``NOT_FRAME``: the head is not a numeric length prefix.
     """
     newline = buffer.find(b"\n")
     if newline == -1:

@@ -36,7 +36,7 @@ class HostPlatform(ABC):
 
     @abstractmethod
     def get_hostname(self) -> str:
-        """Machine name for remote GET_NAME responses."""
+        """Machine name for agent protocol responses."""
 
     def log_connectivity_diagnostics(
         self,
