@@ -28,9 +28,9 @@ from kid_pc_monitor.remote_client import (
     get_default_scan_network,
     inspect_pc,
     parse_scan_subnet,
+    perform_action,
     refresh_discovered_entry,
     scan_for_servers,
-    send_command,
 )
 
 PANEL_USERNAME = "Kid PC Monitor"
@@ -265,47 +265,10 @@ def create_app() -> Flask:
         if not ip or not action_name:
             return {"success": False, "response": "Missing ip or action"}
 
-        command = _action_to_command(action_name, payload)
-        if command is None:
-            return {"success": False, "response": f"Unknown action: {action_name}"}
-
-        ok, response = send_command(ip, command)
+        ok, response = perform_action(ip, action_name, payload)
         return {"success": ok, "response": response}
 
     return app
-
-
-def _action_to_command(action_name: str, payload: dict[str, Any]) -> str | None:
-    if action_name == "lock":
-        return "LOCK"
-    if action_name == "shutdown":
-        return "SHUTDOWN"
-    if action_name == "message":
-        return f"MESSAGE:{payload.get('message', '')}"
-    if action_name == "extend_time":
-        return f"EXTEND_TIME:{int(payload['minutes'])}"
-    if action_name == "clear_manual_lock":
-        return "CLEAR_MANUAL_LOCK"
-    if action_name == "clear_extensions":
-        return "CLEAR_EXTENSIONS"
-    if action_name == "set_daily_limit":
-        minutes = payload.get("minutes")
-        if minutes is None or minutes == "":
-            return "CLEAR_USAGE_LIMIT"
-        return f"SET_DAILY_LIMIT:{int(minutes)}"
-    if action_name == "set_bed_time":
-        return f"SET_BED_TIME:{payload['time']}"
-    if action_name == "clear_bed_time":
-        return "CLEAR_LOCK_TIMES"
-    if action_name == "set_wake_time":
-        return f"SET_WAKE_TIME:{payload['time']}"
-    if action_name == "clear_usage_limit":
-        return "CLEAR_USAGE_LIMIT"
-    if action_name == "clear_lock_times":
-        return "CLEAR_LOCK_TIMES"
-    if action_name == "clear_all":
-        return "CLEAR_ALL"
-    return None
 
 
 def main() -> None:

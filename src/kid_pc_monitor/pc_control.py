@@ -10,6 +10,7 @@ import getpass
 import logging
 from pathlib import Path
 
+from kid_pc_monitor import agent_protocol
 from kid_pc_monitor.agent_state import (
     AgentStateStore,
     DailySettings,
@@ -568,32 +569,65 @@ class RemoteControlServer:
         self.logger.info("Server stopped")
 
     def handle_client(self, client_socket, client_address, client_id):
-        """Handle communication with a connected client."""
+        """Handle communication with a connected client.
+
+        Supports both the version-1 length-framed structured protocol and the
+        legacy line protocol on the same port. A message whose head is a
+        numeric length prefix is treated as a structured frame; anything else
+        is a legacy command line.
+        """
+        buffer = b""
+        # None until the first message reveals which protocol this client speaks.
+        structured: bool | None = None
         try:
             while self.running:
                 try:
-                    data = client_socket.recv(1024).decode().strip()
-                    if not data:
-                        break  # Client disconnected
-                        
+                    status, body, rest = agent_protocol.inspect_frame(buffer)
+                except agent_protocol.ProtocolError as e:
+                    self.logger.warning("Client %s framing error: %s", client_id, e)
+                    break
+
+                if status == agent_protocol.COMPLETE:
+                    buffer = rest
+                    structured = True
                     self.logger.debug(
-                        "Command from %s (ID: %s): %s", client_address, client_id, data
+                        "Structured request from %s (ID: %s)", client_address, client_id
                     )
-                    response = self.process_command(data)
-                    
+                    response = agent_protocol.handle_request(self.pc_control, body)
+                    client_socket.sendall(agent_protocol.encode_frame(response))
+                    continue
+
+                if status == agent_protocol.NOT_FRAME and buffer:
+                    # Legacy line protocol: the whole buffer is one command.
+                    structured = False
+                    command = buffer.decode(errors="replace").strip()
+                    buffer = b""
+                    self.logger.debug(
+                        "Command from %s (ID: %s): %s", client_address, client_id, command
+                    )
+                    response = self.process_command(command)
                     if response is not None:
                         client_socket.sendall(response.encode())
-                        
+                    continue
+
+                # INCOMPLETE, or empty buffer: read more from the socket.
+                try:
+                    chunk = client_socket.recv(4096)
                 except socket.timeout:
-                    # Send keepalive
-                    client_socket.sendall(b"ALIVE")
+                    # Legacy clients expect periodic keepalives; structured
+                    # clients would mistake "ALIVE" for a corrupt frame.
+                    if structured is False:
+                        client_socket.sendall(b"ALIVE")
                     continue
                 except Exception as e:
                     self.logger.error(
                         "Client %s error: %s", client_id, e, exc_info=True
                     )
                     break
-                    
+                if not chunk:
+                    break  # Client disconnected
+                buffer += chunk
+
         finally:
             client_socket.close()
             if client_id in self.clients:

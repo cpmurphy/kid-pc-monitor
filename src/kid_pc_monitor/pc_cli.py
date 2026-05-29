@@ -11,20 +11,10 @@ from kid_pc_monitor.remote_client import (
     DEFAULT_PORT,
     inspect_pc,
     parse_scan_subnet,
+    request_text,
     scan_for_servers,
     send_command,
 )
-
-# Maps CLI subcommand names to wire protocol commands (or builders).
-ACTION_COMMANDS: dict[str, str | None] = {
-    "lock": "LOCK",
-    "shutdown": "SHUTDOWN",
-    "clear-usage-limit": "CLEAR_USAGE_LIMIT",
-    "clear-lock-times": "CLEAR_LOCK_TIMES",
-    "clear-manual-lock": "CLEAR_MANUAL_LOCK",
-    "clear-all": "CLEAR_ALL",
-    "help": "HELP",
-}
 
 
 def _add_host_port(parser: argparse.ArgumentParser) -> None:
@@ -37,8 +27,7 @@ def _add_host_port(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def _run_action(host: str, command: str, port: int, json_out: bool) -> int:
-    ok, response = send_command(host, command, port=port)
+def _emit(ok: bool, response: str, json_out: bool) -> int:
     if json_out:
         print(json.dumps({"success": ok, "response": response}))
     elif ok:
@@ -119,30 +108,54 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+# CLI actions the v1 protocol covers, mapped to (action, var) pairs. A value,
+# when needed, is pulled from the parsed args below.
+_STRUCTURED_ACTIONS: dict[str, tuple[str, str | None]] = {
+    "lock": ("lock", None),
+    "add-lock-time": ("set", "bed_time"),
+    "set-wake-time": ("set", "wake_time"),
+    "clear-usage-limit": ("clear", "daily_limit"),
+    "clear-lock-times": ("clear", "bed_time"),
+    "clear-manual-lock": ("clear", "manual_lock"),
+}
+
+
+def _legacy_cli_command(name: str, args: argparse.Namespace) -> str | None:
+    """Map CLI actions not yet in the v1 protocol to legacy line commands."""
+    if name == "shutdown":
+        return "SHUTDOWN"
+    if name == "clear-all":
+        return "CLEAR_ALL"
+    if name == "help":
+        return "HELP"
+    if name == "message":
+        return f"MESSAGE:{args.text}"
+    if name == "set-limit":  # legacy reset semantics; no v1 equivalent yet
+        return f"SET_LIMIT:{args.minutes}"
+    if name == "extend-time":
+        return f"EXTEND_TIME:{args.minutes}"
+    if name == "raw":
+        return args.command
+    return None
+
+
 def _cmd_action(args: argparse.Namespace) -> int:
     name = args.action_name
     host = args.host
     port = args.port
 
-    if name == "message":
-        command = f"MESSAGE:{args.text}"
-    elif name == "set-limit":
-        command = f"SET_LIMIT:{args.minutes}"
-    elif name == "add-lock-time":
-        command = f"ADD_LOCK_TIME:{args.time}"
-    elif name == "set-wake-time":
-        command = f"SET_WAKE_TIME:{args.time}"
-    elif name == "extend-time":
-        command = f"EXTEND_TIME:{args.minutes}"
-    elif name == "raw":
-        command = args.command
-    else:
-        command = ACTION_COMMANDS.get(name)
-        if command is None:
-            print(f"Unknown action: {name}", file=sys.stderr)
-            return 2
+    if name in _STRUCTURED_ACTIONS:
+        action, var = _STRUCTURED_ACTIONS[name]
+        val = args.time if var in ("bed_time", "wake_time") else None
+        ok, response = request_text(host, action, var=var, val=val, port=port)
+        return _emit(ok, response, args.json)
 
-    return _run_action(host, command, port, args.json)
+    command = _legacy_cli_command(name, args)
+    if command is None:
+        print(f"Unknown action: {name}", file=sys.stderr)
+        return 2
+    ok, response = send_command(host, command, port=port)
+    return _emit(ok, response, args.json)
 
 
 def _build_parser() -> argparse.ArgumentParser:
