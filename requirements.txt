@@ -1,2 +1,3 @@
+cryptography>=3.0
 flask>=2.0.0
 pywin32>=300; sys_platform == 'win32'  # Windows agent / future Windows APIs (skipped on Linux/macOS)
