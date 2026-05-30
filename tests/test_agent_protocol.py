@@ -180,7 +180,7 @@ class AuthenticationTests(unittest.TestCase):
 
     def test_missing_auth_block_rejected(self) -> None:
         # A v2 frame with no auth block at all.
-        body = "v 2\nname kid-pc\ntimestamp 1710000000\nnonce \"%s\"\naction lock" % (
+        body = "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"%s\"\naction lock" % (
             "a" * 32
         )
         with self.assertRaises(ProtocolError) as ctx:
