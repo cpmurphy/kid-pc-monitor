@@ -49,6 +49,9 @@ Available codes are:
 - `invalid_value`
 - `forbidden`
 - `internal_error` a catch-all for anything else
+- `authentication_required` (v2) — a write action arrived without an `auth` block or without `name`
+- `authentication_failed` (v2) — signature does not verify or name mismatch
+- `stale_timestamp` (v2) — frame timestamp outside ±60 s window
 
 
 ## Actions
@@ -144,23 +147,188 @@ of the client, we:
 
 ## Security
 
-To be implemented in a follow-on version (not version 1).
+Security is implemented starting in protocol version 2.  Every request and
+every response carries an `auth` block with an HMAC-SHA256 signature.  Both
+sides verify the other's signature on every frame.
+
+### Threat model
+
+Kids on the same LAN can capture traffic, replay old commands, tamper with
+messages in flight, and redirect commands from one PC to another.  v2 makes
+the panel and agent mutually authenticate every exchange so that:
+
+- An agent only acts on commands genuinely issued by the parent panel.
+- The panel only trusts status data from the real agent.
+- A command captured on one PC cannot be replayed to a different PC.
+
+Blind replay on the *same* PC is defeated by a timestamp window.
+v2 does **not** encrypt the message payload — secrecy is out of scope.
+All traffic stays on the local trusted LAN.
+
+### Shared secret
+
+The parent chooses one secret — either a memorable passphrase or a long
+random token from a password manager — and supplies it on every PC that runs
+the panel or the agent.  Each side stores it encrypted-at-rest via the
+`secrets_store` module.  The stored secret is the raw passphrase; the per-
+agent HMAC signing key is derived on the fly (see *Cross-PC replay* below).
+
+### Authenticated wire format
+
+Every v2 frame includes an `auth` block as its **last** node.  The block is
+present on both requests and responses.
+
+**Request:**
 
 ```
 v 2
-id "uuid-or-random-hex"
-timestamp: 1710000000
-nonce "random-hex"
-action set
-var daily_limit
-val 120
+name bedroom-pc
+timestamp 1710000000
+nonce "a1b2c3d4e5f6..."
+action unlock
 auth {
-    key_id "parent-panel"
-    algorithm "hmac-sha256"
-    signature "..."
-  }
+  algorithm hmac-sha256
+  key_id "kid-pc-monitor-shared-secret"
+  signature "base64url-encoded-hmac..."
 }
 ```
 
-The signature covers the canonical request/response fields: version, id, timestamp,
-nonce, action, var, val.
+**Response:**
+
+```
+v 2
+timestamp 1710000001
+nonce "f6e5d4c3b2a1..."
+status ok
+result "unlocked"
+auth {
+  algorithm hmac-sha256
+  key_id "kid-pc-monitor-shared-secret"
+  signature "base64url-encoded-hmac..."
+}
+```
+
+| Field | Type | Required? | Notes |
+|---|---|---|---|
+| `version` | int | yes | Always `2` for v2 frames. |
+| `id` | string | no | Request id echoed back in the response. Omitted on responses if the request had none. |
+| `name` | string | **write actions only** | The target agent's hostname. Required for `set`, `clear`, `lock`, `unlock`, `extend`, `shutdown`, `message`. Optional for `get` and `list_capabilities`. |
+| `timestamp` | int | yes | Unix seconds as an integer (not a float). |
+| `nonce` | string | yes | At least 16 bytes of hex-encoded randomness. Provides uniqueness for the HMAC even when multiple requests share the same timestamp. |
+| `auth.algorithm` | bare | yes | Always `hmac-sha256`. |
+| `auth.key_id` | string | yes | Identifies the shared secret used to generate the signature |
+| `auth.signature` | string | yes | Base64url-encoded HMAC-SHA256 over the canonical signing string (see below). |
+
+When `name` is absent from a read-only request (the common case),
+the agent still signs, validates, and includes its own `name` in its
+response — so the panel learns the hostname without needing to know
+it in advance.
+
+### Signature computation
+
+Strip the `auth` block from the parsed frame.  Serialize every remaining
+top-level node — including any block nodes like `settings` or `error`, and
+any future block nodes added in later protocol versions — to their
+deterministic KDL string representation.  The HMAC is computed over the
+UTF-8 bytes of that serialized string.
+
+**Request canonical string** (the request above, minus `auth`):
+
+```
+v 2
+name bedroom-pc
+timestamp 1710000000
+nonce "a1b2c3d4e5f6..."
+action unlock
+```
+
+**Response canonical string** with a block node (`settings`):
+
+```
+v 2
+timestamp 1710000001
+nonce "f6e5d4c3b2a1..."
+status ok
+settings {
+  name "bedroom-pc"
+  status UNLOCKED
+  daily_limit 120
+}
+```
+
+The HMAC key is the UTF-8 bytes of the shared secret.
+
+Then `signature = base64url(HMAC-SHA256(key, canonical_string_bytes))`.
+
+The recipient strips `auth`, re-serializes the remaining nodes, and
+compares the HMAC.  Mismatch → `authentication_failed`.
+
+> The length-prefix framing layer is NOT part of the canonical string.
+> Node ordering within the `auth` block does not matter because the entire
+> block is stripped before serialization.  All other nodes are serialized
+> with the standard KDL-Subset serialization (two-space block indent, no
+> trailing newline).
+
+### Timestamp window
+
+Constant `TIMESTAMP_WINDOW_SECONDS = 60`.
+
+The recipient checks `abs(current_unix_time - frame_timestamp)` against the
+window.  A frame outside the window is rejected with `stale_timestamp`.
+This tolerates reasonable NTP drift (minutes, not hours) while preventing an
+attacker from saving a valid frame and replaying it the next day.
+
+### Cross-PC replay
+
+The signing key for destination-specific frames is
+`HMAC-SHA256(shared_secret, name)`.  Because the shared secret is mixed
+with the target agent's hostname, a signature that verifies under
+`bedroom-pc`'s key will **not** verify under `living-room-pc`'s key — even
+though both agents share the same raw secret.
+
+The agent receiving a frame with a `name` field checks that the value
+matches its own hostname.  A mismatch is rejected immediately
+(`authentication_failed`).  The panel likewise verifies that the name in a
+response matches the agent it expected to talk to.
+
+So a kid who captures an `unlock` command on `bedroom-pc` cannot replay it
+against `living-room-pc` — the signature won't verify under
+`living-room-pc`'s derived key, and the `name` field won't match.
+
+### Discovery handshake
+
+When the panel first contacts an agent on a given IP, it does not yet know
+the agent's hostname.  It sends a read-only request (`get name` or
+`get settings`) **without** a `name` field — the signing key is just the
+raw shared secret.  The agent answers with a signed response that includes
+its `name`.  From that point on the panel derives the per-agent key from
+the agent's `name` and includes `name` in all future requests.
+
+The agent never requires `name` for read-only actions (`get`,
+`list_capabilities`).  Write or destructive actions (`set`, `clear`, `lock`,
+`unlock`, `extend`, `shutdown`, `message`) **must** carry `name`, and it
+must match the agent's hostname.
+
+Example:
+
+```
+Panel → Agent:   v 2 ... timestamp ... nonce ... action get var name
+                 auth { algorithm hmac-sha256 key_id "..." signature "..." }
+                 (no name → HMAC key is raw shared secret)
+
+Agent → Panel:   v 2 ... name "bedroom-pc" ... status ok result "bedroom-pc"
+                 auth { algorithm hmac-sha256 key_id "..." signature "..." }
+
+Panel → Agent:   v 2 ... name "bedroom-pc" ... action unlock
+                 auth { algorithm hmac-sha256 key_id "..."
+                        signature "..." }
+                 (HMAC key is HMAC-SHA256(shared, "bedroom-pc"))
+```
+
+### Error codes (v2 additions)
+
+| Code | Meaning |
+|---|---|
+| `authentication_required` | A write action arrived without an `auth` block or without `name`. |
+| `authentication_failed` | The signature does not verify, or `name` does not match the agent. |
+| `stale_timestamp` | The frame's timestamp is outside the ±60 s window. |
