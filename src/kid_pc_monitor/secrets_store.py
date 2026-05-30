@@ -139,28 +139,6 @@ def load_secret(name: str) -> str | None:
             continue
     return None
 
-
-def prune_secret_copies(name: str, keep: Path) -> None:
-    """Delete copies of *name* that live outside *keep*.
-
-    Used to migrate a secret that was previously written to a lower-priority
-    location (e.g. an admin's per-user AppData) into the machine-wide directory
-    without leaving the stale copy behind.
-    """
-    try:
-        keep_resolved = keep.resolve()
-    except OSError:
-        keep_resolved = keep
-    for directory in secrets_dirs():
-        path = directory / f"{name}.enc"
-        try:
-            if not path.is_file() or path.resolve() == keep_resolved:
-                continue
-            path.unlink()
-        except OSError:
-            continue
-
-
 def delete_secret(name: str) -> bool:
     """Remove the named secret from every location.  True if any existed."""
     removed = False

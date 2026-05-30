@@ -94,7 +94,6 @@ def _persist_shared_secret(secret: str):
     child's session can read it (mode 2 / cross-user installs).
     """
     path = secrets_store.save_secret(SHARED_SECRET_NAME, secret)
-    secrets_store.prune_secret_copies(SHARED_SECRET_NAME, path)
     return path
 
 

@@ -120,7 +120,7 @@ class SharedSecretTests(unittest.TestCase):
 
             self.assertEqual(result, "legacy")
             self.assertTrue((machine / f"{name}.enc").is_file())
-            self.assertFalse((user / f"{name}.enc").is_file())
+
 
     def test_prompt_and_store_replace_existing(self) -> None:
         secrets_store.save_secret(shared_secret.SHARED_SECRET_NAME, "old secret value")
