@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+import io
 import socket
 import threading
 import unittest
 
-from kid_pc_monitor.remote_client import is_pc_reachable, refresh_discovered_entry
+from kid_pc_monitor import agent_protocol as proto
+from kid_pc_monitor.remote_client import (
+    _print_frame,
+    is_pc_reachable,
+    refresh_discovered_entry,
+    send_request,
+)
+
+SECRET = "test-shared-secret"
+HOSTNAME = "kid-pc"
 
 
 class RemoteClientTests(unittest.TestCase):
@@ -53,6 +63,160 @@ class RemoteClientTests(unittest.TestCase):
         self.assertFalse(entry["locked"])
         self.assertNotIn("current_user", entry)
         self.assertNotIn("usage_limit", entry)
+
+
+class VerboseOutputTests(unittest.TestCase):
+    """Tests for the -v / --verbose curl-style frame logging."""
+
+    def _serve_one(self, port_holder: list[int], ready: threading.Event, response_body: str) -> None:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server.bind(("127.0.0.1", 0))
+            server.listen(1)
+            port_holder.append(server.getsockname()[1])
+            ready.set()
+            conn, _addr = server.accept()
+            with conn:
+                # Read and discard the request frame(s)
+                proto.read_frame(conn)
+                conn.sendall(proto.encode_frame(response_body))
+
+    def test_print_frame_prefixes_lines(self) -> None:
+        out = io.StringIO()
+        _print_frame(">", "v 2\naction get", out=out)
+        lines = out.getvalue().splitlines()
+        self.assertEqual(lines[0], "> 14")
+        self.assertEqual(lines[1], "> v 2")
+        self.assertEqual(lines[2], "> action get")
+
+    def test_send_request_verbose_emits_connection_and_frames(self) -> None:
+        ready = threading.Event()
+        port_holder: list[int] = []
+        response = proto.sign_response(
+            proto.ok_content("kid-pc"),
+            secret=SECRET,
+            hostname=HOSTNAME,
+        )
+
+        thread = threading.Thread(
+            target=self._serve_one, args=(port_holder, ready, response), daemon=True
+        )
+        thread.start()
+        ready.wait(timeout=2)
+        port = port_holder[0]
+
+        out = io.StringIO()
+        resp = send_request(
+            "127.0.0.1",
+            "get",
+            var="name",
+            port=port,
+            secret=SECRET,
+            verbose=True,
+            out=out,
+        )
+        thread.join(timeout=2)
+
+        self.assertTrue(resp.ok)
+        self.assertEqual(resp.result, "kid-pc")
+
+        text = out.getvalue()
+        self.assertIn("* Connected to 127.0.0.1:", text)
+        self.assertIn(">", text)
+        self.assertIn("<", text)
+        # Verify the response frame was printed
+        self.assertIn("status ok", text)
+        self.assertIn("result kid-pc", text)
+
+    def test_send_request_verbose_with_discovery_handshake(self) -> None:
+        """Write actions trigger a discovery handshake; both frames are logged."""
+        ready = threading.Event()
+        port_holder: list[int] = []
+
+        # Server will receive two frames: discovery (get name) + the real request
+        def serve_two() -> None:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                server.bind(("127.0.0.1", 0))
+                server.listen(1)
+                port_holder.append(server.getsockname()[1])
+                ready.set()
+                conn, _addr = server.accept()
+                with conn:
+                    # Frame 1: discovery get name
+                    _req1 = proto.read_frame(conn)
+                    resp1 = proto.sign_response(
+                        proto.ok_content("kid-pc"),
+                        secret=SECRET,
+                        hostname=HOSTNAME,
+                    )
+                    conn.sendall(proto.encode_frame(resp1))
+                    # Frame 2: the actual lock request
+                    _req2 = proto.read_frame(conn)
+                    resp2 = proto.sign_response(
+                        proto.ok_content("locked"),
+                        secret=SECRET,
+                        hostname=HOSTNAME,
+                    )
+                    conn.sendall(proto.encode_frame(resp2))
+
+        thread = threading.Thread(target=serve_two, daemon=True)
+        thread.start()
+        ready.wait(timeout=2)
+        port = port_holder[0]
+
+        out = io.StringIO()
+        resp = send_request(
+            "127.0.0.1",
+            "lock",
+            port=port,
+            secret=SECRET,
+            verbose=True,
+            out=out,
+        )
+        thread.join(timeout=2)
+
+        self.assertTrue(resp.ok)
+        self.assertEqual(resp.result, "locked")
+
+        text = out.getvalue()
+        # Should see two request frames (discovery + lock) and two responses
+        self.assertEqual(text.count("* Connected to"), 1)
+        self.assertIn("action get", text)
+        self.assertIn("action lock", text)
+        self.assertIn("result kid-pc", text)
+        self.assertIn("result locked", text)
+
+    def test_send_request_silent_when_verbose_false(self) -> None:
+        ready = threading.Event()
+        port_holder: list[int] = []
+        response = proto.sign_response(
+            proto.ok_content("kid-pc"),
+            secret=SECRET,
+            hostname=HOSTNAME,
+        )
+
+        thread = threading.Thread(
+            target=self._serve_one, args=(port_holder, ready, response), daemon=True
+        )
+        thread.start()
+        ready.wait(timeout=2)
+        port = port_holder[0]
+
+        out = io.StringIO()
+        resp = send_request(
+            "127.0.0.1",
+            "get",
+            var="name",
+            port=port,
+            secret=SECRET,
+            verbose=False,
+            out=out,
+        )
+        thread.join(timeout=2)
+
+        self.assertTrue(resp.ok)
+        self.assertEqual(out.getvalue(), "")
 
 
 if __name__ == "__main__":

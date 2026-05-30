@@ -46,7 +46,7 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     if not args.quiet:
         print(f"Scanning {label} for agents on port {args.port}...")
 
-    pcs = scan_for_servers(port=args.port, subnet=args.subnet)
+    pcs = scan_for_servers(port=args.port, subnet=args.subnet, verbose=args.verbose)
 
     if args.json:
         payload = {
@@ -77,7 +77,7 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
 def _cmd_inspect(args: argparse.Namespace) -> int:
     try:
-        info = inspect_pc(args.host, port=args.port)
+        info = inspect_pc(args.host, port=args.port, verbose=args.verbose)
     except ConnectionError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
@@ -140,13 +140,13 @@ def _cmd_action(args: argparse.Namespace) -> int:
     port = args.port
 
     if name == "help":
-        ok, response = request_text(host, "list_capabilities", port=port)
+        ok, response = request_text(host, "list_capabilities", port=port, verbose=args.verbose)
         return _emit(ok, response, args.json)
 
     if name == "clear-all":
         results = []
         for var in ("daily_limit", "bed_time", "manual_lock", "cumulative_extension"):
-            ok, response = request_text(host, "clear", var=var, port=port)
+            ok, response = request_text(host, "clear", var=var, port=port, verbose=args.verbose)
             if not ok:
                 return _emit(ok, response, args.json)
             results.append(response)
@@ -155,7 +155,7 @@ def _cmd_action(args: argparse.Namespace) -> int:
     structured = _structured_call(name, args)
     if structured is not None:
         action, var, val = structured
-        ok, response = request_text(host, action, var=var, val=val, port=port)
+        ok, response = request_text(host, action, var=var, val=val, port=port, verbose=args.verbose)
         return _emit(ok, response, args.json)
 
     print(f"Unknown action: {name}", file=sys.stderr)
@@ -182,6 +182,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print machine-readable JSON output",
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Show raw request/response frames (like curl)",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
