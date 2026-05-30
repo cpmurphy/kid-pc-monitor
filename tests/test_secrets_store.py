@@ -14,11 +14,11 @@ from kid_pc_monitor import secrets_store
 class SecretsStoreTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
-        tmp_path = Path(self._tmpdir.name)
-        self._patch_config = mock.patch.object(
-            secrets_store, "config_dir", return_value=tmp_path
-        )
-        self._patch_config.start()
+        tmp_path = Path(self._tmpdir.name) / "secrets"
+        # Pin storage to an isolated directory so the machine-wide and per-user
+        # search paths never touch the real filesystem during tests.
+        self._prev_secrets_dir = os.environ.get(secrets_store._SECRETS_DIR_ENV)
+        os.environ[secrets_store._SECRETS_DIR_ENV] = str(tmp_path)
         self._patch_kdf = mock.patch.object(secrets_store, "_derive_key")
         self._derive_key = self._patch_kdf.start()
 
@@ -30,7 +30,10 @@ class SecretsStoreTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self._patch_kdf.stop()
-        self._patch_config.stop()
+        if self._prev_secrets_dir is None:
+            os.environ.pop(secrets_store._SECRETS_DIR_ENV, None)
+        else:
+            os.environ[secrets_store._SECRETS_DIR_ENV] = self._prev_secrets_dir
         self._tmpdir.cleanup()
 
     def _secrets_dir(self) -> Path:
@@ -97,6 +100,56 @@ class SecretsStoreTests(unittest.TestCase):
         secrets_store.save_secret("key", "value")
         self._secret_path("key").write_bytes(b"not-a-valid-fernet-token")
         self.assertIsNone(secrets_store.load_secret("key"))
+
+
+class SecretsStoreSearchPathTests(unittest.TestCase):
+    """Cross-account (mode 2) storage: machine-wide vs per-user directories."""
+
+    def setUp(self) -> None:
+        self._machine = tempfile.TemporaryDirectory()
+        self._user = tempfile.TemporaryDirectory()
+        # No explicit override: exercise the real machine/per-user search order.
+        os.environ.pop(secrets_store._SECRETS_DIR_ENV, None)
+        self._patch_machine = mock.patch.object(
+            secrets_store, "_machine_secrets_dir", return_value=Path(self._machine.name)
+        )
+        self._patch_user = mock.patch.object(
+            secrets_store, "_user_secrets_dir", return_value=Path(self._user.name)
+        )
+        self._patch_machine.start()
+        self._patch_user.start()
+        self._patch_kdf = mock.patch.object(secrets_store, "_derive_key")
+        self._derive_key = self._patch_kdf.start()
+        from cryptography.fernet import Fernet
+        self._derive_key.return_value = Fernet.generate_key()
+
+    def tearDown(self) -> None:
+        self._patch_kdf.stop()
+        self._patch_user.stop()
+        self._patch_machine.stop()
+        self._machine.cleanup()
+        self._user.cleanup()
+
+    def test_save_prefers_machine_wide_dir(self) -> None:
+        secrets_store.save_secret("panel-agent-shared-secret", "hunter2")
+        machine_file = Path(self._machine.name) / "panel-agent-shared-secret.enc"
+        user_file = Path(self._user.name) / "panel-agent-shared-secret.enc"
+        self.assertTrue(machine_file.is_file())
+        self.assertFalse(user_file.is_file())
+
+    def test_load_finds_machine_secret_when_user_dir_empty(self) -> None:
+        # Simulates an admin installer writing the secret to the machine-wide
+        # location while the child's per-user directory has nothing.
+        secrets_store.save_secret("shared", "from-installer")
+        self.assertEqual(secrets_store.load_secret("shared"), "from-installer")
+
+    def test_falls_back_to_user_dir_when_machine_unwritable(self) -> None:
+        with mock.patch.object(
+            secrets_store, "_machine_secrets_dir", return_value=Path("/proc/cannot/write")
+        ):
+            secrets_store.save_secret("shared", "value")
+        self.assertTrue((Path(self._user.name) / "shared.enc").is_file())
+        self.assertEqual(secrets_store.load_secret("shared"), "value")
 
 
 class SecretsStoreKeyDerivationTests(unittest.TestCase):
