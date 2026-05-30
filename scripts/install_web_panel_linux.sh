@@ -106,12 +106,22 @@ write_unit() {
     echo "Wrote: $UNIT_PATH"
 }
 
+# Prompt for and store the panel <-> agent shared secret via the Python helper,
+# so the guidance and storage match the other installers.
+prompt_shared_secret() {
+    local py="$1"
+    if ! PYTHONPATH="${SRC_DIR}" "$py" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'; then
+        echo "Warning: shared-secret setup did not complete. You can re-run install later." >&2
+    fi
+}
+
 cmd_install() {
     require_linux
     require_systemctl_user
     local py
     py="$(pick_python)"
     echo "Using Python: $py"
+    prompt_shared_secret "$py"
     write_unit "$py"
     systemctl --user daemon-reload
     systemctl --user enable "$UNIT_NAME"
