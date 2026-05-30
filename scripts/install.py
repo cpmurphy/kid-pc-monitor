@@ -12,6 +12,7 @@ if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
 from kid_pc_monitor.lock_policy import parse_time_hhmm
+from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret
 
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
@@ -923,6 +924,8 @@ def run_install_flow():
             f"\n✅ Schedule saved to {daily_path}"
             f"\n   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"
         )
+
+    prompt_and_store_shared_secret()
 
     if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
         allow_public_firewall = prompt_allow_public_firewall()

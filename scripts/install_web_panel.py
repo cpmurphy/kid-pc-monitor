@@ -39,6 +39,21 @@ def ensure_package_installed():
     print("Package installed successfully.")
     return True
 
+
+def configure_shared_secret():
+    """Prompt for and store the panel <-> agent shared secret.
+
+    Requires the package to be importable, so call after ensure_package_installed().
+    """
+    try:
+        from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret
+    except ImportError as exc:
+        print(f"\nCould not load the shared-secret prompt: {exc}")
+        print("Skipping shared-secret setup; you can re-run this installer later.")
+        return
+    prompt_and_store_shared_secret()
+
+
 def create_task_with_power_settings():
     """Create scheduled task that runs even on battery power"""
 
@@ -290,6 +305,9 @@ if __name__ == "__main__":
 
     if choice == "1":
         print("\nCreating scheduled task with battery-friendly settings...\n")
+
+        if ensure_package_installed():
+            configure_shared_secret()
 
         if create_task_with_power_settings():
             print("\nSetup complete! Task will run even on laptops using battery.")
