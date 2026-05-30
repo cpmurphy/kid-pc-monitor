@@ -2,6 +2,9 @@ import unittest
 from datetime import datetime, timedelta, time as dtime
 
 from kid_pc_monitor.lock_policy import (
+    brief_enforcement_reason,
+    enforcement_state,
+    format_access_status,
     is_in_bedtime_curfew,
     lock_decision,
     minutes_until_lock,
@@ -160,6 +163,79 @@ class LockPolicyTests(unittest.TestCase):
         )
 
         self.assertEqual(remaining, 5)
+
+
+class AccessStatusTests(unittest.TestCase):
+    def test_brief_enforcement_reason_shortens_known_messages(self):
+        self.assertEqual(
+            brief_enforcement_reason("Before wake-up time 07:00"),
+            "before wake-up",
+        )
+        self.assertEqual(
+            brief_enforcement_reason("Past bedtime 21:00"),
+            "past bedtime",
+        )
+        self.assertEqual(
+            brief_enforcement_reason("Daily allowance of 90 minutes reached"),
+            "daily limit reached",
+        )
+
+    def test_enforcement_state_ignores_manual_lock(self):
+        active, reason = enforcement_state(
+            now=datetime(2026, 5, 17, 21, 5),
+            bed_time=dtime(21, 0),
+            effective_usage_allowance_minutes=None,
+            accumulated_minutes=0,
+        )
+        self.assertTrue(active)
+        self.assertEqual(reason, "past bedtime")
+
+    def test_format_access_status_cases(self):
+        self.assertEqual(
+            format_access_status(
+                manual_lock=False,
+                enforcement_active=False,
+                enforcement_reason=None,
+                screen_locked=False,
+            ),
+            "Unlocked",
+        )
+        self.assertEqual(
+            format_access_status(
+                manual_lock=True,
+                enforcement_active=False,
+                enforcement_reason=None,
+                screen_locked=False,
+            ),
+            "Locked — manual lock",
+        )
+        self.assertEqual(
+            format_access_status(
+                manual_lock=False,
+                enforcement_active=True,
+                enforcement_reason="past bedtime",
+                screen_locked=True,
+            ),
+            "Locked — past bedtime",
+        )
+        self.assertEqual(
+            format_access_status(
+                manual_lock=True,
+                enforcement_active=True,
+                enforcement_reason="past bedtime",
+                screen_locked=True,
+            ),
+            "Locked — past bedtime",
+        )
+        self.assertEqual(
+            format_access_status(
+                manual_lock=False,
+                enforcement_active=False,
+                enforcement_reason=None,
+                screen_locked=True,
+            ),
+            "Screen locked",
+        )
 
 
 if __name__ == "__main__":

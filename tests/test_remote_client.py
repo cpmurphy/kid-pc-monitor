@@ -9,6 +9,7 @@ import unittest
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
+    _legacy_access_status,
     _print_frame,
     is_pc_reachable,
     parse_scan_subnet,
@@ -22,6 +23,11 @@ HOSTNAME = "kid-pc"
 
 
 class RemoteClientTests(unittest.TestCase):
+    def test_legacy_access_status_fallback(self) -> None:
+        self.assertEqual(_legacy_access_status("UNLOCKED", False), "Unlocked")
+        self.assertEqual(_legacy_access_status("LOCKED", False), "Screen locked")
+        self.assertEqual(_legacy_access_status("UNLOCKED", True), "Locked — manual lock")
+
     def test_is_pc_reachable_open_port(self) -> None:
         ready = threading.Event()
         port_holder: list[int] = []

@@ -6,8 +6,10 @@ import socket
 import tempfile
 import threading
 import unittest
+from datetime import datetime
 from datetime import time as dtime
 from pathlib import Path
+from unittest import mock
 
 from kid_pc_monitor import agent_auth
 from kid_pc_monitor import agent_protocol as proto
@@ -336,6 +338,32 @@ class DispatchTests(unittest.TestCase):
             self.assertEqual(resp.settings["bed_time"], "21:00")
             self.assertEqual(resp.settings["status"], "UNLOCKED")
             self.assertIs(resp.settings["manual_lock"], False)
+            self.assertIs(resp.settings["enforcement_active"], False)
+            self.assertIsNone(resp.settings["enforcement_reason"])
+            self.assertEqual(resp.settings["access_status"], "Unlocked")
+
+    def test_get_settings_manual_lock_access_status(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp, hostname="kid-pc")
+            control.runtime.manual_lock_active = True
+            resp = self._handle(control, action="get", var="settings")
+            self.assertTrue(resp.ok)
+            self.assertFalse(resp.settings["enforcement_active"])
+            self.assertEqual(resp.settings["access_status"], "Locked — manual lock")
+
+    def test_get_settings_enforcement_with_manual_lock(self) -> None:
+        fixed = datetime(2026, 5, 17, 21, 5)
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp, hostname="kid-pc")
+            control.set_bed_time(21, 0)
+            control.runtime.manual_lock_active = True
+            with mock.patch("kid_pc_monitor.pc_control.datetime") as mock_dt:
+                mock_dt.now.return_value = fixed
+                resp = self._handle(control, action="get", var="settings")
+            self.assertTrue(resp.settings["enforcement_active"])
+            self.assertEqual(resp.settings["enforcement_reason"], "past bedtime")
+            self.assertEqual(resp.settings["access_status"], "Locked — past bedtime")
+            self.assertTrue(resp.settings["manual_lock"])
 
     def test_get_single_variable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

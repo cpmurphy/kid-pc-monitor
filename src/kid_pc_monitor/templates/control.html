@@ -78,14 +78,19 @@
                 </span>
             </p>
 
-            <p class="stat-row">🔒 <strong>Manual lock:</strong>
-                {% if pc_info.get('manual_lock_active') %}
-                    Active
+            <p class="stat-row">🔒 <strong>Status:</strong>
+                <span class="{% if pc_info.access_status != 'Unlocked' and pc_info.access_status != 'Screen locked' %}locked-text{% endif %}">
+                    {{ pc_info.access_status }}
+                </span>
+                {% if pc_info.manual_lock_active and not pc_info.enforcement_active %}
                     <button class="clear-inline" onclick="clearManualLock()">Clear</button>
-                {% else %}
-                    <span class="muted">Not active</span>
                 {% endif %}
             </p>
+            {% if pc_info.manual_lock_active and pc_info.enforcement_active %}
+            <p class="stat-row">🔒 <strong>Manual lock:</strong> Active
+                <button class="clear-inline" onclick="clearManualLock()">Clear</button>
+            </p>
+            {% endif %}
             {% if pc_info.get('reachable', true) %}
             <p>
             <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
@@ -97,10 +102,6 @@
         {% if not pc_info.get('reachable', true) %}
         <div class="status-message banner info">
             ○ This computer is offline or unreachable. Scan again after it is powered on.
-        </div>
-        {% elif pc_info.locked %}
-        <div class="status-message banner warning">
-            🔒 This computer is currently LOCKED
         </div>
         {% endif %}
 

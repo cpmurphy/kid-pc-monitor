@@ -199,6 +199,7 @@ h1 {
 .readonly-value { color: #333; }
 .muted          { color: #999; }
 .stat-row       { margin: 8px 0; line-height: 1.5; }
+.locked-text    { color: #c62828; font-weight: 600; }
 
 .clear-inline {
     margin-left: 10px;

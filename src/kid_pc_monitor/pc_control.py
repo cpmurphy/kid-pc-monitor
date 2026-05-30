@@ -24,6 +24,8 @@ from kid_pc_monitor.host_platform import HostPlatform, get_default_platform
 from kid_pc_monitor.network import get_primary_ipv4
 from kid_pc_monitor.lock_policy import (
     DEFAULT_WAKE_TIME,
+    enforcement_state,
+    format_access_status,
     lock_decision,
     minutes_until_lock,
     parse_time_hhmm,
@@ -400,6 +402,27 @@ class PCTimeControl:
             wake_time=self.daily.wake_time,
         )
         return decision.should_lock, decision.reason
+
+    def enforcement_lock_state(self) -> tuple[bool, str | None]:
+        """Return schedule/limit enforcement without considering manual lock."""
+        return enforcement_state(
+            now=datetime.now(),
+            bed_time=self.daily.bed_time,
+            effective_usage_allowance_minutes=self._effective_usage_allowance_minutes(),
+            accumulated_minutes=self.runtime.accumulated_seconds / 60,
+            monitor_user=self.should_monitor_user(),
+            wake_time=self.daily.wake_time,
+        )
+
+    def get_access_status(self) -> str:
+        """Brief access status for the parent panel."""
+        enforcement_active, enforcement_reason = self.enforcement_lock_state()
+        return format_access_status(
+            manual_lock=self.runtime.manual_lock_active,
+            enforcement_active=enforcement_active,
+            enforcement_reason=enforcement_reason,
+            screen_locked=self.check_if_locked(),
+        )
 
     def run_monitor(self):
         """

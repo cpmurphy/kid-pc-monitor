@@ -81,6 +81,9 @@ VARIABLES: dict[str, str] = {
     "cumulative_extension": "read-only, a running total of extension seconds today",
     "accumulated_seconds": "read-only, a running total of active seconds used today",
     "time_remaining": "read-only, minutes remaining today (or null)",
+    "enforcement_active": "read-only, whether schedule/limit enforcement is active",
+    "enforcement_reason": "read-only, brief reason when enforcement is active (or null)",
+    "access_status": "read-only, brief overall access status for the parent panel",
 }
 
 WRITABLE_VARIABLES = frozenset({"daily_limit", "bed_time", "manual_lock", "wake_time"})
@@ -803,6 +806,14 @@ def _read_variable(control: Any, var: str) -> Any:
     if var == "time_remaining":
         remaining = control.get_time_remaining()
         return None if remaining is None else round(remaining)
+    if var == "enforcement_active":
+        active, _reason = control.enforcement_lock_state()
+        return active
+    if var == "enforcement_reason":
+        active, reason = control.enforcement_lock_state()
+        return reason if active else None
+    if var == "access_status":
+        return control.get_access_status()
     raise ProtocolError(UNKNOWN_VARIABLE, f"unknown variable: {var}")
 
 

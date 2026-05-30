@@ -67,6 +67,15 @@ def format_seconds_duration(seconds: int | float) -> str:
     return format_minutes_duration(seconds / 60)
 
 
+def _legacy_access_status(status: str, manual_lock: bool) -> str:
+    """Fallback access label for agents that do not expose access_status."""
+    if manual_lock:
+        return "Locked — manual lock"
+    if status == "LOCKED":
+        return "Screen locked"
+    return "Unlocked"
+
+
 def get_default_scan_network() -> ipaddress.IPv4Network:
     local_ip = get_local_ip()
     return ipaddress.ip_network(f"{local_ip}/24", strict=False)
@@ -414,6 +423,17 @@ def inspect_pc(
 
     hostname = settings.get("name") or _resolve_hostname(host, port, verbose=verbose, out=out)
 
+    manual_lock_active = bool(settings.get("manual_lock"))
+    enforcement_active = settings.get("enforcement_active")
+    if enforcement_active is None:
+        enforcement_active = False
+    else:
+        enforcement_active = bool(enforcement_active)
+    enforcement_reason = settings.get("enforcement_reason")
+    access_status = settings.get("access_status")
+    if access_status is None:
+        access_status = _legacy_access_status(status, manual_lock_active)
+
     return {
         "ip": host,
         "port": port,
@@ -426,7 +446,10 @@ def inspect_pc(
         "bed_time": bed_time,
         "lock_times": lock_times,
         "wake_time": wake_time,
-        "manual_lock_active": bool(settings.get("manual_lock")),
+        "manual_lock_active": manual_lock_active,
+        "enforcement_active": enforcement_active,
+        "enforcement_reason": enforcement_reason,
+        "access_status": access_status,
         "cumulative_extension_seconds": extension_seconds,
         "accumulated_seconds": accumulated_seconds,
         "effective_limit_minutes": effective_limit,

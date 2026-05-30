@@ -88,6 +88,9 @@ One of
 - `cumulative_extension`
 - `accumulated_seconds`
 - `time_remaining`
+- `enforcement_active` -- read-only; true when schedule/limit enforcement would lock (ignores manual lock)
+- `enforcement_reason` -- read-only; brief reason when `enforcement_active` is true, otherwise null
+- `access_status` -- read-only; brief overall access status for the parent panel (e.g. `Unlocked`, `Locked — past bedtime`, `Locked — manual lock`)
 
 
 ## List Capabilities
@@ -119,6 +122,9 @@ values {
  cumulative_extension "read-only, a running total of extensions given today"
  accumulated_seconds "read-only, a running total of time used today"
  time_remaining "read-only, a total time remaining today"
+ enforcement_active "read-only, whether schedule/limit enforcement is active"
+ enforcement_reason "read-only, brief reason when enforcement is active (or null)"
+ access_status "read-only, brief overall access status for the parent panel"
 }
 ```
 

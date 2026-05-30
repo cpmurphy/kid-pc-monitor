@@ -180,3 +180,57 @@ def minutes_until_lock(
             min_remaining = minutes_remaining
 
     return min_remaining
+
+
+def brief_enforcement_reason(full_reason: str) -> str:
+    """Shorten a lock_decision reason for protocol/UI display."""
+    lower = full_reason.lower()
+    if "before wake-up" in lower:
+        return "before wake-up"
+    if "past bedtime" in lower:
+        return "past bedtime"
+    if "daily allowance" in lower:
+        return "daily limit reached"
+    return full_reason
+
+
+def enforcement_state(
+    *,
+    now: datetime,
+    bed_time: dtime | None,
+    effective_usage_allowance_minutes: float | None,
+    accumulated_minutes: float,
+    monitor_user: bool = True,
+    wake_time: dtime = DEFAULT_WAKE_TIME,
+) -> tuple[bool, str | None]:
+    """Return schedule/limit enforcement without considering manual lock."""
+    decision = lock_decision(
+        now=now,
+        bed_time=bed_time,
+        effective_usage_allowance_minutes=effective_usage_allowance_minutes,
+        accumulated_minutes=accumulated_minutes,
+        monitor_user=monitor_user,
+        manual_lock_active=False,
+        wake_time=wake_time,
+    )
+    if not decision.should_lock:
+        return False, None
+    return True, brief_enforcement_reason(decision.reason)
+
+
+def format_access_status(
+    *,
+    manual_lock: bool,
+    enforcement_active: bool,
+    enforcement_reason: str | None,
+    screen_locked: bool,
+) -> str:
+    """Compose a brief access status for the parent panel."""
+    if manual_lock and not enforcement_active:
+        return "Locked — manual lock"
+    if enforcement_active:
+        reason = enforcement_reason or "enforcement active"
+        return f"Locked — {reason}"
+    if screen_locked:
+        return "Screen locked"
+    return "Unlocked"
