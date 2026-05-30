@@ -22,44 +22,6 @@ FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 FIREWALL_RULE_GROUP = "Kid PC Monitor"
 
 
-def get_script_path():
-    """Get the path to pc_control.py from user (same-user mode)"""
-    print("📁 Where is pc_control.py located?")
-    print("\nOptions:")
-    print("1. Current directory")
-    print("2. Same directory as this installer")
-    print("3. Enter custom path")
-
-    choice = input("\nChoice (1-3): ").strip()
-
-    if choice == "1":
-        script_path = os.path.abspath("pc_control.py")
-    elif choice == "2":
-        script_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "run_agent.py"
-        )
-    else:
-        while True:
-            custom_path = input("\nEnter full path to pc_control.py: ").strip()
-            # Remove quotes if user copied from explorer
-            custom_path = custom_path.strip('"').strip("'")
-
-            if os.path.exists(custom_path) and custom_path.endswith('.py'):
-                script_path = os.path.abspath(custom_path)
-                break
-            else:
-                print("❌ File not found or not a .py file. Please try again.")
-
-    # Verify the file exists
-    if not os.path.exists(script_path):
-        print(f"\n❌ Error: Could not find {script_path}")
-        print("Please make sure pc_control.py exists in the specified location.")
-        return None
-
-    print(f"\n✅ Found: {script_path}")
-    return script_path
-
-
 def find_repo_package_dir():
     """Locate the kid_pc_monitor package shipped with this repo."""
     here = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -85,15 +47,6 @@ from kid_pc_monitor.pc_control import main
 if __name__ == "__main__":
     raise SystemExit(main())
 '''
-
-
-def prompt_install_mode(current_user):
-    """Ask whether to install for the current account or for a different user."""
-    print("\n👥 Who will run the monitoring agent?")
-    print(f"\n  1. This account ({current_user}) — install and run as the current user")
-    print( "  2. A different user account — admin installs, a non-admin child runs")
-    choice = input("\nChoice (1-2) [1]: ").strip() or "1"
-    return choice == "2"
 
 
 def _format_time_hhmm(raw: str) -> str:
@@ -378,10 +331,30 @@ def write_agent_daily_settings_to_state(
     return None, False
 
 
-def prompt_target_user():
-    """Ask for the child's Windows username and validate it exists locally."""
+def warn_self_install(current_user):
+    """Explain the trade-offs of monitoring the same account that runs the installer.
+
+    Returns True if the user wants to proceed anyway.
+    """
+    print(f"\n⚠️  You entered the current account ('{current_user}').")
+    print("   Monitoring the same account that runs the installer is allowed,")
+    print("   but it is the weakest setup:")
+    print("   • The agent runs unelevated (LeastPrivilege), so this account can")
+    print("     stop or delete the scheduled task and the install files.")
+    print("   • A remote lock can be undone by this same account.")
+    print("   • For real enforcement, monitor a separate standard (non-admin)")
+    print("     account and run this installer from an administrator account.")
+    choice = input("\nProceed monitoring your own account anyway? (y/N): ").strip().lower()
+    return choice in ("y", "yes")
+
+
+def prompt_target_user(current_user):
+    """Ask for the monitored Windows username and validate it exists locally.
+
+    Entering the current account is permitted after a warning + confirmation.
+    """
     while True:
-        name = input("\nChild's Windows username on this PC: ").strip()
+        name = input("\nWhich Windows account should be monitored (the child's username): ").strip()
         if not name:
             print("❌ Username cannot be empty.")
             continue
@@ -391,6 +364,9 @@ def prompt_target_user():
             if retry != "y":
                 return None
             continue
+        if current_user and name.lower() == current_user.lower():
+            if not warn_self_install(current_user):
+                continue
         return name
 
 
@@ -487,7 +463,7 @@ def install_to_programdata(target_user, package_dir):
     return str(launcher_path)
 
 
-def create_task_with_power_settings(target_user, script_path, python_path, cross_user):
+def create_task_with_power_settings(target_user, script_path, python_path, *, is_self=False):
     """Create the scheduled task via PowerShell New-ScheduledTask cmdlets."""
 
     task_name = TASK_NAME
@@ -496,36 +472,22 @@ def create_task_with_power_settings(target_user, script_path, python_path, cross
     print(f"   Script:     {script_path}")
     print(f"   Python:     {python_path}")
     print(f"   Task Name:  {task_name}")
-    print(f"   Runs as:    {target_user}")
-    print(f"   Mode:       {'cross-user (admin install / non-admin run)' if cross_user else 'same-user'}")
+    print(f"   Runs as:    {target_user}{' (self-install)' if is_self else ''}")
 
     confirm = input("\nProceed with these settings? (y/n): ").lower()
     if confirm != 'y':
         print("❌ Setup cancelled.")
         return False
 
-    if cross_user:
-        # Logon trigger pinned to the child's account; runs unelevated in their session.
-        domain = os.environ.get('COMPUTERNAME', '.')
-        triggers_block = (
-            f"$triggers = @( New-ScheduledTaskTrigger -AtLogon -User '{domain}\\{target_user}' )"
-        )
-        principal_block = (
-            f"$principal = New-ScheduledTaskPrincipal "
-            f"-UserId '{domain}\\{target_user}' -LogonType Interactive -RunLevel Limited"
-        )
-    else:
-        # Existing same-user behavior: also start at boot and on any logon, elevated if available.
-        triggers_block = (
-            "$triggers = @( "
-            "(New-ScheduledTaskTrigger -AtStartup), "
-            "(New-ScheduledTaskTrigger -AtLogon) "
-            ")"
-        )
-        principal_block = (
-            f"$principal = New-ScheduledTaskPrincipal "
-            f"-UserId '{target_user}' -LogonType Interactive -RunLevel Highest"
-        )
+    # Logon trigger pinned to the monitored account; runs unelevated in their session.
+    domain = os.environ.get('COMPUTERNAME', '.')
+    triggers_block = (
+        f"$triggers = @( New-ScheduledTaskTrigger -AtLogon -User '{domain}\\{target_user}' )"
+    )
+    principal_block = (
+        f"$principal = New-ScheduledTaskPrincipal "
+        f"-UserId '{domain}\\{target_user}' -LogonType Interactive -RunLevel Limited"
+    )
 
     ps_script = f'''
     $ErrorActionPreference = 'Stop'
@@ -586,10 +548,7 @@ def create_task_with_power_settings(target_user, script_path, python_path, cross
 
             if verify_result.returncode == 0:
                 print("\n✅ Task successfully created and verified!")
-                if cross_user:
-                    print(f"   - Triggers: At logon of {target_user}")
-                else:
-                    print(f"   - Triggers: At Startup + At Logon")
+                print(f"   - Triggers: At logon of {target_user}")
                 print(f"   - Running as: {target_user}")
                 print("\nYou can verify in Task Scheduler (taskschd.msc)")
                 return True
@@ -608,31 +567,22 @@ def create_task_with_power_settings(target_user, script_path, python_path, cross
         return False
 
 
-def create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
+def create_task_simple_schtasks(target_user, script_path, python_path):
     """XML fallback for environments where the PowerShell cmdlets misbehave."""
     task_name = TASK_NAME
 
     print(f"\n📋 Creating task with XML method...")
 
-    if cross_user:
-        domain = os.environ.get('COMPUTERNAME', '.')
-        user_id = f"{domain}\\{target_user}"
-        trigger_block = f'''    <LogonTrigger>
+    domain = os.environ.get('COMPUTERNAME', '.')
+    user_id = f"{domain}\\{target_user}"
+    trigger_block = f'''    <LogonTrigger>
       <Enabled>true</Enabled>
       <UserId>{user_id}</UserId>
     </LogonTrigger>'''
-        principal_block = f'''    <Principal id="Author">
+    principal_block = f'''    <Principal id="Author">
       <UserId>{user_id}</UserId>
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>'''
-    else:
-        trigger_block = '''    <LogonTrigger>
-      <Enabled>true</Enabled>
-    </LogonTrigger>'''
-        principal_block = '''    <Principal id="Author">
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>HighestAvailable</RunLevel>
     </Principal>'''
 
     xml_content = f'''<?xml version="1.0" encoding="UTF-16"?>
@@ -871,42 +821,41 @@ def remove_task():
 
 
 def run_install_flow():
-    """Drive the install: pick a mode, gather paths, create the task."""
+    """Drive the install: gather the monitored account, paths, and create the task."""
     current_user = os.environ.get('USERNAME') or os.environ.get('USER') or ''
-    cross_user = prompt_install_mode(current_user)
 
-    if cross_user:
-        target_user = prompt_target_user()
-        if not target_user:
-            print("❌ No valid user provided. Aborting.")
-            return False
+    target_user = prompt_target_user(current_user)
+    if not target_user:
+        print("❌ No valid user provided. Aborting.")
+        return False
 
-        python_path = find_system_python()
-        if not python_path:
+    is_self = bool(current_user) and target_user.lower() == current_user.lower()
+
+    python_path = find_system_python()
+    if not python_path:
+        if is_self:
+            python_path = sys.executable.replace('python.exe', 'pythonw.exe')
+            print(f"\n🐍 No system-wide Python found; using the current interpreter "
+                  f"(self-install): {python_path}")
+        else:
             print("\n❌ No system-wide Python (pythonw.exe) was found.")
             print("   The scheduled task will run in the child's session, which cannot")
             print("   reach a Python install under your user profile.")
             print("\n   Fix: reinstall Python from https://www.python.org/downloads/")
             print("   and on the first screen choose 'Install for all users'.")
             return False
+    else:
         print(f"\n🐍 Using system Python: {python_path}")
 
-        source_package = find_repo_package_dir()
-        if not source_package:
-            print("\n❌ Could not locate the kid_pc_monitor package next to this installer.")
-            print("   Expected at ../src/kid_pc_monitor relative to scripts/install.py.")
-            return False
+    source_package = find_repo_package_dir()
+    if not source_package:
+        print("\n❌ Could not locate the kid_pc_monitor package next to this installer.")
+        print("   Expected at ../src/kid_pc_monitor relative to scripts/install.py.")
+        return False
 
-        print(f"\n📦 Installing agent to {INSTALL_DIR_DEFAULT} ...")
-        script_path = install_to_programdata(target_user, source_package)
-        print(f"   Granted {target_user} read+execute on the install directory.")
-
-    else:
-        target_user = current_user
-        python_path = sys.executable.replace('python.exe', 'pythonw.exe')
-        script_path = get_script_path()
-        if not script_path:
-            return False
+    print(f"\n📦 Installing agent to {INSTALL_DIR_DEFAULT} ...")
+    script_path = install_to_programdata(target_user, source_package)
+    print(f"   Granted {target_user} read+execute on the install directory.")
 
     bed_time = prompt_bed_time()
     wake_time = prompt_wake_up_time()
@@ -916,7 +865,7 @@ def run_install_flow():
         wake_time=wake_time,
         bed_time=bed_time,
         allowance=allowance,
-        same_user=not cross_user,
+        same_user=is_self,
     )
     if state_ok and daily_path is not None:
         limit_label = f"{allowance} min/day" if allowance is not None else "no daily cap"
@@ -927,14 +876,14 @@ def run_install_flow():
 
     prompt_and_store_shared_secret()
 
-    if create_task_with_power_settings(target_user, script_path, python_path, cross_user):
+    if create_task_with_power_settings(target_user, script_path, python_path, is_self=is_self):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
-    if create_task_simple_schtasks(target_user, script_path, python_path, cross_user):
+    if create_task_simple_schtasks(target_user, script_path, python_path):
         allow_public_firewall = prompt_allow_public_firewall()
         add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
         print("\n✅ Setup complete using XML method!")

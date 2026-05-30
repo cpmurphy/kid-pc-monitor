@@ -92,11 +92,9 @@ The install script walks you through the installation.
 For this setup, you want to:
 
  1. You would like the first option, `Create/Update scheduled task`
- 2. You're running as admin, so choose (2) the monitoring agent should run
-    under a different user.
- 3. Enter the kid's username when asked.
- 4. Enter the regular bed time, wake-up time and daily time allowance.
- 5. When prompted about public networks, you should allow it unless you
+ 2. Enter the kid's username when asked.
+ 3. Enter the regular bed time, wake-up time and daily time allowance.
+ 4. When prompted about public networks, you should allow it unless you
     really are concerned about your home network being insecure.
  
 
@@ -209,17 +207,19 @@ pip install -r requirements.txt
 python scripts\install.py
 ```
 
-The installer asks whether to install for **this account** (the simple
-path — works when the kid's account is the only one on the PC, even
-if it has admin rights) or for **a different user account** (cross-user
-install: a parent/admin runs the installer and provides the child's
-username; the agent then launches in the child's session at their logon).
-
-For cross-user mode:
+Run the installer from an administrator account and, when prompted,
+enter the **child's Windows username**. The agent then launches in that
+child's session at their logon. Specifics:
 - Files install to `C:\ProgramData\KidPCMonitor` and the child account is granted read+execute.
 - Python must be installed **for all users** (not the per-user `%LOCALAPPDATA%\Programs\Python\…` install) so the child's task can launch `pythonw.exe`. The installer refuses with a clear message if only a per-user Python is found.
 - The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid).
 - The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile.
+
+You may also enter your **own** username to monitor the account you are
+signed in as. This is the weakest setup — the agent runs unelevated, so
+that account can stop the task and undo locks — so the installer warns
+and asks you to confirm. In this self-install case a per-user Python is
+accepted (the task runs in your own session and can reach it).
 
 #### Windows agent firewall
 
