@@ -111,6 +111,40 @@ class PCTimeControlTests(unittest.TestCase):
             control.tick_accumulator()
             self.assertEqual(control.runtime.accumulated_seconds, before)
 
+    def test_tick_accumulator_does_not_count_while_locked(self) -> None:
+        platform = FakeHostPlatform(session_active=True, locked=True)
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.last_tick_at = datetime.now() - timedelta(seconds=30)
+            control.tick_accumulator()
+            self.assertEqual(control.runtime.accumulated_seconds, 0.0)
+
+    def test_tick_accumulator_skips_during_bedtime_curfew(self) -> None:
+        platform = FakeHostPlatform(session_active=True, locked=False)
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            # Build a curfew around "now": the only awake minute is [now+1, now+2),
+            # so the current instant is always inside the curfew regardless of when
+            # the test runs (handles midnight wraparound too).
+            now = datetime.now()
+            wake = (now + timedelta(minutes=1)).time()
+            bed = (now + timedelta(minutes=2)).time()
+            control.set_wake_time(wake.hour, wake.minute)
+            control.set_bed_time(bed.hour, bed.minute)
+            in_window, _ = control.currently_in_lock_window()
+            self.assertTrue(in_window)
+            control.last_tick_at = now - timedelta(seconds=30)
+            control.tick_accumulator()
+            self.assertEqual(control.runtime.accumulated_seconds, 0.0)
+
     def test_extend_time_adds_to_cumulative_extension_only(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:

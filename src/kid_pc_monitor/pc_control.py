@@ -240,7 +240,16 @@ class PCTimeControl:
             reset_runtime_for_new_period(self.runtime, now)
             self.last_tick_at = None
 
-        if self.should_monitor_user() and self.session_is_active():
+        # Never credit usage while a lock window is active (bedtime curfew or
+        # manual lock). Accurate session detection already covers this, but a
+        # brief detection flicker during curfew must not inflate usage.
+        in_lock_window, _ = self.currently_in_lock_window()
+
+        if (
+            self.should_monitor_user()
+            and self.session_is_active()
+            and not in_lock_window
+        ):
             if self.last_tick_at is not None:
                 delta = (now - self.last_tick_at).total_seconds()
                 # Clamp to (0, 60): negative means clock went backwards;

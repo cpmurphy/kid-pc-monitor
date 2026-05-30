@@ -9,9 +9,7 @@ import os
 import subprocess
 import sys
 import threading
-import tkinter as tk
 from ctypes import wintypes
-from tkinter import messagebox
 
 import getpass
 
@@ -23,6 +21,66 @@ _FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 _INVALID_HANDLE_VALUE = ctypes.c_size_t(-1).value
 _TH32CS_SNAPPROCESS = 0x00000002
 _MAX_PATH = 260
+
+# WTSQuerySessionInformation lock-state polling.
+_WTS_CURRENT_SERVER_HANDLE = 0
+_WTS_CURRENT_SESSION = 0xFFFFFFFF
+_WTS_INFO_CLASS_SESSION_INFO_EX = 25  # WTSSessionInfoEx
+_WTS_SESSIONSTATE_LOCK = 0
+_WTS_SESSIONSTATE_UNLOCK = 1
+_WTS_SESSIONSTATE_UNKNOWN = 0xFFFFFFFF
+
+
+class _WTSINFOEX_LEVEL1(ctypes.Structure):
+    """Prefix of WTSINFOEX_LEVEL1_W — only the fields we read.
+
+    The full structure continues with name strings and timestamps, but
+    SessionFlags is the third field and everything after it is irrelevant
+    to lock detection, so we deliberately stop here.
+    """
+
+    _fields_ = [
+        ("SessionId", wintypes.DWORD),
+        ("SessionState", ctypes.c_long),
+        ("SessionFlags", ctypes.c_long),
+    ]
+
+
+class _WTSINFOEX(ctypes.Structure):
+    """WTSINFOEXW prefix. The `_pad` field forces the union (Data) onto the
+    8-byte boundary it really has (it contains LARGE_INTEGERs), so SessionFlags
+    is read at the correct offset even though we only declare a 4-byte prefix."""
+
+    _fields_ = [
+        ("Level", wintypes.DWORD),
+        ("_pad", wintypes.DWORD),
+        ("Data", _WTSINFOEX_LEVEL1),
+    ]
+
+
+def _wts_session_flags_inverted() -> bool:
+    """True on Windows 7 / Server 2008 R2 (NT 6.1), where the documented
+    WTS_SESSIONSTATE_LOCK/UNLOCK values are reversed due to a code defect."""
+    try:
+        version = sys.getwindowsversion()
+    except AttributeError:
+        return False
+    return version.major == 6 and version.minor == 1
+
+
+def _session_flags_indicate_locked(session_flags: int, *, inverted: bool) -> bool | None:
+    """Interpret a WTSINFOEX SessionFlags value.
+
+    Returns True if locked, False if unlocked, or None when the state is
+    unknown (so the caller can fall back to another signal).
+    """
+    if session_flags == _WTS_SESSIONSTATE_UNKNOWN:
+        return None
+    if session_flags == _WTS_SESSIONSTATE_LOCK:
+        return False if inverted else True
+    if session_flags == _WTS_SESSIONSTATE_UNLOCK:
+        return True if inverted else False
+    return None
 
 
 class _PROCESSENTRY32W(ctypes.Structure):
@@ -110,17 +168,62 @@ def _process_exists_in_session(image_name: str, session_id: int | None) -> bool:
     return False
 
 
+def _query_session_locked_via_wts() -> bool | None:
+    """Authoritative lock state for the current session via WTSSessionInfoEx.
+
+    Returns True (locked), False (unlocked), or None when the API call fails
+    or reports an unknown state. Unlike LogonUI.exe detection, the WTS session
+    flags stay correct even when the lock screen's display has gone to sleep.
+    """
+    try:
+        wtsapi32 = ctypes.windll.wtsapi32
+        buffer = ctypes.c_void_p()
+        bytes_returned = wintypes.DWORD()
+        ok = wtsapi32.WTSQuerySessionInformationW(
+            _WTS_CURRENT_SERVER_HANDLE,
+            _WTS_CURRENT_SESSION,
+            _WTS_INFO_CLASS_SESSION_INFO_EX,
+            ctypes.byref(buffer),
+            ctypes.byref(bytes_returned),
+        )
+        if not ok or not buffer:
+            return None
+        try:
+            if bytes_returned.value < ctypes.sizeof(_WTSINFOEX):
+                return None
+            info = ctypes.cast(buffer, ctypes.POINTER(_WTSINFOEX)).contents
+            return _session_flags_indicate_locked(
+                info.Data.SessionFlags, inverted=_wts_session_flags_inverted()
+            )
+        finally:
+            wtsapi32.WTSFreeMemory(buffer)
+    except Exception as exc:
+        logging.getLogger("PCTimeControl").debug(
+            "WTS lock query failed: %s", exc, exc_info=True
+        )
+        return None
+
+
 class WindowsHostPlatform(HostPlatform):
     """Windows session lock, shutdown, messaging, and firewall diagnostics."""
 
     def check_session_locked(self) -> bool:
         """
-        True if LogonUI.exe is running in this session.
+        True when this session's workstation is locked.
 
-        Filtering by session avoids false LOCKED when another user's session
-        is locked under fast user switching. Uses Toolhelp APIs so the agent
-        does not spawn a visible console every monitoring tick.
+        Primary signal is the WTS session flags (WTSSessionInfoEx), which stay
+        correct even after the locked lock screen's display sleeps. Windows
+        terminates LogonUI.exe when the display turns off while locked, so the
+        legacy LogonUI presence check is only used as a fallback when the WTS
+        query is unavailable or returns an unknown state.
+
+        LogonUI detection is filtered by session to avoid a false LOCKED when
+        another user's session is locked under fast user switching, and uses
+        Toolhelp APIs so the agent does not spawn a visible console each tick.
         """
+        wts_locked = _query_session_locked_via_wts()
+        if wts_locked is not None:
+            return wts_locked
         try:
             return _process_exists_in_session("LogonUI.exe", _current_session_id())
         except Exception as exc:
@@ -161,6 +264,9 @@ class WindowsHostPlatform(HostPlatform):
         os.system("shutdown /a")
 
     def show_message(self, message: str, title: str = "PC Time Control") -> None:
+        import tkinter as tk
+        from tkinter import messagebox
+
         def display() -> None:
             root = None
             try:
