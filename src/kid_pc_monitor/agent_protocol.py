@@ -106,6 +106,16 @@ class ProtocolError(Exception):
         self.req_id = req_id
 
 
+class ConnectionClosedBeforeFrame(ProtocolError):
+    """The peer closed the connection before sending any frame bytes.
+
+    This is what a bare TCP liveness/port probe looks like (the panel and CLI
+    open a socket to check reachability, then close it without writing a
+    frame).  It is benign, so callers can log it at a lower level than a
+    genuine mid-frame corruption.
+    """
+
+
 # ===========================================================================
 # KDL-subset document model
 # ===========================================================================
@@ -338,7 +348,9 @@ def read_frame(sock: Any) -> str:
     while b"\n" not in buffer:
         chunk = sock.recv(4096)
         if not chunk:
-            raise ProtocolError(INVALID_REQUEST, "connection closed before length prefix")
+            raise ConnectionClosedBeforeFrame(
+                INVALID_REQUEST, "connection closed before length prefix"
+            )
         buffer += chunk
         if len(buffer) > MAX_FRAME_BYTES:
             raise ProtocolError(INVALID_REQUEST, "length prefix too long")

@@ -594,6 +594,11 @@ class RemoteControlServer:
             while self.running:
                 try:
                     body = agent_protocol.read_frame(client_socket)
+                except agent_protocol.ConnectionClosedBeforeFrame as e:
+                    # A bare TCP probe (e.g. the panel's reachability check)
+                    # connects and closes without sending a frame. Benign.
+                    self.logger.debug("Client %s closed before sending a frame: %s", client_id, e)
+                    break
                 except agent_protocol.ProtocolError as e:
                     self.logger.warning("Client %s framing error: %s", client_id, e)
                     break
