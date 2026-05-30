@@ -317,26 +317,19 @@ def scan_for_servers(
     def check_host(ip: ipaddress.IPv4Address) -> None:
         ip_str = str(ip)
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(SCAN_CONNECT_TIMEOUT)
-                if s.connect_ex((ip_str, port)) != 0:
-                    with lock:
-                        scanned_count[0] += 1
-                    return
-        except OSError:
+            if not is_pc_reachable(ip_str, port=port, timeout=SCAN_CONNECT_TIMEOUT):
+                return
+            hostname = _resolve_hostname(ip_str, port, verbose=verbose, out=out)
+            entry = {
+                "hostname": hostname,
+                "status": "online",
+                "last_seen": datetime.now(),
+            }
+            with lock:
+                discovered[ip_str] = entry
+        finally:
             with lock:
                 scanned_count[0] += 1
-            return
-
-        hostname = _resolve_hostname(ip_str, port, verbose=verbose, out=out)
-        entry = {
-            "hostname": hostname,
-            "status": "online",
-            "last_seen": datetime.now(),
-        }
-        with lock:
-            discovered[ip_str] = entry
-            scanned_count[0] += 1
 
     threads = [threading.Thread(target=check_host, args=(ip,)) for ip in network.hosts()]
     for t in threads:
