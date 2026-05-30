@@ -11,6 +11,7 @@ import logging
 from pathlib import Path
 
 from kid_pc_monitor import agent_protocol
+from kid_pc_monitor import shared_secret
 from kid_pc_monitor.agent_state import (
     AgentStateStore,
     DailySettings,
@@ -442,6 +443,16 @@ class RemoteControlServer:
         self.last_primary_ip = None
         self.listener_ready = threading.Event()
         self.logger = logging.getLogger('RemoteControlServer')
+        # The shared secret authenticates every protocol v2 frame.  It is
+        # loaded lazily so a freshly installed agent reflects a secret added
+        # after the process started.
+        self._shared_secret = None
+
+    def get_shared_secret(self):
+        """Return the configured shared secret, loading and caching it once."""
+        if self._shared_secret is None:
+            self._shared_secret = shared_secret.load_shared_secret()
+        return self._shared_secret
 
     def get_primary_ip(self):
         """Return the primary IPv4 address, or None while networking is down."""
@@ -569,7 +580,7 @@ class RemoteControlServer:
         self.logger.info("Server stopped")
 
     def handle_client(self, client_socket, client_address, client_id):
-        """Handle communication with a connected client using protocol v1."""
+        """Handle communication with a connected client using protocol v2."""
         try:
             while self.running:
                 try:
@@ -580,7 +591,17 @@ class RemoteControlServer:
                 self.logger.debug(
                     "Structured request from %s (ID: %s)", client_address, client_id
                 )
-                response = agent_protocol.handle_request(self.pc_control, body)
+                secret = self.get_shared_secret()
+                if not secret:
+                    self.logger.error(
+                        "No shared secret configured; cannot authenticate "
+                        "client %s. Re-run the installer to set one.",
+                        client_id,
+                    )
+                    break
+                response = agent_protocol.handle_request(
+                    self.pc_control, body, secret=secret
+                )
                 try:
                     client_socket.sendall(agent_protocol.encode_frame(response))
                 except OSError as e:

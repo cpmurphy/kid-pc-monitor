@@ -16,6 +16,31 @@ SHARED_SECRET_NAME = "panel-agent-shared-secret"
 MIN_SECRET_LENGTH = 8
 
 
+class SharedSecretMissing(RuntimeError):
+    """Raised when the panel/agent shared secret has not been configured."""
+
+
+def load_shared_secret() -> str | None:
+    """Return the stored shared secret, or ``None`` if it has not been set."""
+    return secrets_store.load_secret(SHARED_SECRET_NAME)
+
+
+def require_shared_secret() -> str:
+    """Return the stored shared secret or raise :class:`SharedSecretMissing`.
+
+    Both halves of the system authenticate every protocol v2 frame with this
+    secret, so a missing secret is a hard configuration error rather than a
+    reason to silently fall back to unauthenticated traffic.
+    """
+    secret = load_shared_secret()
+    if not secret:
+        raise SharedSecretMissing(
+            "No shared secret is configured. Re-run the installer to set the "
+            "panel/agent shared secret on this machine."
+        )
+    return secret
+
+
 def _print_guidance() -> None:
     print("\n🔑 Shared secret (web panel <-> monitoring agent)")
     print("\n   The web panel and the monitoring agent must share one secret so each")

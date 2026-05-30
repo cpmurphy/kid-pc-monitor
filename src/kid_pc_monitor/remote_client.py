@@ -10,6 +10,11 @@ from datetime import datetime
 from typing import Any
 
 from kid_pc_monitor import agent_protocol as proto
+from kid_pc_monitor import shared_secret
+
+# Raised by send_request when the panel has no shared secret configured; the
+# broad ``except`` blocks below treat it like any other unreachable condition.
+SharedSecretMissing = shared_secret.SharedSecretMissing
 
 DEFAULT_PORT = 9999
 CONNECT_TIMEOUT = 5
@@ -83,8 +88,31 @@ def parse_scan_subnet(subnet_arg: str | None) -> tuple[ipaddress.IPv4Network, st
 
 
 # ---------------------------------------------------------------------------
-# Structured protocol (version 1) client helpers
+# Structured protocol (version 2) client helpers
 # ---------------------------------------------------------------------------
+def _resolve_secret(secret: str | None) -> str:
+    """Return the supplied secret or load the configured shared secret."""
+    if secret is not None:
+        return secret
+    return shared_secret.require_shared_secret()
+
+
+def _discover_name(client: socket.socket, secret: str) -> str:
+    """Run the unnamed ``get name`` handshake and return the agent's hostname.
+
+    The request is signed with the raw shared secret (no ``name`` yet); the
+    agent's signed reply carries its hostname, which we verify before trusting.
+    """
+    body = proto.build_request("get", secret=secret, var="name", req_id=secrets.token_hex(3))
+    client.sendall(proto.encode_frame(body))
+    resp = proto.parse_response(proto.read_frame(client), secret=secret)
+    if not resp.ok or not resp.name:
+        raise proto.ProtocolError(
+            proto.AUTHENTICATION_FAILED, "could not discover the agent's name"
+        )
+    return str(resp.name)
+
+
 def send_request(
     host: str,
     action: str,
@@ -93,19 +121,31 @@ def send_request(
     val: Any = None,
     port: int = DEFAULT_PORT,
     timeout: float = CONNECT_TIMEOUT,
+    secret: str | None = None,
+    name: str | None = None,
 ) -> proto.Response:
-    """Send one length-framed structured request and return the parsed response.
+    """Send one signed v2 request and return the verified response.
 
-    Raises OSError on connection problems and ProtocolError on a malformed
-    response frame.
+    Write actions are bound to a target agent's hostname.  When ``name`` is not
+    supplied for such an action, the client first performs the discovery
+    handshake on the same connection to learn (and authenticate) the hostname,
+    then signs the write with the per-agent key.
+
+    Raises OSError on connection problems, ProtocolError on a malformed or
+    unauthenticated response, and SharedSecretMissing if no secret is set.
     """
-    body = proto.build_request(action, var=var, val=val, req_id=secrets.token_hex(3))
+    secret = _resolve_secret(secret)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
         client.settimeout(timeout)
         client.connect((host, port))
+        if name is None and action in proto.WRITE_ACTIONS:
+            name = _discover_name(client, secret)
+        body = proto.build_request(
+            action, secret=secret, var=var, val=val, req_id=secrets.token_hex(3), name=name
+        )
         client.sendall(proto.encode_frame(body))
         response_body = proto.read_frame(client)
-    return proto.parse_response(response_body)
+    return proto.parse_response(response_body, secret=secret, expected_name=name)
 
 
 def request_text(
@@ -119,7 +159,7 @@ def request_text(
     """Send a structured request; return (success, human-readable text)."""
     try:
         resp = send_request(host, action, var=var, val=val, port=port)
-    except (OSError, proto.ProtocolError) as exc:
+    except (OSError, proto.ProtocolError, SharedSecretMissing) as exc:
         return False, str(exc)
     return resp.ok, resp.text
 
@@ -128,7 +168,7 @@ def get_settings(host: str, port: int = DEFAULT_PORT) -> dict[str, Any] | None:
     """Fetch every variable in a single round-trip, or None if unreachable."""
     try:
         resp = send_request(host, "get", var="settings", port=port)
-    except (OSError, proto.ProtocolError):
+    except (OSError, proto.ProtocolError, SharedSecretMissing):
         return None
     return resp.settings if resp.ok else None
 
@@ -221,7 +261,7 @@ def _resolve_hostname(ip: str, port: int) -> str:
         resp = send_request(ip, "get", var="name", port=port)
         if resp.ok and resp.result:
             return str(resp.result)
-    except (OSError, proto.ProtocolError):
+    except (OSError, proto.ProtocolError, SharedSecretMissing):
         pass
     try:
         return socket.gethostbyaddr(ip)[0].split(".")[0]
@@ -270,7 +310,7 @@ def check_pc_status(ip: str, port: int = DEFAULT_PORT) -> str:
     """Return LOCKED, UNLOCKED, or UNKNOWN."""
     try:
         resp = send_request(ip, "get", var="status", port=port)
-    except (OSError, proto.ProtocolError):
+    except (OSError, proto.ProtocolError, SharedSecretMissing):
         return "UNKNOWN"
     return str(resp.result) if resp.ok and resp.result else "UNKNOWN"
 
@@ -278,7 +318,7 @@ def check_pc_status(ip: str, port: int = DEFAULT_PORT) -> str:
 def get_current_user(ip: str, port: int = DEFAULT_PORT) -> str | None:
     try:
         resp = send_request(ip, "get", var="current_user", port=port)
-    except (OSError, proto.ProtocolError):
+    except (OSError, proto.ProtocolError, SharedSecretMissing):
         return None
     if resp.ok and resp.result is not None:
         return str(resp.result)

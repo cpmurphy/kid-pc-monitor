@@ -224,6 +224,13 @@ the agent still signs, validates, and includes its own `name` in its
 response — so the panel learns the hostname without needing to know
 it in advance.
 
+Every response — including discovery responses and signed error
+responses — carries the agent's own `name` and is signed with that
+agent's per-host key (`HMAC-SHA256(shared_secret, name)`). The panel
+derives the verification key from the `name` in the response, so it can
+authenticate the very first reply from an agent it has never contacted,
+and afterwards confirm that `name` matches the agent it expected.
+
 ### Signature computation
 
 Strip the `auth` block from the parsed frame.  Serialize every remaining

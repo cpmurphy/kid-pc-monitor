@@ -1,13 +1,18 @@
-"""Structured request/response protocol for kid PC agents (version 1).
+"""Structured request/response protocol for kid PC agents (version 2).
 
 The wire format is a length-prefixed body written in a small subset of
 `KDL <https://kdl.dev/spec>`_.  Each line is a node: a bare identifier name
 followed by a single value, e.g. ``action set``.  Blocks (``{ ... }``) carry
-nested nodes, used for ``error``, ``settings``, and ``list_capabilities``
-responses.  The subset deliberately omits comments, type annotations, floating
-point numbers, and KDL's multi-line string syntax.
+nested nodes, used for ``error``, ``settings``, ``list_capabilities``, and the
+``auth`` signature.  The subset deliberately omits comments, type annotations,
+floating point numbers, and KDL's multi-line string syntax.
 
-See ``docs/agent-protocol.md`` for the full design.
+Protocol version 2 adds mutual authentication: every request and every
+response carries an ``auth`` block with an HMAC-SHA256 signature, plus a
+``timestamp`` and ``nonce`` so that captured frames cannot be replayed or
+tampered with.  The cryptographic primitives live in
+:mod:`kid_pc_monitor.agent_auth`; this module wires them into the frame
+format.  See ``docs/agent-protocol.md`` for the full design.
 """
 
 from __future__ import annotations
@@ -16,7 +21,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-PROTOCOL_VERSION = 1
+from kid_pc_monitor import agent_auth
+
+PROTOCOL_VERSION = 2
 
 # Reject absurd length prefixes outright; real frames are well under 1 KiB.
 MAX_FRAME_BYTES = 64 * 1024
@@ -31,6 +38,10 @@ UNKNOWN_VARIABLE = "unknown_variable"
 INVALID_VALUE = "invalid_value"
 FORBIDDEN = "forbidden"
 INTERNAL_ERROR = "internal_error"
+# v2 authentication failures.
+AUTHENTICATION_REQUIRED = "authentication_required"
+AUTHENTICATION_FAILED = "authentication_failed"
+STALE_TIMESTAMP = "stale_timestamp"
 
 # ---------------------------------------------------------------------------
 # Actions and variables
@@ -46,6 +57,14 @@ ACTIONS: dict[str, str] = {
     "shutdown": "shut down the PC after a warning (val=seconds, default 60)",
     "list_capabilities": "describe supported actions and variables",
 }
+
+# Write/destructive actions must carry a ``name`` that matches the agent's
+# hostname (see "Cross-PC replay" in docs/agent-protocol.md).  Read-only
+# actions may omit ``name`` so the panel can discover an agent it has never
+# spoken to before.
+WRITE_ACTIONS = frozenset(
+    {"set", "clear", "lock", "unlock", "extend", "shutdown", "message"}
+)
 
 # Default warning period before shutdown, in seconds.
 DEFAULT_SHUTDOWN_SECONDS = 60
@@ -336,6 +355,86 @@ def read_frame(sock: Any) -> str:
 
 
 # ===========================================================================
+# Authentication (protocol v2)
+# ===========================================================================
+def _split_auth(nodes: list[Node]) -> tuple[Node | None, list[Node]]:
+    """Separate the (first) ``auth`` node from the rest, preserving order."""
+    auth: Node | None = None
+    rest: list[Node] = []
+    for node in nodes:
+        if node.name == "auth" and auth is None:
+            auth = node
+        else:
+            rest.append(node)
+    return auth, rest
+
+
+def _auth_node(signed_nodes: list[Node], secret: str, name: str | None) -> Node:
+    """Build the ``auth`` block that signs ``signed_nodes`` (which exclude it)."""
+    canonical = serialize(signed_nodes)
+    key = agent_auth.derive_key(secret, name)
+    signature = agent_auth.compute_signature(key, canonical)
+    return Node(
+        "auth",
+        children=[
+            Node("algorithm", [agent_auth.ALGORITHM]),
+            Node("key_id", [agent_auth.DEFAULT_KEY_ID]),
+            Node("signature", [signature]),
+        ],
+    )
+
+
+def verify_frame(
+    nodes: list[Node],
+    secret: str,
+    *,
+    req_id: str | None = None,
+    now: int | None = None,
+) -> str | None:
+    """Validate the auth, timestamp, and nonce of a parsed v2 frame.
+
+    Returns the frame's ``name`` (or ``None`` for an unnamed read-only frame).
+    Raises :class:`ProtocolError` with the appropriate v2 code on any failure.
+    The caller is responsible for matching the returned name against the
+    expected hostname.
+    """
+    auth, rest = _split_auth(nodes)
+    fields = {node.name: node.arg for node in rest}
+
+    name = fields.get("name")
+    if name is not None:
+        name = str(name)
+
+    if auth is None:
+        raise ProtocolError(AUTHENTICATION_REQUIRED, "missing auth block", req_id)
+
+    timestamp = fields.get("timestamp")
+    nonce = fields.get("nonce")
+    if timestamp is None:
+        raise ProtocolError(AUTHENTICATION_REQUIRED, "missing timestamp", req_id)
+    if nonce is None:
+        raise ProtocolError(AUTHENTICATION_REQUIRED, "missing nonce", req_id)
+    if isinstance(timestamp, bool) or not isinstance(timestamp, int):
+        raise ProtocolError(INVALID_REQUEST, "timestamp must be an integer", req_id)
+    if not agent_auth.is_valid_nonce(nonce):
+        raise ProtocolError(INVALID_REQUEST, "nonce must be hex randomness", req_id)
+
+    signature = auth.child_map().get("signature")
+    if signature is None:
+        raise ProtocolError(AUTHENTICATION_REQUIRED, "missing signature", req_id)
+
+    canonical = serialize(rest)
+    key = agent_auth.derive_key(secret, name)
+    if not agent_auth.verify_signature(key, canonical, str(signature)):
+        raise ProtocolError(AUTHENTICATION_FAILED, "signature did not verify", req_id)
+
+    if not agent_auth.timestamp_in_window(timestamp, now=now):
+        raise ProtocolError(STALE_TIMESTAMP, "timestamp outside allowed window", req_id)
+
+    return name
+
+
+# ===========================================================================
 # Requests
 # ===========================================================================
 @dataclass
@@ -345,39 +444,66 @@ class Request:
     action: str
     var: str | None = None
     val: Any = None
+    name: str | None = None
+    timestamp: int | None = None
+    nonce: str | None = None
 
 
 def build_request(
     action: str,
     *,
+    secret: str,
     var: str | None = None,
     val: Any = None,
     req_id: str | None = None,
+    name: str | None = None,
+    timestamp: int | None = None,
+    nonce: str | None = None,
 ) -> str:
-    """Build a request body for a client to send."""
+    """Build and sign a v2 request body for a client to send.
+
+    ``name`` is the target agent's hostname.  It is required for write actions
+    and optional for read-only ones; when present it also selects the
+    per-agent signing key.
+    """
     nodes = [Node("v", [PROTOCOL_VERSION])]
     if req_id is not None:
         nodes.append(Node("id", [req_id]))
+    if name is not None:
+        nodes.append(Node("name", [name]))
+    nodes.append(
+        Node("timestamp", [agent_auth.now_timestamp() if timestamp is None else timestamp])
+    )
+    nodes.append(Node("nonce", [agent_auth.make_nonce() if nonce is None else nonce]))
     nodes.append(Node("action", [action]))
     if var is not None:
         nodes.append(Node("var", [var]))
     if val is not None:
         nodes.append(Node("val", [val]))
+    nodes.append(_auth_node(nodes, secret, name))
     return serialize(nodes)
 
 
-def parse_request(body: str) -> Request:
-    """Parse and structurally validate a request body.
+def parse_request(
+    body: str,
+    *,
+    secret: str,
+    hostname: str,
+    now: int | None = None,
+) -> Request:
+    """Parse, authenticate, and structurally validate a v2 request body.
 
     Raises :class:`ProtocolError` for malformed requests, unsupported versions,
-    and unknown actions/variables.  Value-level checks happen in :func:`dispatch`.
+    failed authentication, and unknown actions/variables.  Value-level checks
+    happen in :func:`dispatch`.  ``hostname`` is the agent's own name, used to
+    reject frames addressed to a different PC.
     """
     try:
         nodes = parse(body)
     except ProtocolError:
         raise ProtocolError(INVALID_REQUEST, "could not parse request")
 
-    fields = {node.name: node.arg for node in nodes}
+    fields = {node.name: node.arg for node in nodes if node.name != "auth"}
     req_id = fields.get("id")
     if req_id is not None:
         req_id = str(req_id)
@@ -392,9 +518,27 @@ def parse_request(body: str) -> Request:
             req_id,
         )
 
+    # Authenticate before acting on anything in the frame.
+    name = verify_frame(nodes, secret, req_id=req_id, now=now)
+
     action = fields.get("action")
     if action not in ACTIONS:
         raise ProtocolError(UNKNOWN_ACTION, f"unknown action: {action!r}", req_id)
+
+    # Destination binding: a named frame must target this agent; write actions
+    # must always be named (see "Cross-PC replay" / "Discovery handshake").
+    if name is not None and name != hostname:
+        raise ProtocolError(
+            AUTHENTICATION_FAILED,
+            "frame addressed to a different agent",
+            req_id,
+        )
+    if action in WRITE_ACTIONS and name is None:
+        raise ProtocolError(
+            AUTHENTICATION_REQUIRED,
+            f"{action} requires a name identifying the target agent",
+            req_id,
+        )
 
     var = fields.get("var")
     if var is not None:
@@ -418,43 +562,74 @@ def parse_request(body: str) -> Request:
     elif action == "message" and val is None:
         raise ProtocolError(INVALID_REQUEST, "message requires text", req_id)
 
-    return Request(PROTOCOL_VERSION, req_id, action, var, val)
+    return Request(
+        PROTOCOL_VERSION,
+        req_id,
+        action,
+        var,
+        val,
+        name=name,
+        timestamp=fields.get("timestamp"),
+        nonce=fields.get("nonce"),
+    )
 
 
 # ===========================================================================
 # Responses
 # ===========================================================================
-def _envelope(req_id: str | None, status: str, *extra: Node) -> str:
+# Response builders return the *content* nodes (``status`` plus any payload).
+# The signed v2 envelope (``v``/``name``/``timestamp``/``nonce``/``auth``) is
+# added by :func:`sign_response`, which the server entry point calls last.
+def ok_content(result: Any) -> list[Node]:
+    return [Node("status", ["ok"]), Node("result", [result])]
+
+
+def block_content(block: Node) -> list[Node]:
+    return [Node("status", ["ok"]), block]
+
+
+def error_content(code: str, message: str) -> list[Node]:
+    error = Node("error", children=[Node("code", [code]), Node("message", [message])])
+    return [Node("status", ["failure"]), error]
+
+
+def capabilities_content() -> list[Node]:
+    actions = Node("actions", children=[Node(k, [v]) for k, v in ACTIONS.items()])
+    values = Node("values", children=[Node(k, [v]) for k, v in VARIABLES.items()])
+    return [Node("status", ["ok"]), actions, values]
+
+
+def sign_response(
+    content_nodes: list[Node],
+    *,
+    secret: str,
+    hostname: str,
+    req_id: str | None = None,
+    timestamp: int | None = None,
+    nonce: str | None = None,
+) -> str:
+    """Wrap response ``content_nodes`` in a signed v2 envelope.
+
+    Every response carries the agent's own ``name`` and is signed with that
+    agent's per-host key, so the panel both learns the hostname (discovery) and
+    can confirm it is talking to the agent it expected.
+    """
     nodes = [Node("v", [PROTOCOL_VERSION])]
     if req_id is not None:
         nodes.append(Node("id", [req_id]))
-    nodes.append(Node("status", [status]))
-    nodes.extend(extra)
+    nodes.append(Node("name", [hostname]))
+    nodes.append(
+        Node("timestamp", [agent_auth.now_timestamp() if timestamp is None else timestamp])
+    )
+    nodes.append(Node("nonce", [agent_auth.make_nonce() if nonce is None else nonce]))
+    nodes.extend(content_nodes)
+    nodes.append(_auth_node(nodes, secret, hostname))
     return serialize(nodes)
-
-
-def ok_response(req_id: str | None, result: Any) -> str:
-    return _envelope(req_id, "ok", Node("result", [result]))
-
-
-def block_response(req_id: str | None, block: Node) -> str:
-    return _envelope(req_id, "ok", block)
-
-
-def error_response(req_id: str | None, code: str, message: str) -> str:
-    error = Node("error", children=[Node("code", [code]), Node("message", [message])])
-    return _envelope(req_id, "failure", error)
-
-
-def capabilities_response(req_id: str | None) -> str:
-    actions = Node("actions", children=[Node(k, [v]) for k, v in ACTIONS.items()])
-    values = Node("values", children=[Node(k, [v]) for k, v in VARIABLES.items()])
-    return _envelope(req_id, "ok", actions, values)
 
 
 @dataclass
 class Response:
-    """A parsed response, for clients."""
+    """A parsed, authenticated response, for clients."""
 
     version: int | None
     id: str | None
@@ -463,6 +638,9 @@ class Response:
     error_code: str | None = None
     error_message: str | None = None
     settings: dict[str, Any] | None = None
+    name: str | None = None
+    timestamp: int | None = None
+    nonce: str | None = None
 
     @property
     def ok(self) -> bool:
@@ -478,15 +656,43 @@ class Response:
         return f"{self.error_code}: {self.error_message}"
 
 
-def parse_response(body: str) -> Response:
-    """Parse a response body received by a client."""
+def parse_response(
+    body: str,
+    *,
+    secret: str,
+    expected_name: str | None = None,
+    now: int | None = None,
+) -> Response:
+    """Parse and authenticate a response body received by a client.
+
+    The response signature is verified with the key derived from the ``name``
+    the agent reports.  When ``expected_name`` is given (every request after
+    discovery), the reported name must match it, defeating attempts to pass off
+    one PC's signed response as another's.
+    """
     nodes = parse(body)
-    by_name = {node.name: node for node in nodes}
+    by_name = {node.name: node for node in nodes if node.name != "auth"}
 
     version = by_name["v"].arg if "v" in by_name else None
     req_id = by_name["id"].arg if "id" in by_name else None
     if req_id is not None:
         req_id = str(req_id)
+
+    if version != PROTOCOL_VERSION:
+        raise ProtocolError(
+            UNSUPPORTED_VERSION,
+            f"protocol version {version!r} is not supported",
+            req_id,
+        )
+
+    name = verify_frame(nodes, secret, req_id=req_id, now=now)
+    if expected_name is not None and name != expected_name:
+        raise ProtocolError(
+            AUTHENTICATION_FAILED,
+            "response came from an unexpected agent",
+            req_id,
+        )
+
     status = by_name["status"].arg if "status" in by_name else "failure"
 
     error_code = error_message = None
@@ -508,6 +714,9 @@ def parse_response(body: str) -> Response:
         error_code=error_code,
         error_message=error_message,
         settings=settings,
+        name=name,
+        timestamp=by_name["timestamp"].arg if "timestamp" in by_name else None,
+        nonce=by_name["nonce"].arg if "nonce" in by_name else None,
     )
 
 
@@ -579,14 +788,14 @@ def _read_variable(control: Any, var: str) -> Any:
     raise ProtocolError(UNKNOWN_VARIABLE, f"unknown variable: {var}")
 
 
-def _do_get(control: Any, req: Request) -> str:
+def _do_get(control: Any, req: Request) -> list[Node]:
     if req.var == "settings":
         children = [Node(name, [_read_variable(control, name)]) for name in VARIABLES]
-        return block_response(req.id, Node("settings", children=children))
-    return ok_response(req.id, _read_variable(control, req.var))  # type: ignore[arg-type]
+        return block_content(Node("settings", children=children))
+    return ok_content(_read_variable(control, req.var))  # type: ignore[arg-type]
 
 
-def _do_set(control: Any, req: Request) -> str:
+def _do_set(control: Any, req: Request) -> list[Node]:
     var, val, req_id = req.var, req.val, req.id
     if var not in WRITABLE_VARIABLES:
         raise ProtocolError(FORBIDDEN, f"{var} is read-only", req_id)
@@ -617,10 +826,10 @@ def _do_set(control: Any, req: Request) -> str:
         result = engaged
 
     control.save_state()
-    return ok_response(req_id, result)
+    return ok_content(result)
 
 
-def _do_clear(control: Any, req: Request) -> str:
+def _do_clear(control: Any, req: Request) -> list[Node]:
     var, req_id = req.var, req.id
     if var not in CLEARABLE_VARIABLES:
         raise ProtocolError(FORBIDDEN, f"{var} cannot be cleared", req_id)
@@ -636,33 +845,37 @@ def _do_clear(control: Any, req: Request) -> str:
         control.runtime.manual_lock_active = False
 
     control.save_state()
-    return ok_response(req_id, "cleared")
+    return ok_content("cleared")
 
 
-def _do_extend(control: Any, req: Request) -> str:
+def _do_extend(control: Any, req: Request) -> list[Node]:
     minutes = _parse_int(req.val, req.id)
     control.extend_time(minutes)
     control.save_state()
-    return ok_response(req.id, minutes)
+    return ok_content(minutes)
 
 
-def _do_message(control: Any, req: Request) -> str:
+def _do_message(control: Any, req: Request) -> list[Node]:
     control.show_message(str(req.val))
-    return ok_response(req.id, "message sent")
+    return ok_content("message sent")
 
 
-def _do_shutdown(control: Any, req: Request) -> str:
+def _do_shutdown(control: Any, req: Request) -> list[Node]:
     seconds = DEFAULT_SHUTDOWN_SECONDS if req.val is None else _parse_int(req.val, req.id)
     if seconds < 0:
         raise ProtocolError(INVALID_VALUE, "seconds must not be negative", req.id)
     control.shutdown_pc(seconds)
-    return ok_response(req.id, seconds)
+    return ok_content(seconds)
 
 
-def dispatch(control: Any, req: Request) -> str:
-    """Execute a validated request against ``control`` and return a response body."""
+def dispatch(control: Any, req: Request) -> list[Node]:
+    """Execute a validated request against ``control`` and return content nodes.
+
+    The returned nodes are the response body's ``status`` plus payload; the
+    signed v2 envelope is added by :func:`handle_request`.
+    """
     if req.action == "list_capabilities":
-        return capabilities_response(req.id)
+        return capabilities_content()
     if req.action == "get":
         return _do_get(control, req)
     if req.action == "set":
@@ -679,26 +892,36 @@ def dispatch(control: Any, req: Request) -> str:
         control.runtime.manual_lock_active = True
         control.lock_pc()
         control.save_state()
-        return ok_response(req.id, "locked")
+        return ok_content("locked")
     if req.action == "unlock":
         control.runtime.manual_lock_active = False
         control.save_state()
-        return ok_response(req.id, "unlocked")
+        return ok_content("unlocked")
     raise ProtocolError(UNKNOWN_ACTION, f"unknown action: {req.action}", req.id)
 
 
-def handle_request(control: Any, body: str) -> str:
-    """Top-level server entry: parse, dispatch, and serialize, never raising.
+def handle_request(
+    control: Any,
+    body: str,
+    *,
+    secret: str,
+    now: int | None = None,
+) -> str:
+    """Top-level server entry: authenticate, dispatch, and sign, never raising.
 
-    Any :class:`ProtocolError` becomes a failure response; unexpected
-    exceptions become an ``internal_error`` response.
+    Any :class:`ProtocolError` becomes a signed failure response; unexpected
+    exceptions become a signed ``internal_error`` response.  Every response is
+    signed with this agent's per-host key so the panel can authenticate it.
     """
+    hostname = control.platform.get_hostname()
     req_id: str | None = None
     try:
-        req = parse_request(body)
+        req = parse_request(body, secret=secret, hostname=hostname, now=now)
         req_id = req.id
-        return dispatch(control, req)
+        content = dispatch(control, req)
     except ProtocolError as exc:
-        return error_response(exc.req_id or req_id, exc.code, exc.message)
+        content = error_content(exc.code, exc.message)
+        req_id = exc.req_id or req_id
     except Exception as exc:  # noqa: BLE001 - defensive catch-all per design
-        return error_response(req_id, INTERNAL_ERROR, str(exc))
+        content = error_content(INTERNAL_ERROR, str(exc))
+    return sign_response(content, secret=secret, hostname=hostname, req_id=req_id)

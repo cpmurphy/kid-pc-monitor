@@ -1,4 +1,4 @@
-"""Tests for the structured agent protocol (agent_protocol.py)."""
+"""Tests for the structured agent protocol (agent_protocol.py), protocol v2."""
 
 from __future__ import annotations
 
@@ -9,11 +9,15 @@ import unittest
 from datetime import time as dtime
 from pathlib import Path
 
+from kid_pc_monitor import agent_auth
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import Node, ProtocolError
 from kid_pc_monitor.pc_control import PCTimeControl, RemoteControlServer
 
 from test_pc_control import FakeHostPlatform
+
+SECRET = "test-shared-secret"
+HOSTNAME = "kid-pc"
 
 
 class KdlSerializationTests(unittest.TestCase):
@@ -115,62 +119,192 @@ class FramingTests(unittest.TestCase):
 
 
 class RequestValidationTests(unittest.TestCase):
+    def _parse(self, body: str, *, hostname: str = HOSTNAME, now=None) -> proto.Request:
+        return proto.parse_request(body, secret=SECRET, hostname=hostname, now=now)
+
     def test_build_and_parse_round_trip(self) -> None:
-        body = proto.build_request("set", var="daily_limit", val=120, req_id="abc123")
-        req = proto.parse_request(body)
+        body = proto.build_request(
+            "set", secret=SECRET, var="daily_limit", val=120, req_id="abc123", name=HOSTNAME
+        )
+        req = self._parse(body)
         self.assertEqual((req.action, req.var, req.val, req.id), ("set", "daily_limit", 120, "abc123"))
+        self.assertEqual(req.name, HOSTNAME)
 
     def test_missing_version(self) -> None:
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("action lock")
+            self._parse("action lock")
         self.assertEqual(ctx.exception.code, proto.INVALID_REQUEST)
 
-    def test_unsupported_version(self) -> None:
+    def test_unsupported_version_v1(self) -> None:
+        # v1 frames are no longer accepted now that v2 security is mandatory.
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("v 2\naction lock")
+            self._parse("v 1\naction lock")
         self.assertEqual(ctx.exception.code, proto.UNSUPPORTED_VERSION)
 
     def test_unknown_action(self) -> None:
+        body = proto.build_request("explode", secret=SECRET, name=HOSTNAME)
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("v 1\naction explode")
+            self._parse(body)
         self.assertEqual(ctx.exception.code, proto.UNKNOWN_ACTION)
 
     def test_unknown_variable(self) -> None:
+        body = proto.build_request("get", secret=SECRET, var="nonsense", name=HOSTNAME)
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("v 1\naction get\nvar nonsense")
+            self._parse(body)
         self.assertEqual(ctx.exception.code, proto.UNKNOWN_VARIABLE)
 
     def test_set_requires_value(self) -> None:
+        body = proto.build_request("set", secret=SECRET, var="daily_limit", name=HOSTNAME)
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("v 1\naction set\nvar daily_limit")
+            self._parse(body)
         self.assertEqual(ctx.exception.code, proto.INVALID_REQUEST)
 
     def test_error_echoes_request_id(self) -> None:
+        body = proto.build_request("explode", secret=SECRET, req_id="xyz", name=HOSTNAME)
         with self.assertRaises(ProtocolError) as ctx:
-            proto.parse_request("v 1\nid xyz\naction explode")
+            self._parse(body)
         self.assertEqual(ctx.exception.req_id, "xyz")
+
+    def test_read_only_action_allowed_without_name(self) -> None:
+        body = proto.build_request("get", secret=SECRET, var="name")
+        req = self._parse(body)
+        self.assertEqual(req.action, "get")
+        self.assertIsNone(req.name)
+
+
+class AuthenticationTests(unittest.TestCase):
+    """Signature, timestamp, nonce, and cross-PC binding on requests."""
+
+    def _parse(self, body: str, *, hostname: str = HOSTNAME, now=None) -> proto.Request:
+        return proto.parse_request(body, secret=SECRET, hostname=hostname, now=now)
+
+    def test_missing_auth_block_rejected(self) -> None:
+        # A v2 frame with no auth block at all.
+        body = "v 2\nname kid-pc\ntimestamp 1710000000\nnonce \"%s\"\naction lock" % (
+            "a" * 32
+        )
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_REQUIRED)
+
+    def test_tampered_request_rejected(self) -> None:
+        body = proto.build_request(
+            "set",
+            secret=SECRET,
+            var="daily_limit",
+            val=120,
+            name=HOSTNAME,
+            timestamp=1710000000,
+            nonce="a" * 32,
+        )
+        tampered = body.replace("val 120", "val 999")
+        self.assertIn("val 999", tampered)
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(tampered, now=1710000000)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
+
+    def test_wrong_secret_rejected(self) -> None:
+        body = proto.build_request("get", secret="some-other-secret", var="name")
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
+
+    def test_stale_timestamp_rejected(self) -> None:
+        body = proto.build_request(
+            "get", secret=SECRET, var="name", timestamp=1000, nonce="b" * 32
+        )
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS + 5)
+        self.assertEqual(ctx.exception.code, proto.STALE_TIMESTAMP)
+
+    def test_fresh_timestamp_within_window_accepted(self) -> None:
+        body = proto.build_request(
+            "get", secret=SECRET, var="name", timestamp=1000, nonce="c" * 32
+        )
+        req = self._parse(body, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS - 1)
+        self.assertEqual(req.action, "get")
+
+    def test_write_without_name_requires_authentication(self) -> None:
+        body = proto.build_request("lock", secret=SECRET)  # no name
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_REQUIRED)
+
+    def test_name_mismatch_rejected(self) -> None:
+        body = proto.build_request("unlock", secret=SECRET, name="some-other-pc")
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body, hostname=HOSTNAME)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
+
+    def test_cross_pc_replay_rejected(self) -> None:
+        # An unlock genuinely issued for bedroom-pc, captured and replayed at
+        # living-room-pc. Same raw secret, but the derived key and the name
+        # both bind the frame to bedroom-pc.
+        captured = proto.build_request("unlock", secret=SECRET, name="bedroom-pc")
+        with self.assertRaises(ProtocolError) as ctx:
+            proto.parse_request(captured, secret=SECRET, hostname="living-room-pc")
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
+
+    def test_short_nonce_rejected(self) -> None:
+        body = proto.build_request("get", secret=SECRET, var="name", nonce="abc")
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body)
+        self.assertEqual(ctx.exception.code, proto.INVALID_REQUEST)
 
 
 class ResponseBuildingTests(unittest.TestCase):
-    def test_ok_response(self) -> None:
-        resp = proto.parse_response(proto.ok_response("abc", 120))
+    def _parse(self, body: str, **kwargs) -> proto.Response:
+        return proto.parse_response(body, secret=SECRET, **kwargs)
+
+    def test_ok_response_round_trip(self) -> None:
+        body = proto.sign_response(
+            proto.ok_content(120), secret=SECRET, hostname=HOSTNAME, req_id="abc"
+        )
+        resp = self._parse(body, expected_name=HOSTNAME)
         self.assertTrue(resp.ok)
         self.assertEqual(resp.result, 120)
         self.assertEqual(resp.id, "abc")
+        self.assertEqual(resp.name, HOSTNAME)
 
-    def test_error_response(self) -> None:
-        resp = proto.parse_response(proto.error_response("abc", proto.INVALID_VALUE, "bad"))
+    def test_error_response_round_trip(self) -> None:
+        body = proto.sign_response(
+            proto.error_content(proto.INVALID_VALUE, "bad"),
+            secret=SECRET,
+            hostname=HOSTNAME,
+            req_id="abc",
+        )
+        resp = self._parse(body)
         self.assertFalse(resp.ok)
         self.assertEqual(resp.error_code, proto.INVALID_VALUE)
         self.assertEqual(resp.error_message, "bad")
         self.assertIn("invalid_value", resp.text)
 
     def test_capabilities_response(self) -> None:
-        nodes = {n.name: n for n in proto.parse(proto.capabilities_response("abc"))}
+        body = proto.sign_response(
+            proto.capabilities_content(), secret=SECRET, hostname=HOSTNAME
+        )
+        nodes = {n.name: n for n in proto.parse(body)}
         actions = nodes["actions"].child_map()
         self.assertIn("get", actions)
         self.assertIn("extend", actions)
         self.assertIn("daily_limit", nodes["values"].child_map())
+
+    def test_tampered_response_rejected(self) -> None:
+        body = proto.sign_response(
+            proto.ok_content("unlocked"), secret=SECRET, hostname=HOSTNAME
+        )
+        tampered = body.replace("unlocked", "locked!!")
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(tampered)
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
+
+    def test_response_from_unexpected_agent_rejected(self) -> None:
+        body = proto.sign_response(
+            proto.ok_content("unlocked"), secret=SECRET, hostname="living-room-pc"
+        )
+        with self.assertRaises(ProtocolError) as ctx:
+            self._parse(body, expected_name="bedroom-pc")
+        self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
 
 
 class DispatchTests(unittest.TestCase):
@@ -181,9 +315,14 @@ class DispatchTests(unittest.TestCase):
             start_background_threads=False,
         )
 
-    def _handle(self, control: PCTimeControl, **req_kwargs) -> proto.Response:
-        body = proto.build_request(req_id="r1", **req_kwargs)
-        return proto.parse_response(proto.handle_request(control, body))
+    def _handle(self, control: PCTimeControl, *, name=..., **req_kwargs) -> proto.Response:
+        hostname = control.platform.get_hostname()
+        # Default to a correctly-addressed, signed frame; tests can pass
+        # ``name=None`` for the read-only discovery path.
+        target = hostname if name is ... else name
+        body = proto.build_request(secret=SECRET, req_id="r1", name=target, **req_kwargs)
+        resp_body = proto.handle_request(control, body, secret=SECRET)
+        return proto.parse_response(resp_body, secret=SECRET, expected_name=hostname)
 
     def test_get_settings_returns_all_variables(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -204,6 +343,16 @@ class DispatchTests(unittest.TestCase):
             control.set_daily_allowance(45)
             resp = self._handle(control, action="get", var="daily_limit")
             self.assertEqual(resp.result, 45)
+
+    def test_get_name_without_name_field(self) -> None:
+        # The discovery handshake: an unnamed read still returns a signed,
+        # named response so the panel learns the hostname.
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp, hostname="kid-pc")
+            resp = self._handle(control, action="get", var="name", name=None)
+            self.assertTrue(resp.ok)
+            self.assertEqual(resp.result, "kid-pc")
+            self.assertEqual(resp.name, "kid-pc")
 
     def test_set_daily_limit_persists(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -314,17 +463,31 @@ class DispatchTests(unittest.TestCase):
     def test_list_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             control = self._control(tmp)
-            body = proto.handle_request(control, proto.build_request("list_capabilities"))
-            nodes = {n.name: n for n in proto.parse(body)}
-            self.assertIn("actions", nodes)
-            self.assertIn("values", nodes)
+            resp = self._handle(control, action="list_capabilities", name=None)
+            self.assertTrue(resp.ok)
 
-    def test_malformed_request_yields_failure(self) -> None:
+    def test_unauthenticated_request_yields_signed_failure(self) -> None:
+        # The agent still signs its rejection so the panel can trust the error.
         with tempfile.TemporaryDirectory() as tmp:
-            control = self._control(tmp)
-            resp = proto.parse_response(proto.handle_request(control, "this is not valid"))
+            control = self._control(tmp, hostname="kid-pc")
+            body = "this is not valid"
+            resp_body = proto.handle_request(control, body, secret=SECRET)
+            resp = proto.parse_response(resp_body, secret=SECRET, expected_name="kid-pc")
             self.assertFalse(resp.ok)
             self.assertEqual(resp.error_code, proto.INVALID_REQUEST)
+
+    def test_tampered_request_yields_auth_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp, hostname="kid-pc")
+            body = proto.build_request(
+                "set", secret=SECRET, var="daily_limit", val=120, name="kid-pc"
+            )
+            tampered = body.replace("val 120", "val 999")
+            resp_body = proto.handle_request(control, tampered, secret=SECRET)
+            resp = proto.parse_response(resp_body, secret=SECRET, expected_name="kid-pc")
+            self.assertFalse(resp.ok)
+            self.assertEqual(resp.error_code, proto.AUTHENTICATION_FAILED)
+            self.assertIsNone(control.daily.allowance)
 
 
 class ServerIntegrationTests(unittest.TestCase):
@@ -334,6 +497,7 @@ class ServerIntegrationTests(unittest.TestCase):
         server = RemoteControlServer()
         server.pc_control = control
         server.running = True
+        server._shared_secret = SECRET
         client_end, server_end = socket.socketpair()
         thread = threading.Thread(
             target=server.handle_client, args=(server_end, ("test", 0), 0), daemon=True
@@ -350,14 +514,25 @@ class ServerIntegrationTests(unittest.TestCase):
             )
             client_end, thread = self._serve(control)
             try:
-                client_end.sendall(proto.encode_frame(proto.build_request("get", var="name")))
-                resp = proto.parse_response(proto.read_frame(client_end))
-                self.assertEqual(resp.result, "kid-pc")
-
+                # Discovery: unnamed read learns and authenticates the hostname.
                 client_end.sendall(
-                    proto.encode_frame(proto.build_request("set", var="daily_limit", val=75))
+                    proto.encode_frame(proto.build_request("get", secret=SECRET, var="name"))
                 )
-                resp = proto.parse_response(proto.read_frame(client_end))
+                resp = proto.parse_response(proto.read_frame(client_end), secret=SECRET)
+                self.assertEqual(resp.result, "kid-pc")
+                self.assertEqual(resp.name, "kid-pc")
+
+                # A named write, signed with the per-agent key.
+                client_end.sendall(
+                    proto.encode_frame(
+                        proto.build_request(
+                            "set", secret=SECRET, var="daily_limit", val=75, name="kid-pc"
+                        )
+                    )
+                )
+                resp = proto.parse_response(
+                    proto.read_frame(client_end), secret=SECRET, expected_name="kid-pc"
+                )
                 self.assertTrue(resp.ok)
                 self.assertEqual(control.daily.allowance, 75)
             finally:
