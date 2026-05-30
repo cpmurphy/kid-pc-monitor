@@ -85,6 +85,19 @@ def prompt_for_shared_secret(*, getpass_fn=getpass.getpass) -> str | None:
         return secret
 
 
+def _persist_shared_secret(secret: str):
+    """Store the secret in the preferred location and drop stale copies.
+
+    Re-saving on every install (even when reusing an existing secret) is what
+    migrates a secret that an earlier version left in the admin's per-user
+    AppData into the machine-wide directory, so the agent running in the
+    child's session can read it (mode 2 / cross-user installs).
+    """
+    path = secrets_store.save_secret(SHARED_SECRET_NAME, secret)
+    secrets_store.prune_secret_copies(SHARED_SECRET_NAME, path)
+    return path
+
+
 def prompt_and_store_shared_secret(
     *,
     getpass_fn=getpass.getpass,
@@ -93,8 +106,9 @@ def prompt_and_store_shared_secret(
     """Show guidance, prompt for the shared secret, and persist it.
 
     If a secret is already stored, the parent is offered a short prompt to reuse
-    it without re-reading the full guidance. Returns the stored secret, or
-    ``None`` if the parent cancelled without saving.
+    it without re-reading the full guidance. Either way the secret is (re-)saved
+    to the machine-wide location so cross-user installs work. Returns the stored
+    secret, or ``None`` if the parent cancelled without saving.
     """
     existing = secrets_store.load_secret(SHARED_SECRET_NAME)
     if existing is not None:
@@ -105,7 +119,8 @@ def prompt_and_store_shared_secret(
         except (EOFError, KeyboardInterrupt):
             keep = ""
         if keep in ("", "y", "yes"):
-            print("   Keeping the existing shared secret.")
+            path = _persist_shared_secret(existing)
+            print(f"   Keeping the existing shared secret (stored at {path}).")
             return existing
 
     _print_guidance()
@@ -114,6 +129,6 @@ def prompt_and_store_shared_secret(
     if secret is None:
         return None
 
-    secrets_store.save_secret(SHARED_SECRET_NAME, secret)
-    print("   ✅ Shared secret saved (encrypted at rest).")
+    path = _persist_shared_secret(secret)
+    print(f"   ✅ Shared secret saved (encrypted at rest) at {path}.")
     return secret

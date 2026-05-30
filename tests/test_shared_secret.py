@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,11 +26,11 @@ class _FakeGetpass:
 class SharedSecretTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
-        tmp_path = Path(self._tmpdir.name)
-        self._patch_config = mock.patch.object(
-            secrets_store, "config_dir", return_value=tmp_path
-        )
-        self._patch_config.start()
+        tmp_path = Path(self._tmpdir.name) / "secrets"
+        # Pin storage to an isolated directory so neither the machine-wide nor
+        # the per-user search path touches the real filesystem.
+        self._prev_secrets_dir = os.environ.get(secrets_store._SECRETS_DIR_ENV)
+        os.environ[secrets_store._SECRETS_DIR_ENV] = str(tmp_path)
         self._patch_kdf = mock.patch.object(
             secrets_store, "_derive_key", return_value=Fernet.generate_key()
         )
@@ -37,7 +38,10 @@ class SharedSecretTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self._patch_kdf.stop()
-        self._patch_config.stop()
+        if self._prev_secrets_dir is None:
+            os.environ.pop(secrets_store._SECRETS_DIR_ENV, None)
+        else:
+            os.environ[secrets_store._SECRETS_DIR_ENV] = self._prev_secrets_dir
         self._tmpdir.cleanup()
 
     def test_prompt_for_shared_secret_matching(self) -> None:
@@ -92,6 +96,31 @@ class SharedSecretTests(unittest.TestCase):
             secrets_store.load_secret(shared_secret.SHARED_SECRET_NAME),
             "already set",
         )
+
+    def test_keep_existing_migrates_to_preferred_location(self) -> None:
+        # Simulate a secret left behind by an older version in the per-user
+        # directory, with the machine-wide directory empty (the mode 2 bug).
+        machine = Path(self._tmpdir.name) / "machine"
+        user = Path(self._tmpdir.name) / "user"
+        name = shared_secret.SHARED_SECRET_NAME
+        os.environ.pop(secrets_store._SECRETS_DIR_ENV, None)  # exercise real search order
+        with mock.patch.object(
+            secrets_store, "_machine_secrets_dir", return_value=machine
+        ), mock.patch.object(
+            secrets_store, "_user_secrets_dir", return_value=user
+        ):
+            user.mkdir(parents=True, exist_ok=True)
+            token = Fernet(secrets_store._derive_key()).encrypt(b"legacy")
+            (user / f"{name}.enc").write_bytes(token)
+
+            result = shared_secret.prompt_and_store_shared_secret(
+                getpass_fn=_FakeGetpass([]),
+                input_fn=lambda prompt="": "y",
+            )
+
+            self.assertEqual(result, "legacy")
+            self.assertTrue((machine / f"{name}.enc").is_file())
+            self.assertFalse((user / f"{name}.enc").is_file())
 
     def test_prompt_and_store_replace_existing(self) -> None:
         secrets_store.save_secret(shared_secret.SHARED_SECRET_NAME, "old secret value")
