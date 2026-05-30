@@ -7,6 +7,7 @@ import secrets
 import socket
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
 
@@ -21,6 +22,13 @@ DEFAULT_PORT = 9999
 CONNECT_TIMEOUT = 5
 SCAN_CONNECT_TIMEOUT = 0.5
 QUERY_TIMEOUT = 2
+
+# Cap on concurrent scan probes so a /24 uses a bounded pool instead of one
+# thread per host.
+SCAN_MAX_WORKERS = 64
+
+# Refuse to scan networks larger than a /24 (anything with a shorter prefix).
+MIN_SCAN_PREFIXLEN = 24
 
 # Optional friendly names (same format as web_panel.py)
 CUSTOM_PC_NAMES: dict[str, str] = {
@@ -97,6 +105,13 @@ def parse_scan_subnet(subnet_arg: str | None) -> tuple[ipaddress.IPv4Network, st
 
     if network.version != 4:
         raise ValueError("Only IPv4 networks are supported.")
+
+    if network.prefixlen < MIN_SCAN_PREFIXLEN:
+        raise ValueError(
+            f"Network '{network}' is too large to scan "
+            f"({network.num_addresses} addresses). "
+            "Limit scans to a /24 (256 addresses) or smaller."
+        )
 
     return network, str(network)
 
@@ -331,11 +346,12 @@ def scan_for_servers(
             with lock:
                 scanned_count[0] += 1
 
-    threads = [threading.Thread(target=check_host, args=(ip,)) for ip in network.hosts()]
-    for t in threads:
-        t.start()
-    for t in threads:
-        t.join()
+    hosts = list(network.hosts())
+    if hosts:
+        max_workers = min(SCAN_MAX_WORKERS, len(hosts))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for ip in hosts:
+                executor.submit(check_host, ip)
 
     if verbose:
         total_hosts = scanned_count[0]

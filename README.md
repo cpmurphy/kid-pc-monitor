@@ -178,12 +178,14 @@ The parent computer and kid computers usually need to be:
 
 <details>
 <summary>Scanning for PCs (Technical Details)</summary>
-By default the `/24` subnet containing the parent
-machine's primary IPv4 address is scanned. (See `scan_for_servers` in
-`src/kid_pc_monitor/web_panel.py`). If discovery misses a PC, you can
-still use it once the agent is reachable at its IP.  If you need to
-scan an entirely different network (rare), you can enter a different
-`/24` to scan.
+By default the `/24` subnet containing the parent machine's
+primary IPv4 address is scanned. (See `scan_for_servers` in
+`src/kid_pc_monitor/remote_client.py`).  Scans are capped at a `/24`
+(256 addresses): a network larger than that (for example a `/16`)
+is refused outright. If discovery misses a PC, you can still use it
+once the agent is reachable at its IP.  If you need to scan an
+entirely different network (rare), you can enter a different `/24`
+to scan.
 </details>
 
 ## Installation

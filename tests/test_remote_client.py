@@ -11,7 +11,9 @@ from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
     _print_frame,
     is_pc_reachable,
+    parse_scan_subnet,
     refresh_discovered_entry,
+    scan_for_servers,
     send_request,
 )
 
@@ -63,6 +65,57 @@ class RemoteClientTests(unittest.TestCase):
         self.assertFalse(entry["locked"])
         self.assertNotIn("current_user", entry)
         self.assertNotIn("usage_limit", entry)
+
+
+class ScanSubnetTests(unittest.TestCase):
+    def test_rejects_networks_larger_than_24(self) -> None:
+        for oversized in ("10.0.0.0/16", "10.0.0.0/8", "0.0.0.0/0"):
+            with self.subTest(network=oversized):
+                with self.assertRaises(ValueError):
+                    parse_scan_subnet(oversized)
+
+    def test_accepts_24_and_smaller(self) -> None:
+        for ok in ("192.168.1.0/24", "192.168.1.0/30", "192.168.1.50", "192.168.1"):
+            with self.subTest(network=ok):
+                network, _label = parse_scan_subnet(ok)
+                self.assertGreaterEqual(network.prefixlen, 24)
+
+
+class ScanForServersTests(unittest.TestCase):
+    def test_discovers_listening_host_through_bounded_pool(self) -> None:
+        ready = threading.Event()
+        stop = threading.Event()
+        port_holder: list[int] = []
+
+        def serve() -> None:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                server.bind(("127.0.0.1", 0))
+                server.listen(8)
+                server.settimeout(0.2)
+                port_holder.append(server.getsockname()[1])
+                ready.set()
+                while not stop.is_set():
+                    try:
+                        conn, _addr = server.accept()
+                    except socket.timeout:
+                        continue
+                    conn.close()
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        ready.wait(timeout=2)
+        port = port_holder[0]
+
+        try:
+            # /30 keeps the probe set tiny: 127.0.0.1 (our listener) + 127.0.0.2.
+            discovered = scan_for_servers(port=port, subnet="127.0.0.0/30")
+        finally:
+            stop.set()
+            thread.join(timeout=2)
+
+        self.assertIn("127.0.0.1", discovered)
+        self.assertEqual(discovered["127.0.0.1"]["status"], "online")
 
 
 class VerboseOutputTests(unittest.TestCase):
