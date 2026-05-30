@@ -1,12 +1,10 @@
 """Interactive prompt for the panel <-> agent shared secret (protocol v2).
 
 The web panel and the monitoring agent authenticate their messages to each
-other with a single shared secret.  Because the parent types the same secret
-on both halves of the install, it should be a memorable passphrase rather than
-a random string.  This module collects that passphrase and persists it with
+other with a single shared secret entered on both sides of the install.
+This module collects that secret and persists it with
 :mod:`kid_pc_monitor.secrets_store`.
 """
-
 from __future__ import annotations
 
 import getpass
@@ -23,7 +21,10 @@ def _print_guidance() -> None:
     print("\n   The web panel and the monitoring agent must share one secret so each")
     print("   can confirm the other's messages are genuine. Enter the SAME secret")
     print("   here and when you install the other half.")
-    print("\n   Pick something that is:")
+    print("\n   Best option:")
+    print("     • Generate a random string in a password manager (Bitwarden,")
+    print("       1Password, Apple Keychain, etc.) and paste it in on each PC.")
+    print("\n   If you can't use a password manager, pick something that is:")
     print("     • Easy for YOU to remember and type")
     print("     • Hard for your child (or anyone else) to guess")
     print("     • Like a password — but NOT one you use anywhere else")
