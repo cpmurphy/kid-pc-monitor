@@ -21,6 +21,34 @@ def config_dir() -> Path:
     return base / "kid-pc-monitor"
 
 
+def tls_dir() -> Path:
+    """Directory for optional web panel TLS certificate and key."""
+    return config_dir() / "tls"
+
+
+def resolve_tls_cert_paths() -> tuple[str, str] | None:
+    """Return (cert_path, key_path) when TLS files are configured and readable."""
+    cert_env = os.environ.get("KID_PC_MONITOR_SSL_CERT")
+    key_env = os.environ.get("KID_PC_MONITOR_SSL_KEY")
+    if cert_env and key_env:
+        cert_path = Path(cert_env)
+        key_path = Path(key_env)
+    else:
+        cert_path = tls_dir() / "cert.pem"
+        key_path = tls_dir() / "key.pem"
+
+    if not cert_path.is_file() or not key_path.is_file():
+        return None
+    try:
+        with cert_path.open():
+            pass
+        with key_path.open():
+            pass
+    except OSError:
+        return None
+    return str(cert_path), str(key_path)
+
+
 def template_dir() -> Path:
     return package_dir() / "templates"
 

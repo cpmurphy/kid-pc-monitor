@@ -29,12 +29,66 @@ If they have administrator access, yes. This tool is based on trust and communic
 2. **Firewall:** On Windows (kid PC or a Windows parent), allow Python / ports **5000** (web panel) and **9999** (agent). On a **Linux** machine running the web panel, allow inbound **5000/tcp** (e.g. `sudo ufw allow 5000/tcp` on Ubuntu)
 3. Use the IP address shown when starting `web_panel.py`, not `localhost`, from the other device
 
+### Safari on iPhone won't autofill my saved password
+
+iOS Safari only auto-offers saved passwords on **HTTPS** pages with a **trusted** certificate. The web panel defaults to plain `http://192.168.x.x:5000`, so Keychain may store your password but Safari will not show the key icon or inline autofill prompt.
+
+**Quick workaround (HTTP, no setup):**
+1. **Settings → Passwords** → open the saved entry → tap the website link (Safari may fill when launched from there).
+2. Long-press the password field → **Autofill** → **Passwords** → pick the entry.
+
+**Permanent fix (one-tap autofill):**
+
+Caveat: this does involve you managing your own certificate authority (CA). If
+someone gets access to the CA's private key, they could use it to create
+fake certificates for any site they want.  Only do this if you understand
+and accept the risks.
+
+On the machine running the web panel, install
+[mkcert](https://github.com/FiloSottile/mkcert#installation), then
+generate a root CA and a certificate for the web panel.
+
+```bash
+mkcert -install
+mkdir -p ~/.config/kid-pc-monitor/tls
+KEY_FILE=~/.config/kid-pc-monitor/tls/cert.pem
+CERT_FILE=~/.config/kid-pc-monitor/tls/cert.pem
+# know what you're using for <parents-pc> before you run this mkcert command
+mkcert -key-file "$KEY_FILE" -cert-file "$CERT_FILE" "<parents-pc>"
+```
+
+The panel auto-detects certificates at `~/.config/kid-pc-monitor/tls/cert.pem` and `key.pem` (or `%LOCALAPPDATA%\kid-pc-monitor\tls\` on Windows).
+You can also set `KID_PC_MONITOR_SSL_CERT` and `KID_PC_MONITOR_SSL_KEY` explicitly.
+
+Then on your iPhone:
+1. Install and fully trust the mkcert root CA (see mkcert documentation for steps).
+2. Restart the web panel.
+3. Open `https://<parent-pc>:5000` (not `http://`).
+4. Sign in once and save the password again at the `https://` URL (delete any old `http://` entry).
+
+**Windows parent:** install [mkcert](https://github.com/FiloSottile/mkcert#installation), then run the same commands manually:
+
+```powershell
+mkcert -install
+mkdir "$env:LOCALAPPDATA\kid-pc-monitor\tls"
+<# know what you're using for <parents_pc> before running #>
+mkcert -key-file "$env:LOCALAPPDATA\kid-pc-monitor\tls\key.pem" `
+       -cert-file "$env:LOCALAPPDATA\kid-pc-monitor\tls\cert.pem" `
+       <parents_pc>
+```
+
+Trust the mkcert root CA on your iPhone as above.
+
+**Advanced:** run Caddy or nginx in front of the panel with TLS termination; keep Flask on HTTP locally (`http://127.0.0.1:5000` behind the proxy).
+
+**Note:** A self-signed certificate that is not trusted on the phone still will not enable autofill — you need a CA installed on iOS (mkcert is the simplest option for home LAN use).
+
 ### "PC shows as Unknown"
 This is normal. You can:
 1. Add custom names in config.py
 2. The PC will still work, just with generic name
 
-### Scan finds no PCs / pc_cli cannot connect, but the kid PC is online
+### Scan finds no PCs / `pc_cli` cannot connect, but the kid PC is online
 
 The agent may be running and listening on port **9999** locally while **Windows Firewall still blocks inbound** connections from your parent PC or phone.
 

@@ -117,6 +117,8 @@ Open this on your phone or laptop:
 
 http://`<IP address of parent's PC>`:5000
 
+**iPhone password autofill:** Safari only auto-fills saved passwords over trusted HTTPS. For one-tap login from your phone, see [Safari autofill in the FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password) and run `./scripts/setup_web_panel_https.sh` on the parent machine.
+
 #### How to Find Your PC's IP Address
 
 Open Powershell and type:
@@ -308,6 +310,7 @@ python scripts/install_web_panel.py <# Installs web panel #>
 2. **On your phone:**
    - Open browser and go to `http://KIDS-PC-IP:5000`
    - Bookmark it for easy access
+   - For iOS Safari password autofill hints, see [FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password)
 
 Both services run invisibly in the background using `pythonw.exe`.
 

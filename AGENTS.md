@@ -10,7 +10,7 @@
 ## Three Components
 
 1. **Agent** (`pc_control.py`) — Kid-side Windows service. Monitors session, enforces locks, listens on **TCP 9999**.
-2. **Web Panel** (`web_panel.py`) — Parent admin UI (Flask on **TCP 5000**). Runs on Windows, Linux, or macOS.
+2. **Web Panel** (`web_panel.py`) — Parent admin UI (Flask on **TCP 5000**). Runs on Windows, Linux, or macOS. Optional TLS via `config_dir()/tls/cert.pem` + `key.pem` or `KID_PC_MONITOR_SSL_CERT` / `KID_PC_MONITOR_SSL_KEY`; iOS Safari password autofill requires trusted HTTPS (see `scripts/setup_web_panel_https.sh`).
 3. **CLI** (`pc_cli.py`) — Command-line remote client (`scan`, `inspect`, `set-limit`, `lock`, …).
 
 Entry points (after `pip install -e .`):

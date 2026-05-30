@@ -23,7 +23,13 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from kid_pc_monitor.paths import config_dir, package_dir, static_dir, template_dir
+from kid_pc_monitor.paths import (
+    config_dir,
+    package_dir,
+    resolve_tls_cert_paths,
+    static_dir,
+    template_dir,
+)
 from kid_pc_monitor.remote_client import (
     format_minutes_duration,
     format_seconds_duration,
@@ -315,8 +321,18 @@ def main() -> None:
     host = os.environ.get("KID_PC_MONITOR_HOST", "0.0.0.0")
     port = int(os.environ.get("KID_PC_MONITOR_PORT", "5000"))
     app = create_app()
-    print(f"Kid PC Monitor web panel on http://{host}:{port}")
-    app.run(host=host, port=port, debug=False)
+    tls = resolve_tls_cert_paths()
+    scheme = "https" if tls else "http"
+    print(f"Kid PC Monitor web panel on {scheme}://{host}:{port}")
+    if tls:
+        print(
+            "TLS enabled. iOS Safari password autofill requires the certificate "
+            "authority to be trusted on your phone."
+        )
+    run_kwargs: dict[str, Any] = {"host": host, "port": port, "debug": False}
+    if tls:
+        run_kwargs["ssl_context"] = tls
+    app.run(**run_kwargs)
 
 
 if __name__ == "__main__":
