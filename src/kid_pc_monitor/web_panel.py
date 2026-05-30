@@ -9,9 +9,11 @@ from datetime import datetime
 from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import urljoin, urlparse
 
 from flask import (
     Flask,
+    abort,
     flash,
     redirect,
     render_template,
@@ -36,6 +38,35 @@ from kid_pc_monitor.remote_client import (
 PANEL_USERNAME = "Kid PC Monitor"
 AUTH_FILE = "web_panel_auth.json"
 SESSION_AUTH_KEY = "panel_authenticated"
+CSRF_SESSION_KEY = "_csrf_token"
+
+
+def _csrf_token() -> str:
+    token = session.get(CSRF_SESSION_KEY)
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session[CSRF_SESSION_KEY] = token
+    return token
+
+
+def _csrf_valid() -> bool:
+    expected = session.get(CSRF_SESSION_KEY)
+    if not expected:
+        return False
+    supplied = request.form.get("csrf_token") or request.headers.get("X-CSRF-Token")
+    return bool(supplied) and secrets.compare_digest(expected, supplied)
+
+
+def _safe_next_url(target: str | None) -> str:
+    if not target:
+        return url_for("index")
+    ref = urlparse(request.host_url)
+    test = urlparse(urljoin(request.host_url, target))
+    if test.scheme not in ("http", "https"):
+        return url_for("index")
+    if test.netloc and test.netloc != ref.netloc:
+        return url_for("index")
+    return target
 
 
 def _auth_path() -> Path:
@@ -120,6 +151,11 @@ def create_app() -> Flask:
         or secrets.token_hex(32)
     )
 
+    @app.before_request
+    def require_csrf_on_post() -> None:
+        if request.method == "POST" and not _csrf_valid():
+            abort(400)
+
     @app.context_processor
     def inject_panel_context() -> dict[str, Any]:
         return {
@@ -128,6 +164,7 @@ def create_app() -> Flask:
             "panel_username": PANEL_USERNAME,
             "format_minutes_duration": format_minutes_duration,
             "format_seconds_duration": format_seconds_duration,
+            "csrf_token": _csrf_token,
         }
 
     def login_required(view: Callable):
@@ -148,13 +185,11 @@ def create_app() -> Flask:
             password = request.form.get("password", "")
             if record and _verify_password(record, password):
                 session[SESSION_AUTH_KEY] = True
-                next_url = request.form.get("next") or url_for("index")
-                return redirect(next_url)
+                return redirect(_safe_next_url(request.form.get("next")))
             flash("Incorrect password.", "error")
-        return render_template(
-            "login.html",
-            next=request.args.get("next", ""),
-        )
+        next_arg = request.args.get("next", "")
+        safe_next = next_arg if _safe_next_url(next_arg) == next_arg else ""
+        return render_template("login.html", next=safe_next)
 
     @app.route("/logout")
     def logout():
@@ -169,7 +204,12 @@ def create_app() -> Flask:
         if request.method == "POST":
             password = request.form.get("password", "")
             confirm = request.form.get("password_confirm", "")
-            if len(password) < 8:
+            record = load_auth_record()
+            if changing and (
+                not record or not _verify_password(record, request.form.get("current_password", ""))
+            ):
+                flash("Current password is incorrect.", "error")
+            elif len(password) < 8:
                 flash("Password must be at least 8 characters.", "error")
             elif password != confirm:
                 flash("Passwords do not match.", "error")

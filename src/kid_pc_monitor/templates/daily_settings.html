@@ -48,6 +48,11 @@
 
 {% block scripts %}
     <script>
+        const csrfHeaders = {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        };
+
         function showStatus(message, isSuccess) {
             const statusEl = document.getElementById('status-message');
             statusEl.textContent = message;
@@ -59,7 +64,7 @@
         function postAction(body) {
             return fetch('/action', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: csrfHeaders,
                 body: JSON.stringify(Object.assign({ ip: '{{ ip }}' }, body))
             })
             .then(response => response.json())

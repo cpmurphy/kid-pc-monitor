@@ -138,6 +138,11 @@
 
 {% block scripts %}
     <script>
+        const csrfHeaders = {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        };
+
         function showStatus(message, isSuccess) {
             const statusEl = document.getElementById('status-message');
             statusEl.textContent = message;
@@ -149,7 +154,7 @@
         function performAction(action) {
             fetch('/action', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: csrfHeaders,
                 body: JSON.stringify({ ip: '{{ ip }}', action: action })
             })
             .then(response => response.json())
@@ -175,7 +180,7 @@
             }
             fetch('/action', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: csrfHeaders,
                 body: JSON.stringify({ ip: '{{ ip }}', action: 'message', message: message })
             })
             .then(response => response.json())
@@ -200,7 +205,7 @@
             }
             fetch('/action', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: csrfHeaders,
                 body: JSON.stringify({
                     ip: '{{ ip }}',
                     action: 'extend_time',
@@ -224,7 +229,7 @@
             }
             fetch('/action', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: csrfHeaders,
                 body: JSON.stringify({ ip: '{{ ip }}', action: action })
             })
             .then(response => response.json())
