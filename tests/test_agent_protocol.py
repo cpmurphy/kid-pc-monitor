@@ -238,8 +238,8 @@ class AuthenticationTests(unittest.TestCase):
 
     def test_cross_pc_replay_rejected(self) -> None:
         # An unlock genuinely issued for bedroom-pc, captured and replayed at
-        # living-room-pc. Same raw secret, but the derived key and the name
-        # both bind the frame to bedroom-pc.
+        # living-room-pc. The signed ``name`` field binds the frame to
+        # bedroom-pc, so living-room-pc rejects the mismatch.
         captured = proto.build_request("unlock", secret=SECRET, name="bedroom-pc")
         with self.assertRaises(ProtocolError) as ctx:
             proto.parse_request(captured, secret=SECRET, hostname="living-room-pc")

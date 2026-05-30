@@ -170,8 +170,8 @@ All traffic stays on the local trusted LAN.
 The parent chooses one secret — either a memorable passphrase or a long
 random token from a password manager — and supplies it on every PC that runs
 the panel or the agent.  Each side stores it encrypted-at-rest via the
-`secrets_store` module.  The stored secret is the raw passphrase; the per-
-agent HMAC signing key is derived on the fly (see *Cross-PC replay* below).
+`secrets_store` module.  The stored secret is the raw passphrase, whose
+UTF-8 bytes are used directly as the HMAC signing key for every frame.
 
 ### Authenticated wire format
 
@@ -225,11 +225,10 @@ response — so the panel learns the hostname without needing to know
 it in advance.
 
 Every response — including discovery responses and signed error
-responses — carries the agent's own `name` and is signed with that
-agent's per-host key (`HMAC-SHA256(shared_secret, name)`). The panel
-derives the verification key from the `name` in the response, so it can
-authenticate the very first reply from an agent it has never contacted,
-and afterwards confirm that `name` matches the agent it expected.
+responses — carries the agent's own `name` and is signed with the shared
+key. The panel can therefore authenticate the very first reply from an
+agent it has never contacted, and afterwards confirm that the `name` in the
+response matches the agent it expected.
 
 ### Signature computation
 
@@ -287,11 +286,9 @@ attacker from saving a valid frame and replaying it the next day.
 
 ### Cross-PC replay
 
-The signing key for destination-specific frames is
-`HMAC-SHA256(shared_secret, name)`.  Because the shared secret is mixed
-with the target agent's hostname, a signature that verifies under
-`bedroom-pc`'s key will **not** verify under `living-room-pc`'s key — even
-though both agents share the same raw secret.
+Cross-PC replay is prevented by the signed `name` field, not by the key.
+The `name` is part of the canonical signing string, so it cannot be altered
+without breaking the signature.
 
 The agent receiving a frame with a `name` field checks that the value
 matches its own hostname.  A mismatch is rejected immediately
@@ -299,17 +296,17 @@ matches its own hostname.  A mismatch is rejected immediately
 response matches the agent it expected to talk to.
 
 So a kid who captures an `unlock` command on `bedroom-pc` cannot replay it
-against `living-room-pc` — the signature won't verify under
-`living-room-pc`'s derived key, and the `name` field won't match.
+against `living-room-pc` — the captured frame still says `name bedroom-pc`,
+which it cannot change without invalidating the signature, and
+`living-room-pc` rejects the mismatch.
 
 ### Discovery handshake
 
 When the panel first contacts an agent on a given IP, it does not yet know
 the agent's hostname.  It sends a read-only request (`get name` or
-`get settings`) **without** a `name` field — the signing key is just the
-raw shared secret.  The agent answers with a signed response that includes
-its `name`.  From that point on the panel derives the per-agent key from
-the agent's `name` and includes `name` in all future requests.
+`get settings`) **without** a `name` field.  The agent answers with a
+signed response that includes its `name`.  From that point on the panel
+includes that `name` in all future requests.
 
 The agent never requires `name` for read-only actions (`get`,
 `list_capabilities`).  Write or destructive actions (`set`, `clear`, `lock`,
@@ -321,7 +318,7 @@ Example:
 ```
 Panel → Agent:   v 2 ... timestamp ... nonce ... action get var name
                  auth { algorithm hmac-sha256 key_id "..." signature "..." }
-                 (no name → HMAC key is raw shared secret)
+                 (no name field; discovery request)
 
 Agent → Panel:   v 2 ... name "bedroom-pc" ... status ok result "bedroom-pc"
                  auth { algorithm hmac-sha256 key_id "..." signature "..." }
@@ -329,7 +326,7 @@ Agent → Panel:   v 2 ... name "bedroom-pc" ... status ok result "bedroom-pc"
 Panel → Agent:   v 2 ... name "bedroom-pc" ... action unlock
                  auth { algorithm hmac-sha256 key_id "..."
                         signature "..." }
-                 (HMAC key is HMAC-SHA256(shared, "bedroom-pc"))
+                 (name is signed, so the agent can enforce it)
 ```
 
 ### Error codes (v2 additions)

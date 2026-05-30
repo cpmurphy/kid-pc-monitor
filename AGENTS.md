@@ -52,7 +52,7 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 ## Agent Protocol (Custom)
 
 - KDL-subset over TCP with a **length-prefix** frame (see `docs/agent-protocol.md`).
-- **v2** adds HMAC-SHA256 mutual auth; signing key is `HMAC-SHA256(shared_secret, agent_hostname)`.
+- **v2** adds HMAC-SHA256 mutual auth; signing key is `HMAC-SHA256(shared_secret)`.
 - Write actions (`set`, `lock`, `unlock`, `extend`, `shutdown`, `message`) require `name` matching the agent's hostname.
 - Timestamp window: ±60 s.
 

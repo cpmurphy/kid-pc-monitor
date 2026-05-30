@@ -23,7 +23,7 @@ from typing import Any
 
 from kid_pc_monitor import agent_auth
 
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 
 # Reject absurd length prefixes outright; real frames are well under 1 KiB.
 MAX_FRAME_BYTES = 64 * 1024
@@ -369,10 +369,10 @@ def _split_auth(nodes: list[Node]) -> tuple[Node | None, list[Node]]:
     return auth, rest
 
 
-def _auth_node(signed_nodes: list[Node], secret: str, name: str | None) -> Node:
+def _auth_node(signed_nodes: list[Node], secret: str) -> Node:
     """Build the ``auth`` block that signs ``signed_nodes`` (which exclude it)."""
     canonical = serialize(signed_nodes)
-    key = agent_auth.derive_key(secret, name)
+    key = agent_auth.derive_key(secret)
     signature = agent_auth.compute_signature(key, canonical)
     return Node(
         "auth",
@@ -424,7 +424,7 @@ def verify_frame(
         raise ProtocolError(AUTHENTICATION_REQUIRED, "missing signature", req_id)
 
     canonical = serialize(rest)
-    key = agent_auth.derive_key(secret, name)
+    key = agent_auth.derive_key(secret)
     if not agent_auth.verify_signature(key, canonical, str(signature)):
         raise ProtocolError(AUTHENTICATION_FAILED, "signature did not verify", req_id)
 
@@ -463,8 +463,8 @@ def build_request(
     """Build and sign a v2 request body for a client to send.
 
     ``name`` is the target agent's hostname.  It is required for write actions
-    and optional for read-only ones; when present it also selects the
-    per-agent signing key.
+    and optional for read-only ones.  Because ``name`` is part of the signed
+    canonical string, the receiving agent can trust and enforce it.
     """
     nodes = [Node("v", [PROTOCOL_VERSION])]
     if req_id is not None:
@@ -480,7 +480,7 @@ def build_request(
         nodes.append(Node("var", [var]))
     if val is not None:
         nodes.append(Node("val", [val]))
-    nodes.append(_auth_node(nodes, secret, name))
+    nodes.append(_auth_node(nodes, secret))
     return serialize(nodes)
 
 
@@ -610,9 +610,9 @@ def sign_response(
 ) -> str:
     """Wrap response ``content_nodes`` in a signed v2 envelope.
 
-    Every response carries the agent's own ``name`` and is signed with that
-    agent's per-host key, so the panel both learns the hostname (discovery) and
-    can confirm it is talking to the agent it expected.
+    Every response carries the agent's own ``name`` and is signed with the
+    shared key, so the panel both learns the hostname (discovery) and can
+    confirm it is talking to the agent it expected.
     """
     nodes = [Node("v", [PROTOCOL_VERSION])]
     if req_id is not None:
@@ -623,7 +623,7 @@ def sign_response(
     )
     nodes.append(Node("nonce", [agent_auth.make_nonce() if nonce is None else nonce]))
     nodes.extend(content_nodes)
-    nodes.append(_auth_node(nodes, secret, hostname))
+    nodes.append(_auth_node(nodes, secret))
     return serialize(nodes)
 
 
@@ -665,10 +665,10 @@ def parse_response(
 ) -> Response:
     """Parse and authenticate a response body received by a client.
 
-    The response signature is verified with the key derived from the ``name``
-    the agent reports.  When ``expected_name`` is given (every request after
-    discovery), the reported name must match it, defeating attempts to pass off
-    one PC's signed response as another's.
+    The response signature is verified with the shared key.  When
+    ``expected_name`` is given (every request after discovery), the reported
+    name must match it, defeating attempts to pass off one PC's signed
+    response as another's.
     """
     nodes = parse(body)
     by_name = {node.name: node for node in nodes if node.name != "auth"}

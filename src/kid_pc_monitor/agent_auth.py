@@ -34,19 +34,16 @@ NONCE_BYTES = 16
 NONCE_MIN_HEX_CHARS = NONCE_BYTES * 2
 
 
-def derive_key(shared_secret: str, name: str | None) -> bytes:
-    """Return the HMAC signing key for a frame addressed to ``name``.
+def derive_key(shared_secret: str) -> bytes:
+    """Return the HMAC signing key, the UTF-8 bytes of the shared secret.
 
-    Read-only discovery frames carry no ``name`` and are signed with the raw
-    shared secret.  Every destination-specific frame mixes the target agent's
-    hostname into the key as ``HMAC-SHA256(shared_secret, name)`` so that a
-    signature valid for one PC will not verify on another, even though both
-    PCs share the same raw secret.
+    A single key signs every frame.  Cross-PC replay is prevented not by the
+    key but by the signed ``name`` field: because ``name`` is part of the
+    canonical signing string, it cannot be altered without breaking the
+    signature, and the protocol layer rejects any frame whose ``name`` does
+    not match the receiving agent's hostname.
     """
-    secret_bytes = shared_secret.encode("utf-8")
-    if name is None:
-        return secret_bytes
-    return hmac.new(secret_bytes, name.encode("utf-8"), hashlib.sha256).digest()
+    return shared_secret.encode("utf-8")
 
 
 def compute_signature(key: bytes, canonical: str) -> str:
