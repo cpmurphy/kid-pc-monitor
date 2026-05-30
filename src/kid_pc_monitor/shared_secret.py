@@ -66,20 +66,23 @@ def prompt_and_store_shared_secret(
 ) -> str | None:
     """Show guidance, prompt for the shared secret, and persist it.
 
-    If a secret is already stored, the parent may keep it. Returns the stored
-    secret, or ``None`` if the parent cancelled without saving.
+    If a secret is already stored, the parent is offered a short prompt to reuse
+    it without re-reading the full guidance. Returns the stored secret, or
+    ``None`` if the parent cancelled without saving.
     """
-    _print_guidance()
-
     existing = secrets_store.load_secret(SHARED_SECRET_NAME)
     if existing is not None:
         try:
-            keep = input_fn("\n   A shared secret is already stored. Keep it? (Y/n): ").strip().lower()
+            keep = input_fn(
+                "\n🔑 A shared secret is already stored. Reuse it? (Y/n): "
+            ).strip().lower()
         except (EOFError, KeyboardInterrupt):
             keep = ""
         if keep in ("", "y", "yes"):
             print("   Keeping the existing shared secret.")
             return existing
+
+    _print_guidance()
 
     secret = prompt_for_shared_secret(getpass_fn=getpass_fn)
     if secret is None:
