@@ -38,7 +38,8 @@
             {% endif %}
         </p>
 
-        <form class="scan-form" method="get" action="/scan">
+        <form class="scan-form" method="post" action="/scan">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% if scan_error %}
             <div class="scan-error">{{ scan_error }}</div>
             {% endif %}

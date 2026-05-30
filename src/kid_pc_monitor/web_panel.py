@@ -238,10 +238,10 @@ def create_app() -> Flask:
             default_subnet=str(get_default_scan_network()),
         )
 
-    @app.route("/scan")
+    @app.route("/scan", methods=["POST"])
     @login_required
     def scan():
-        subnet_arg = request.args.get("subnet", "").strip()
+        subnet_arg = request.form.get("subnet", "").strip()
         session.pop("scan_error", None)
         try:
             _network, label = parse_scan_subnet(subnet_arg or None)
