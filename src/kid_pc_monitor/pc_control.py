@@ -139,6 +139,7 @@ class PCTimeControl:
         self.current_user = getpass.getuser()
         base_dir = data_directory or data_dir
         base_dir.mkdir(parents=True, exist_ok=True)
+        self.agent_log_path = base_dir / "pc_control.log"
         self.state_store = AgentStateStore(base_dir, current_user=self.current_user)
         self.logger = logging.getLogger('PCTimeControl')
         self.warnings_sent = set()  # Track which warnings have been sent

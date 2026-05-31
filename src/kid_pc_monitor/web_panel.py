@@ -31,8 +31,10 @@ from kid_pc_monitor.paths import (
     template_dir,
 )
 from kid_pc_monitor.remote_client import (
+    AgentLogsUnavailable,
     format_minutes_duration,
     format_seconds_duration,
+    get_agent_logs,
     get_default_scan_network,
     inspect_pc,
     parse_scan_subnet,
@@ -291,6 +293,35 @@ def create_app() -> Flask:
                     "reachable": False,
                 }
         return render_template("control.html", ip=ip, pc_info=pc_info)
+
+    @app.route("/logs/<ip>")
+    @login_required
+    def agent_logs(ip: str):
+        hostname = f"PC at {ip}"
+        pcs = session.get("discovered_pcs", {})
+        if ip in pcs:
+            hostname = pcs[ip].get("hostname", hostname)
+        log_text = ""
+        truncated = False
+        error_message = None
+        try:
+            result = get_agent_logs(ip)
+            truncated = result.truncated
+            log_text = "\n".join(result.lines)
+            if not log_text:
+                log_text = "(log file is empty)"
+        except AgentLogsUnavailable as exc:
+            error_message = str(exc)
+        except ConnectionError as exc:
+            error_message = str(exc)
+        return render_template(
+            "logs.html",
+            ip=ip,
+            hostname=hostname,
+            log_text=log_text,
+            truncated=truncated,
+            error_message=error_message,
+        )
 
     @app.route("/daily_settings/<ip>")
     @login_required

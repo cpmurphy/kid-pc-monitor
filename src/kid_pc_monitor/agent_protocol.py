@@ -1,4 +1,4 @@
-"""Structured request/response protocol for kid PC agents (version 2).
+"""Structured request/response protocol for kid PC agents (v3/v4).
 
 The wire format is a length-prefixed body written in a small subset of
 `KDL <https://kdl.dev/spec>`_.  Each line is a node: a bare identifier name
@@ -19,11 +19,22 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from kid_pc_monitor import agent_auth
 
-PROTOCOL_VERSION = 3
+# v4 is a strict superset of v3; clients default to v3 for backward compatibility.
+SUPPORTED_VERSIONS = frozenset({3, 4})
+CLIENT_DEFAULT_VERSION = 3
+PROTOCOL_VERSION = 4  # newest version this codebase implements
+
+V4_ONLY_ACTIONS: dict[str, str] = {
+    "get_logs": "read the agent log file (tail=N lines, default 500, max 5000)",
+}
+
+DEFAULT_LOG_TAIL_LINES = 500
+MAX_LOG_TAIL_LINES = 5000
 
 # Reject absurd length prefixes outright; real frames are well under 1 KiB.
 MAX_FRAME_BYTES = 64 * 1024
@@ -458,6 +469,26 @@ def verify_frame(
 # ===========================================================================
 # Requests
 # ===========================================================================
+def _actions_for_version(version: int) -> dict[str, str]:
+    actions = dict(ACTIONS)
+    if version >= 4:
+        actions.update(V4_ONLY_ACTIONS)
+    return actions
+
+
+def _peek_version(body: str) -> int:
+    """Best-effort read of ``v`` for error responses when full parse fails."""
+    try:
+        for node in parse(body):
+            if node.name == "v" and node.args:
+                version = node.args[0]
+                if isinstance(version, int):
+                    return version
+    except ProtocolError:
+        pass
+    return CLIENT_DEFAULT_VERSION
+
+
 @dataclass
 class Request:
     version: int
@@ -468,6 +499,7 @@ class Request:
     name: str | None = None
     timestamp: int | None = None
     nonce: str | None = None
+    tail: int | None = None
 
 
 def build_request(
@@ -480,14 +512,23 @@ def build_request(
     name: str | None = None,
     timestamp: int | None = None,
     nonce: str | None = None,
+    version: int = CLIENT_DEFAULT_VERSION,
+    tail: int | None = None,
 ) -> str:
-    """Build and sign a v2 request body for a client to send.
+    """Build and sign a request body for a client to send.
 
     ``name`` is the target agent's hostname.  It is required for write actions
     and optional for read-only ones.  Because ``name`` is part of the signed
     canonical string, the receiving agent can trust and enforce it.
+
+    Clients should pass ``version=3`` for existing actions and ``version=4`` for
+    v4-only features such as ``get_logs``.
     """
-    nodes = [Node("v", [PROTOCOL_VERSION])]
+    if version not in SUPPORTED_VERSIONS:
+        raise ValueError(f"unsupported protocol version: {version}")
+    if action in V4_ONLY_ACTIONS and version < 4:
+        raise ValueError(f"{action} requires protocol version 4")
+    nodes = [Node("v", [version])]
     if req_id is not None:
         nodes.append(Node("id", [req_id]))
     if name is not None:
@@ -501,6 +542,8 @@ def build_request(
         nodes.append(Node("var", [var]))
     if val is not None:
         nodes.append(Node("val", [val]))
+    if tail is not None:
+        nodes.append(Node("tail", [tail]))
     nodes.append(_auth_node(nodes, secret))
     return serialize(nodes)
 
@@ -532,7 +575,9 @@ def parse_request(
     version = fields.get("v")
     if version is None:
         raise ProtocolError(INVALID_REQUEST, "missing protocol version", req_id)
-    if version != PROTOCOL_VERSION:
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ProtocolError(INVALID_REQUEST, "protocol version must be an integer", req_id)
+    if version not in SUPPORTED_VERSIONS:
         raise ProtocolError(
             UNSUPPORTED_VERSION,
             f"protocol version {version!r} is not supported",
@@ -543,7 +588,8 @@ def parse_request(
     name = verify_frame(nodes, secret, req_id=req_id, now=now)
 
     action = fields.get("action")
-    if action not in ACTIONS:
+    allowed = _actions_for_version(version)
+    if action not in allowed:
         raise ProtocolError(UNKNOWN_ACTION, f"unknown action: {action!r}", req_id)
 
     # Destination binding: a named frame must target this agent; write actions
@@ -583,8 +629,20 @@ def parse_request(
     elif action == "message" and val is None:
         raise ProtocolError(INVALID_REQUEST, "message requires text", req_id)
 
+    tail = fields.get("tail")
+    if tail is not None:
+        tail = _parse_int(tail, req_id)
+        if tail < 1:
+            raise ProtocolError(INVALID_VALUE, "tail must be at least 1", req_id)
+        if tail > MAX_LOG_TAIL_LINES:
+            raise ProtocolError(
+                INVALID_VALUE,
+                f"tail must be at most {MAX_LOG_TAIL_LINES}",
+                req_id,
+            )
+
     return Request(
-        PROTOCOL_VERSION,
+        version,
         req_id,
         action,
         var,
@@ -592,6 +650,7 @@ def parse_request(
         name=name,
         timestamp=fields.get("timestamp"),
         nonce=fields.get("nonce"),
+        tail=tail,
     )
 
 
@@ -614,8 +673,11 @@ def error_content(code: str, message: str) -> list[Node]:
     return [Node("status", ["failure"]), error]
 
 
-def capabilities_content() -> list[Node]:
-    actions = Node("actions", children=[Node(k, [v]) for k, v in ACTIONS.items()])
+def capabilities_content(version: int = CLIENT_DEFAULT_VERSION) -> list[Node]:
+    actions = Node(
+        "actions",
+        children=[Node(k, [v]) for k, v in _actions_for_version(version).items()],
+    )
     values = Node("values", children=[Node(k, [v]) for k, v in VARIABLES.items()])
     return [Node("status", ["ok"]), actions, values]
 
@@ -628,6 +690,7 @@ def sign_response(
     req_id: str | None = None,
     timestamp: int | None = None,
     nonce: str | None = None,
+    version: int = CLIENT_DEFAULT_VERSION,
 ) -> str:
     """Wrap response ``content_nodes`` in a signed v2 envelope.
 
@@ -635,7 +698,9 @@ def sign_response(
     shared key, so the panel both learns the hostname (discovery) and can
     confirm it is talking to the agent it expected.
     """
-    nodes = [Node("v", [PROTOCOL_VERSION])]
+    if version not in SUPPORTED_VERSIONS:
+        raise ValueError(f"unsupported protocol version: {version}")
+    nodes = [Node("v", [version])]
     if req_id is not None:
         nodes.append(Node("id", [req_id]))
     nodes.append(Node("name", [hostname]))
@@ -649,6 +714,15 @@ def sign_response(
 
 
 @dataclass
+class LogsResult:
+    """Parsed ``logs`` block from a ``get_logs`` response."""
+
+    path: str
+    truncated: bool
+    lines: list[str]
+
+
+@dataclass
 class Response:
     """A parsed, authenticated response, for clients."""
 
@@ -659,6 +733,7 @@ class Response:
     error_code: str | None = None
     error_message: str | None = None
     settings: dict[str, Any] | None = None
+    logs: LogsResult | None = None
     name: str | None = None
     timestamp: int | None = None
     nonce: str | None = None
@@ -682,6 +757,7 @@ def parse_response(
     *,
     secret: str,
     expected_name: str | None = None,
+    expected_version: int | None = None,
     now: int | None = None,
 ) -> Response:
     """Parse and authenticate a response body received by a client.
@@ -699,10 +775,16 @@ def parse_response(
     if req_id is not None:
         req_id = str(req_id)
 
-    if version != PROTOCOL_VERSION:
+    if version not in SUPPORTED_VERSIONS:
         raise ProtocolError(
             UNSUPPORTED_VERSION,
             f"protocol version {version!r} is not supported",
+            req_id,
+        )
+    if expected_version is not None and version != expected_version:
+        raise ProtocolError(
+            UNSUPPORTED_VERSION,
+            f"expected protocol version {expected_version}, got {version!r}",
             req_id,
         )
 
@@ -726,6 +808,18 @@ def parse_response(
     if "settings" in by_name:
         settings = by_name["settings"].child_map()
 
+    logs = None
+    if "logs" in by_name:
+        block = by_name["logs"]
+        fields = block.child_map()
+        lines_node = next((c for c in block.children if c.name == "lines"), None)
+        line_texts = [str(arg) for arg in lines_node.args] if lines_node else []
+        logs = LogsResult(
+            path=str(fields.get("path", "")),
+            truncated=bool(fields.get("truncated")),
+            lines=line_texts,
+        )
+
     result = by_name["result"].arg if "result" in by_name else None
     return Response(
         version=version,
@@ -735,6 +829,7 @@ def parse_response(
         error_code=error_code,
         error_message=error_message,
         settings=settings,
+        logs=logs,
         name=name,
         timestamp=by_name["timestamp"].arg if "timestamp" in by_name else None,
         nonce=by_name["nonce"].arg if "nonce" in by_name else None,
@@ -897,6 +992,76 @@ def _do_shutdown(control: Any, req: Request) -> list[Node]:
     return ok_content(seconds)
 
 
+def _read_log_tail(path: Path, *, tail: int) -> tuple[list[str], bool]:
+    """Return up to ``tail`` lines from the end of ``path`` and whether more exist."""
+    if not path.is_file():
+        return [], False
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as handle:
+            all_lines = handle.readlines()
+    except OSError as exc:
+        raise ProtocolError(FORBIDDEN, f"cannot read log file: {exc}", None) from exc
+
+    stripped = [line.rstrip("\n\r") for line in all_lines]
+    truncated = len(stripped) > tail
+    return stripped[-tail:], truncated
+
+
+def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
+    """Estimate UTF-8 size of a signed v4 response carrying these log lines."""
+    lines_node = Node("lines", args=lines)
+    block = Node(
+        "logs",
+        children=[
+            Node("path", [path]),
+            Node("truncated", [truncated]),
+            lines_node,
+        ],
+    )
+    content = block_content(block)
+    return len(
+        serialize(
+            [
+                Node("v", [4]),
+                Node("name", ["hostname"]),
+                Node("timestamp", [0]),
+                Node("nonce", ["a" * 32]),
+                *content,
+                Node("auth", children=[Node("signature", ["x" * 43])]),
+            ]
+        ).encode("utf-8")
+    )
+
+
+def _fit_log_lines_to_frame(
+    path: str, lines: list[str], truncated: bool
+) -> tuple[list[str], bool]:
+    """Drop oldest lines until the ``logs`` block fits under the frame cap."""
+    budget = MAX_FRAME_BYTES - 1024
+    while lines and _logs_block_byte_size(path, lines, truncated) > budget:
+        lines = lines[1:]
+        truncated = True
+    return lines, truncated
+
+
+def _do_get_logs(control: Any, req: Request) -> list[Node]:
+    tail = req.tail if req.tail is not None else DEFAULT_LOG_TAIL_LINES
+    log_path = Path(control.agent_log_path)
+    lines, truncated = _read_log_tail(log_path, tail=tail)
+    path_str = str(log_path)
+    lines, truncated = _fit_log_lines_to_frame(path_str, lines, truncated)
+    lines_node = Node("lines", args=lines)
+    block = Node(
+        "logs",
+        children=[
+            Node("path", [path_str]),
+            Node("truncated", [truncated]),
+            lines_node,
+        ],
+    )
+    return block_content(block)
+
+
 def dispatch(control: Any, req: Request) -> list[Node]:
     """Execute a validated request against ``control`` and return content nodes.
 
@@ -904,7 +1069,9 @@ def dispatch(control: Any, req: Request) -> list[Node]:
     signed v2 envelope is added by :func:`handle_request`.
     """
     if req.action == "list_capabilities":
-        return capabilities_content()
+        return capabilities_content(req.version)
+    if req.action == "get_logs":
+        return _do_get_logs(control, req)
     if req.action == "get":
         return _do_get(control, req)
     if req.action == "set":
@@ -944,13 +1111,21 @@ def handle_request(
     """
     hostname = control.platform.get_hostname()
     req_id: str | None = None
+    response_version = _peek_version(body)
     try:
         req = parse_request(body, secret=secret, hostname=hostname, now=now)
         req_id = req.id
+        response_version = req.version
         content = dispatch(control, req)
     except ProtocolError as exc:
         content = error_content(exc.code, exc.message)
         req_id = exc.req_id or req_id
     except Exception as exc:  # noqa: BLE001 - defensive catch-all per design
         content = error_content(INTERNAL_ERROR, str(exc))
-    return sign_response(content, secret=secret, hostname=hostname, req_id=req_id)
+    return sign_response(
+        content,
+        secret=secret,
+        hostname=hostname,
+        req_id=req_id,
+        version=response_version,
+    )

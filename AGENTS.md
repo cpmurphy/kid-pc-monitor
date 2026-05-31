@@ -53,8 +53,10 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 
 - KDL-subset over TCP with a **length-prefix** frame (see `docs/agent-protocol.md`).
 - **v2** adds HMAC-SHA256 mutual auth; signing key is `HMAC-SHA256(shared_secret)`.
+- **v3** is the deployed baseline; **v4** is a strict superset (adds `get_logs`). Clients send v3 for existing actions and v4 only for v4-only features; agents accept both.
 - Write actions (`set`, `lock`, `unlock`, `extend`, `shutdown`, `message`) require `name` matching the agent's hostname.
 - Timestamp window: ±60 s.
+- Web panel **Agent log** page (`/logs/<ip>`) uses v4 `get_logs`; v3-only agents show an upgrade message.
 
 ## Windows Install Quirks
 

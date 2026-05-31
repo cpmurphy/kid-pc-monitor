@@ -254,6 +254,27 @@ h1 {
     font-size: 14px;
 }
 
+.page-logs .agent-log-view {
+    margin-top: 16px;
+    padding: 12px 14px;
+    max-height: 75vh;
+    overflow: auto;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 6px;
+    border: 1px solid #333;
+}
+
+.page-logs .log-path {
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
 .page-control .account-links {
     text-align: right;
     font-size: 13px;
