@@ -704,6 +704,112 @@ def _escape_ps_single_quoted(value):
     return value.replace("'", "''")
 
 
+def _normalize_program_path(path: str) -> str:
+    return os.path.normcase(os.path.normpath(os.path.abspath(path)))
+
+
+def _parse_firewall_rule_query_output(stdout: str) -> dict | None:
+    """Parse PowerShell output from find_existing_agent_firewall_rule."""
+    text = (stdout or "").strip()
+    if not text or text in ("MISSING", "MISMATCH", "INCOMPLETE"):
+        return None
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    program = payload.get("program")
+    profiles = payload.get("profiles")
+    if not isinstance(program, str) or not isinstance(profiles, str):
+        return None
+    return {
+        "program": program,
+        "profiles": profiles,
+        "enabled": bool(payload.get("enabled", True)),
+    }
+
+
+def find_existing_agent_firewall_rule(python_path: str) -> dict | None:
+    """Return firewall rule details when a matching inbound rule already exists."""
+    if sys.platform != "win32":
+        return None
+
+    python_path = os.path.normpath(os.path.abspath(python_path))
+    if not os.path.isfile(python_path):
+        return None
+
+    ps_python = _escape_ps_single_quoted(python_path)
+    ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
+    ps_script = f"""
+    $ErrorActionPreference = 'Stop'
+    $ruleName = '{ps_name}'
+    $expectedPython = '{ps_python}'
+    $rule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $rule) {{
+        Write-Output 'MISSING'
+        exit 0
+    }}
+    $app = Get-NetFirewallApplicationFilter -AssociatedNetFirewallRule $rule -ErrorAction SilentlyContinue | Select-Object -First 1
+    $port = Get-NetFirewallPortFilter -AssociatedNetFirewallRule $rule -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $app -or -not $port) {{
+        Write-Output 'INCOMPLETE'
+        exit 0
+    }}
+    $actualPython = [System.IO.Path]::GetFullPath($app.Program)
+    $expectedNorm = [System.IO.Path]::GetFullPath($expectedPython)
+    if ($actualPython -ne $expectedNorm) {{
+        Write-Output 'MISMATCH'
+        exit 0
+    }}
+    if ($port.Protocol -ne 'TCP') {{
+        Write-Output 'MISMATCH'
+        exit 0
+    }}
+    if ("$($port.LocalPort)" -ne '{AGENT_PORT}') {{
+        Write-Output 'MISMATCH'
+        exit 0
+    }}
+    @{{
+        program = $actualPython
+        profiles = @($rule.Profile) -join ', '
+        enabled = [bool]$rule.Enabled
+    }} | ConvertTo-Json -Compress
+    """
+
+    try:
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    parsed = _parse_firewall_rule_query_output(result.stdout)
+    if parsed is None:
+        return None
+    if _normalize_program_path(parsed["program"]) != _normalize_program_path(python_path):
+        return None
+    return parsed
+
+
+def configure_agent_firewall(python_path: str) -> None:
+    """Add the agent firewall rule, or reuse an existing matching rule."""
+    existing = find_existing_agent_firewall_rule(python_path)
+    if existing is not None:
+        print("\n🔒 Reusing existing Windows Firewall rule")
+        print(f"   Rule: {FIREWALL_RULE_DISPLAY_NAME}")
+        print(f"   Program: {existing['program']}")
+        print(f"   Profiles: {existing['profiles']}")
+        return
+
+    allow_public = prompt_allow_public_firewall()
+    add_agent_firewall_rule(python_path, allow_public=allow_public)
+
+
 def prompt_allow_public_firewall():
     """
     Ask whether inbound agent traffic should be allowed on Public (untrusted) networks.
@@ -918,15 +1024,13 @@ def run_install_flow():
     prompt_and_store_shared_secret()
 
     if create_task_with_power_settings(target_user, script_path, python_path, is_self=is_self):
-        allow_public_firewall = prompt_allow_public_firewall()
-        add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
+        configure_agent_firewall(python_path)
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
     if create_task_simple_schtasks(target_user, script_path, python_path):
-        allow_public_firewall = prompt_allow_public_firewall()
-        add_agent_firewall_rule(python_path, allow_public=allow_public_firewall)
+        configure_agent_firewall(python_path)
         print("\n✅ Setup complete using XML method!")
         return True
 
