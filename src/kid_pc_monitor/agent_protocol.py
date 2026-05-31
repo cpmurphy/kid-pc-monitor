@@ -73,9 +73,7 @@ ACTIONS: dict[str, str] = {
 # hostname (see "Cross-PC replay" in docs/agent-protocol.md).  Read-only
 # actions may omit ``name`` so the panel can discover an agent it has never
 # spoken to before.
-WRITE_ACTIONS = frozenset(
-    {"set", "clear", "lock", "unlock", "extend", "shutdown", "message"}
-)
+WRITE_ACTIONS = frozenset({"set", "clear", "lock", "unlock", "extend", "shutdown", "message"})
 
 # Default warning period before shutdown, in seconds.
 DEFAULT_SHUTDOWN_SECONDS = 60
@@ -98,9 +96,7 @@ VARIABLES: dict[str, str] = {
 }
 
 WRITABLE_VARIABLES = frozenset({"daily_limit", "bed_time", "manual_lock", "wake_time"})
-CLEARABLE_VARIABLES = frozenset(
-    {"daily_limit", "bed_time", "manual_lock", "cumulative_extension"}
-)
+CLEARABLE_VARIABLES = frozenset({"daily_limit", "bed_time", "manual_lock", "cumulative_extension"})
 
 # A daily limit outside this range is almost certainly a mistake.
 MIN_DAILY_LIMIT = 1
@@ -139,7 +135,7 @@ class Node:
 
     name: str
     args: list[Any] = field(default_factory=list)
-    children: list["Node"] = field(default_factory=list)
+    children: list[Node] = field(default_factory=list)
 
     @property
     def arg(self) -> Any:
@@ -565,7 +561,7 @@ def parse_request(
     try:
         nodes = parse(body)
     except ProtocolError:
-        raise ProtocolError(INVALID_REQUEST, "could not parse request")
+        raise ProtocolError(INVALID_REQUEST, "could not parse request") from None
 
     fields = {node.name: node.arg for node in nodes if node.name != "auth"}
     req_id = fields.get("id")
@@ -851,7 +847,7 @@ def _parse_hhmm(raw: Any, req_id: str | None) -> tuple[int, int]:
         hour_str, minute_str = str(raw).split(":")
         hour, minute = int(hour_str), int(minute_str)
     except (ValueError, AttributeError):
-        raise ProtocolError(INVALID_VALUE, "time must be HH:MM", req_id)
+        raise ProtocolError(INVALID_VALUE, "time must be HH:MM", req_id) from None
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         raise ProtocolError(INVALID_VALUE, "time out of range (00:00–23:59)", req_id)
     return hour, minute
@@ -865,7 +861,7 @@ def _parse_int(raw: Any, req_id: str | None) -> int:
     try:
         return int(str(raw))
     except ValueError:
-        raise ProtocolError(INVALID_VALUE, "expected a number", req_id)
+        raise ProtocolError(INVALID_VALUE, "expected a number", req_id) from None
 
 
 def _parse_bool(raw: Any, req_id: str | None) -> bool:
@@ -1033,9 +1029,7 @@ def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
     )
 
 
-def _fit_log_lines_to_frame(
-    path: str, lines: list[str], truncated: bool
-) -> tuple[list[str], bool]:
+def _fit_log_lines_to_frame(path: str, lines: list[str], truncated: bool) -> tuple[list[str], bool]:
     """Drop oldest lines until the ``logs`` block fits under the frame cap."""
     budget = MAX_FRAME_BYTES - 1024
     while lines and _logs_block_byte_size(path, lines, truncated) > budget:

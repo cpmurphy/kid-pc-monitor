@@ -25,6 +25,7 @@ class SecretsStoreTests(unittest.TestCase):
         # Use a fresh Fernet key per test run so tokens are reproducible within
         # a test without depending on the actual KDF.
         from cryptography.fernet import Fernet
+
         self._fake_key = Fernet.generate_key()
         self._derive_key.return_value = self._fake_key
 
@@ -121,6 +122,7 @@ class SecretsStoreSearchPathTests(unittest.TestCase):
         self._patch_kdf = mock.patch.object(secrets_store, "_derive_key")
         self._derive_key = self._patch_kdf.start()
         from cryptography.fernet import Fernet
+
         self._derive_key.return_value = Fernet.generate_key()
 
     def tearDown(self) -> None:
@@ -161,7 +163,7 @@ class SecretsStoreKeyDerivationTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         # Undo any key derivation patches so the real _derive_key is restored.
-        secrets_store._derive_key.__wrapped__ = None
+        secrets_store._derive_key.__wrapped__ = None  # pyright: ignore[reportFunctionMemberAccess]
         self._patch_config.stop()
         for suffix in ("", "_SECRET_KEY"):
             env_var = f"KID_PC_MONITOR{suffix}"
@@ -172,7 +174,6 @@ class SecretsStoreKeyDerivationTests(unittest.TestCase):
 
     def _call_real_derive(self) -> bytes:
         with mock.patch.object(secrets_store, "_derive_key", wraps=secrets_store._derive_key):
-            from cryptography.fernet import Fernet
             for suffix in ("", "_SECRET_KEY"):
                 env_var = f"KID_PC_MONITOR{suffix}"
                 try:

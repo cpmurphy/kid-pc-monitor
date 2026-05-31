@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import getpass
 import json
 import logging
 import os
@@ -10,8 +11,6 @@ import subprocess
 import sys
 import threading
 from ctypes import wintypes
-
-import getpass
 
 from kid_pc_monitor.host_platform import HostPlatform
 from kid_pc_monitor.network import get_primary_ipv4
@@ -132,9 +131,7 @@ def _run_powershell_json(script: str) -> dict | list | None:
 def _current_session_id() -> int | None:
     kernel32 = ctypes.windll.kernel32
     sid = wintypes.DWORD()
-    if not kernel32.ProcessIdToSessionId(
-        kernel32.GetCurrentProcessId(), ctypes.byref(sid)
-    ):
+    if not kernel32.ProcessIdToSessionId(kernel32.GetCurrentProcessId(), ctypes.byref(sid)):
         return None
     return sid.value
 
@@ -157,9 +154,10 @@ def _process_exists_in_session(image_name: str, session_id: int | None) -> bool:
                 if session_id is None:
                     return True
                 pid_sid = wintypes.DWORD()
-                if kernel32.ProcessIdToSessionId(
-                    entry.th32ProcessID, ctypes.byref(pid_sid)
-                ) and pid_sid.value == session_id:
+                if (
+                    kernel32.ProcessIdToSessionId(entry.th32ProcessID, ctypes.byref(pid_sid))
+                    and pid_sid.value == session_id
+                ):
                     return True
             if not kernel32.Process32NextW(snapshot, ctypes.byref(entry)):
                 break
@@ -198,9 +196,7 @@ def _query_session_locked_via_wts() -> bool | None:
         finally:
             wtsapi32.WTSFreeMemory(buffer)
     except Exception as exc:
-        logging.getLogger("PCTimeControl").debug(
-            "WTS lock query failed: %s", exc, exc_info=True
-        )
+        logging.getLogger("PCTimeControl").debug("WTS lock query failed: %s", exc, exc_info=True)
         return None
 
 
@@ -256,9 +252,7 @@ class WindowsHostPlatform(HostPlatform):
         ctypes.windll.user32.LockWorkStation()
 
     def shutdown(self, seconds: int = 60) -> None:
-        os.system(
-            f'shutdown /s /t {seconds} /c "Computer will shutdown in {seconds} seconds"'
-        )
+        os.system(f'shutdown /s /t {seconds} /c "Computer will shutdown in {seconds} seconds"')
 
     def cancel_shutdown(self) -> None:
         os.system("shutdown /a")
@@ -347,7 +341,7 @@ class WindowsHostPlatform(HostPlatform):
                     agent_port,
                 )
 
-        rule = _run_powershell_json(
+        rule_result = _run_powershell_json(
             f"$r = Get-NetFirewallRule -DisplayName '{_FIREWALL_RULE_DISPLAY_NAME}' "
             "-ErrorAction SilentlyContinue | Select-Object -First 1; "
             "if (-not $r) { @{{found=$false}} | ConvertTo-Json -Compress } "
@@ -358,15 +352,18 @@ class WindowsHostPlatform(HostPlatform):
             "ConvertTo-Json -Compress "
             "}"
         )
-        if rule is None:
+        if rule_result is None:
             logger.warning("Could not query Windows Firewall rule for the agent")
-        elif not rule.get("found"):
+        elif not isinstance(rule_result, dict):
+            logger.warning("Unexpected firewall rule query response")
+        elif not rule_result.get("found"):
             logger.warning(
                 "No firewall rule named %r — inbound TCP 9999 may be blocked. "
                 "Re-run scripts/install.py as administrator.",
                 _FIREWALL_RULE_DISPLAY_NAME,
             )
         else:
+            rule = rule_result
             profile_mask = int(rule.get("profile") or 0)
             profile_names = []
             if profile_mask & 1:

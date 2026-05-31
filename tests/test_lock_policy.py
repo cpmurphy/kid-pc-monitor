@@ -1,5 +1,6 @@
 import unittest
-from datetime import datetime, timedelta, time as dtime
+from datetime import datetime, timedelta
+from datetime import time as dtime
 
 from kid_pc_monitor.lock_policy import (
     brief_enforcement_reason,

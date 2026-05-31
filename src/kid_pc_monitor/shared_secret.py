@@ -5,6 +5,7 @@ other with a single shared secret entered on both sides of the install.
 This module collects that secret and persists it with
 :mod:`kid_pc_monitor.secrets_store`.
 """
+
 from __future__ import annotations
 
 import getpass
@@ -118,8 +119,7 @@ def prompt_and_store_shared_secret(
         source_label = str(source) if source is not None else "stored location"
         if source is not None and source != dest:
             print(
-                f"\n🔑 Reusing existing shared secret from {source_label} "
-                f"(also saved to {dest})."
+                f"\n🔑 Reusing existing shared secret from {source_label} (also saved to {dest})."
             )
         else:
             print(f"\n🔑 Reusing existing shared secret from {dest}.")

@@ -7,7 +7,8 @@ dependencies so it can be unit-tested on any development machine.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time as dtime, timedelta
+from datetime import date, datetime, timedelta
+from datetime import time as dtime
 
 # Default morning unlock when wake_time is not configured (e.g. legacy state files).
 DEFAULT_WAKE_TIME = dtime(7, 0)

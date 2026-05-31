@@ -15,8 +15,9 @@ _INSTALL_PATH = _REPO_ROOT / "scripts" / "install.py"
 
 def _load_install_module():
     spec = importlib.util.spec_from_file_location("kid_pc_install", _INSTALL_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load install module from {_INSTALL_PATH}")
     module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
@@ -57,13 +58,13 @@ class InstallFirewallTests(unittest.TestCase):
         }
         completed = mock.Mock(returncode=0, stdout=json.dumps(payload), stderr="")
 
-        with mock.patch.object(install.sys, "platform", "win32"), mock.patch.object(
-            install.os.path, "isfile", return_value=True
-        ), mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p), mock.patch.object(
-            install.os.path, "normpath", side_effect=lambda p: p
-        ), mock.patch.object(
-            install.subprocess, "run", return_value=completed
-        ) as run_mock:
+        with (
+            mock.patch.object(install.sys, "platform", "win32"),
+            mock.patch.object(install.os.path, "isfile", return_value=True),
+            mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p),
+            mock.patch.object(install.os.path, "normpath", side_effect=lambda p: p),
+            mock.patch.object(install.subprocess, "run", return_value=completed) as run_mock,
+        ):
             result = install.find_existing_agent_firewall_rule(python_path)
 
         self.assertEqual(result, payload)
@@ -73,11 +74,13 @@ class InstallFirewallTests(unittest.TestCase):
         python_path = r"C:\Python312\pythonw.exe"
         completed = mock.Mock(returncode=0, stdout="MISSING", stderr="")
 
-        with mock.patch.object(install.sys, "platform", "win32"), mock.patch.object(
-            install.os.path, "isfile", return_value=True
-        ), mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p), mock.patch.object(
-            install.os.path, "normpath", side_effect=lambda p: p
-        ), mock.patch.object(install.subprocess, "run", return_value=completed):
+        with (
+            mock.patch.object(install.sys, "platform", "win32"),
+            mock.patch.object(install.os.path, "isfile", return_value=True),
+            mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p),
+            mock.patch.object(install.os.path, "normpath", side_effect=lambda p: p),
+            mock.patch.object(install.subprocess, "run", return_value=completed),
+        ):
             self.assertIsNone(install.find_existing_agent_firewall_rule(python_path))
 
     def test_configure_agent_firewall_skips_prompt_when_rule_exists(self) -> None:
@@ -87,11 +90,11 @@ class InstallFirewallTests(unittest.TestCase):
             "enabled": True,
         }
 
-        with mock.patch.object(
-            install, "find_existing_agent_firewall_rule", return_value=existing
-        ), mock.patch.object(install, "prompt_allow_public_firewall") as prompt_mock, mock.patch.object(
-            install, "add_agent_firewall_rule"
-        ) as add_mock:
+        with (
+            mock.patch.object(install, "find_existing_agent_firewall_rule", return_value=existing),
+            mock.patch.object(install, "prompt_allow_public_firewall") as prompt_mock,
+            mock.patch.object(install, "add_agent_firewall_rule") as add_mock,
+        ):
             install.configure_agent_firewall(existing["program"])
 
         prompt_mock.assert_not_called()
@@ -100,13 +103,13 @@ class InstallFirewallTests(unittest.TestCase):
     def test_configure_agent_firewall_prompts_when_rule_missing(self) -> None:
         python_path = r"C:\Python312\pythonw.exe"
 
-        with mock.patch.object(
-            install, "find_existing_agent_firewall_rule", return_value=None
-        ), mock.patch.object(
-            install, "prompt_allow_public_firewall", return_value=False
-        ) as prompt_mock, mock.patch.object(
-            install, "add_agent_firewall_rule"
-        ) as add_mock:
+        with (
+            mock.patch.object(install, "find_existing_agent_firewall_rule", return_value=None),
+            mock.patch.object(
+                install, "prompt_allow_public_firewall", return_value=False
+            ) as prompt_mock,
+            mock.patch.object(install, "add_agent_firewall_rule") as add_mock,
+        ):
             install.configure_agent_firewall(python_path)
 
         prompt_mock.assert_called_once_with()

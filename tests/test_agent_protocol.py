@@ -9,13 +9,13 @@ import unittest
 from datetime import datetime
 from datetime import time as dtime
 from pathlib import Path
+from typing import cast
 from unittest import mock
 
 from kid_pc_monitor import agent_auth
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import Node, ProtocolError
 from kid_pc_monitor.pc_control import PCTimeControl, RemoteControlServer
-
 from test_pc_control import FakeHostPlatform
 
 SECRET = "test-shared-secret"
@@ -129,7 +129,9 @@ class RequestValidationTests(unittest.TestCase):
             "set", secret=SECRET, var="daily_limit", val=120, req_id="abc123", name=HOSTNAME
         )
         req = self._parse(body)
-        self.assertEqual((req.action, req.var, req.val, req.id), ("set", "daily_limit", 120, "abc123"))
+        self.assertEqual(
+            (req.action, req.var, req.val, req.id), ("set", "daily_limit", 120, "abc123")
+        )
         self.assertEqual(req.name, HOSTNAME)
 
     def test_missing_version(self) -> None:
@@ -182,9 +184,7 @@ class AuthenticationTests(unittest.TestCase):
 
     def test_missing_auth_block_rejected(self) -> None:
         # A v2 frame with no auth block at all.
-        body = "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"%s\"\naction lock" % (
-            "a" * 32
-        )
+        body = 'v 3\nname kid-pc\ntimestamp 1710000000\nnonce "%s"\naction lock' % ("a" * 32)
         with self.assertRaises(ProtocolError) as ctx:
             self._parse(body)
         self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_REQUIRED)
@@ -212,17 +212,13 @@ class AuthenticationTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, proto.AUTHENTICATION_FAILED)
 
     def test_stale_timestamp_rejected(self) -> None:
-        body = proto.build_request(
-            "get", secret=SECRET, var="name", timestamp=1000, nonce="b" * 32
-        )
+        body = proto.build_request("get", secret=SECRET, var="name", timestamp=1000, nonce="b" * 32)
         with self.assertRaises(ProtocolError) as ctx:
             self._parse(body, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS + 5)
         self.assertEqual(ctx.exception.code, proto.STALE_TIMESTAMP)
 
     def test_fresh_timestamp_within_window_accepted(self) -> None:
-        body = proto.build_request(
-            "get", secret=SECRET, var="name", timestamp=1000, nonce="c" * 32
-        )
+        body = proto.build_request("get", secret=SECRET, var="name", timestamp=1000, nonce="c" * 32)
         req = self._parse(body, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS - 1)
         self.assertEqual(req.action, "get")
 
@@ -282,9 +278,7 @@ class ResponseBuildingTests(unittest.TestCase):
         self.assertIn("invalid_value", resp.text)
 
     def test_capabilities_response(self) -> None:
-        body = proto.sign_response(
-            proto.capabilities_content(), secret=SECRET, hostname=HOSTNAME
-        )
+        body = proto.sign_response(proto.capabilities_content(), secret=SECRET, hostname=HOSTNAME)
         nodes = {n.name: n for n in proto.parse(body)}
         actions = nodes["actions"].child_map()
         self.assertIn("get", actions)
@@ -292,9 +286,7 @@ class ResponseBuildingTests(unittest.TestCase):
         self.assertIn("daily_limit", nodes["values"].child_map())
 
     def test_tampered_response_rejected(self) -> None:
-        body = proto.sign_response(
-            proto.ok_content("unlocked"), secret=SECRET, hostname=HOSTNAME
-        )
+        body = proto.sign_response(proto.ok_content("unlocked"), secret=SECRET, hostname=HOSTNAME)
         tampered = body.replace("unlocked", "locked!!")
         with self.assertRaises(ProtocolError) as ctx:
             self._parse(tampered)
@@ -310,6 +302,8 @@ class ResponseBuildingTests(unittest.TestCase):
 
 
 class DispatchTests(unittest.TestCase):
+    _UNSET = object()
+
     def _control(self, tmp: str, **kwargs) -> PCTimeControl:
         return PCTimeControl(
             platform=FakeHostPlatform(**kwargs),
@@ -321,14 +315,14 @@ class DispatchTests(unittest.TestCase):
         self,
         control: PCTimeControl,
         *,
-        name=...,
+        name: str | None | object = _UNSET,
         version: int = proto.CLIENT_DEFAULT_VERSION,
         **req_kwargs,
     ) -> proto.Response:
         hostname = control.platform.get_hostname()
         # Default to a correctly-addressed, signed frame; tests can pass
         # ``name=None`` for the read-only discovery path.
-        target = hostname if name is ... else name
+        target = hostname if name is self._UNSET else cast(str | None, name)
         body = proto.build_request(
             secret=SECRET, req_id="r1", name=target, version=version, **req_kwargs
         )
@@ -347,14 +341,16 @@ class DispatchTests(unittest.TestCase):
             control.set_bed_time(21, 0)
             resp = self._handle(control, action="get", var="settings")
             self.assertTrue(resp.ok)
-            self.assertEqual(resp.settings["name"], "kid-pc")
-            self.assertEqual(resp.settings["daily_limit"], 90)
-            self.assertEqual(resp.settings["bed_time"], "21:00")
-            self.assertEqual(resp.settings["status"], "UNLOCKED")
-            self.assertIs(resp.settings["manual_lock"], False)
-            self.assertIs(resp.settings["enforcement_active"], False)
-            self.assertIsNone(resp.settings["enforcement_reason"])
-            self.assertEqual(resp.settings["access_status"], "Unlocked")
+            settings = resp.settings
+            assert settings is not None
+            self.assertEqual(settings["name"], "kid-pc")
+            self.assertEqual(settings["daily_limit"], 90)
+            self.assertEqual(settings["bed_time"], "21:00")
+            self.assertEqual(settings["status"], "UNLOCKED")
+            self.assertIs(settings["manual_lock"], False)
+            self.assertIs(settings["enforcement_active"], False)
+            self.assertIsNone(settings["enforcement_reason"])
+            self.assertEqual(settings["access_status"], "Unlocked")
 
     def test_get_settings_manual_lock_access_status(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -362,8 +358,10 @@ class DispatchTests(unittest.TestCase):
             control.runtime.manual_lock_active = True
             resp = self._handle(control, action="get", var="settings")
             self.assertTrue(resp.ok)
-            self.assertFalse(resp.settings["enforcement_active"])
-            self.assertEqual(resp.settings["access_status"], "Locked — manual lock")
+            settings = resp.settings
+            assert settings is not None
+            self.assertFalse(settings["enforcement_active"])
+            self.assertEqual(settings["access_status"], "Locked — manual lock")
 
     def test_get_settings_enforcement_with_manual_lock(self) -> None:
         fixed = datetime(2026, 5, 17, 21, 5)
@@ -374,10 +372,12 @@ class DispatchTests(unittest.TestCase):
             with mock.patch("kid_pc_monitor.pc_control.datetime") as mock_dt:
                 mock_dt.now.return_value = fixed
                 resp = self._handle(control, action="get", var="settings")
-            self.assertTrue(resp.settings["enforcement_active"])
-            self.assertEqual(resp.settings["enforcement_reason"], "past bedtime")
-            self.assertEqual(resp.settings["access_status"], "Locked — past bedtime")
-            self.assertTrue(resp.settings["manual_lock"])
+            settings = resp.settings
+            assert settings is not None
+            self.assertTrue(settings["enforcement_active"])
+            self.assertEqual(settings["enforcement_reason"], "past bedtime")
+            self.assertEqual(settings["access_status"], "Locked — past bedtime")
+            self.assertTrue(settings["manual_lock"])
 
     def test_get_single_variable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -438,7 +438,9 @@ class DispatchTests(unittest.TestCase):
             resp = self._handle(control, action="set", var="manual_lock", val=True)
             self.assertTrue(resp.ok)
             self.assertTrue(control.runtime.manual_lock_active)
-            self.assertEqual(control.platform.lock_calls, 1)
+            platform = control.platform
+            assert isinstance(platform, FakeHostPlatform)
+            self.assertEqual(platform.lock_calls, 1)
 
     def test_lock_action(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -493,14 +495,18 @@ class DispatchTests(unittest.TestCase):
             control = self._control(tmp)
             resp = self._handle(control, action="message", val="dinner time")
             self.assertTrue(resp.ok)
-            self.assertIn(("PC Time Control", "dinner time"), control.platform.messages)
+            platform = control.platform
+            assert isinstance(platform, FakeHostPlatform)
+            self.assertIn(("PC Time Control", "dinner time"), platform.messages)
 
     def test_shutdown_default_and_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             control = self._control(tmp)
             self.assertTrue(self._handle(control, action="shutdown").ok)
             self.assertTrue(self._handle(control, action="shutdown", val=30).ok)
-            self.assertEqual(control.platform.shutdown_calls, [60, 30])
+            platform = control.platform
+            assert isinstance(platform, FakeHostPlatform)
+            self.assertEqual(platform.shutdown_calls, [60, 30])
 
     def test_list_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

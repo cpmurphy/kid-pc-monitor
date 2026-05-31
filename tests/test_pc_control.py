@@ -5,9 +5,10 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
-from unittest import mock
-from datetime import datetime, timedelta, time as dtime
+from datetime import datetime, timedelta
+from datetime import time as dtime
 from pathlib import Path
+from unittest import mock
 
 from kid_pc_monitor.host_platform import HostPlatform
 from kid_pc_monitor.pc_control import PCTimeControl
@@ -186,18 +187,14 @@ class PCTimeControlTests(unittest.TestCase):
             )
             control.warnings_sent = {"15min", "5min", "1min"}
 
-            with mock.patch.object(
-                control, "get_time_remaining", return_value=14.0
-            ):
+            with mock.patch.object(control, "get_time_remaining", return_value=14.0):
                 control.check_and_send_warnings()
             self.assertEqual(platform.messages, [])
 
             control.extend_time(30)
 
             self.assertEqual(control.warnings_sent, set())
-            with mock.patch.object(
-                control, "get_time_remaining", return_value=14.0
-            ):
+            with mock.patch.object(control, "get_time_remaining", return_value=14.0):
                 control.check_and_send_warnings()
             self.assertEqual(len(platform.messages), 1)
             self.assertIn("14 minutes", platform.messages[0][1])
@@ -240,11 +237,14 @@ class PCTimeControlTests(unittest.TestCase):
             old_win = sys.platform
             try:
                 sys.platform = "win32"
-                from kid_pc_monitor import agent_state as agent_state_mod
                 from unittest.mock import patch
 
+                from kid_pc_monitor import agent_state as agent_state_mod
+
                 original = agent_state_mod.program_data_daily_path
-                agent_state_mod.program_data_daily_path = lambda: program_data / "daily_settings.json"
+                agent_state_mod.program_data_daily_path = lambda: (
+                    program_data / "daily_settings.json"
+                )
                 try:
                     with patch("getpass.getuser", return_value="kid"):
                         control = PCTimeControl(

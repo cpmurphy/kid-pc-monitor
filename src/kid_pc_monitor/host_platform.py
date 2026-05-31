@@ -48,6 +48,7 @@ class HostPlatform(ABC):
         python_executable: str,
     ) -> None:
         """Log OS-specific network/firewall hints; default is a no-op."""
+        return
 
 
 def get_default_platform() -> HostPlatform:

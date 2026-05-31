@@ -22,11 +22,23 @@ Entry points (after `pip install -e .`):
 
 ```bash
 pip install -r requirements.txt
-pip install -e .
-pytest
+pip install -e ".[dev]"
 ```
 
 On Linux/macOS the web panel and CLI work; the agent is Windows-only (`pywin32`).
+
+## Code Quality
+
+Run from an activated venv (`./venv` or `./.venv`):
+
+```bash
+ruff format src tests
+ruff check --fix src tests
+basedpyright
+pytest
+```
+
+Install dev tools with `pip install -e ".[dev]"` or `pip install -r requirements-dev.txt` (after runtime deps).
 
 ## Running from Checkout (No Install)
 

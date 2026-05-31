@@ -149,6 +149,7 @@ def load_secret(name: str) -> str | None:
     fernet = Fernet(_derive_key())
     return fernet.decrypt(path.read_bytes()).decode("utf-8")
 
+
 def delete_secret(name: str) -> bool:
     """Remove the named secret from every location.  True if any existed."""
     removed = False

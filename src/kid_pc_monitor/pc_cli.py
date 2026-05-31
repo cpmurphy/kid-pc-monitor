@@ -10,8 +10,8 @@ import sys
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
-    AgentLogsUnavailable,
     DEFAULT_PORT,
+    AgentLogsUnavailable,
     get_agent_logs,
     inspect_pc,
     parse_scan_subnet,
@@ -66,8 +66,7 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
     if not pcs:
         print(
-            "No kid PCs found. Check that agents are running and "
-            f"firewalls allow TCP {args.port}."
+            f"No kid PCs found. Check that agents are running and firewalls allow TCP {args.port}."
         )
         return 1
 
@@ -111,9 +110,7 @@ def _cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
-def _structured_call(
-    name: str, args: argparse.Namespace
-) -> tuple[str, str | None, object] | None:
+def _structured_call(name: str, args: argparse.Namespace) -> tuple[str, str | None, object] | None:
     """Map a CLI action to a (action, var, val) structured request, or None."""
     if name == "lock":
         return "lock", None, None
@@ -176,9 +173,7 @@ def _cmd_logs(args: argparse.Namespace) -> int:
         return 2
 
     try:
-        result = get_agent_logs(
-            args.host, port=args.port, tail=tail, verbose=args.verbose
-        )
+        result = get_agent_logs(args.host, port=args.port, tail=tail, verbose=args.verbose)
     except AgentLogsUnavailable as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
@@ -240,7 +235,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print machine-readable JSON output",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Show raw request/response frames (like curl)",
     )

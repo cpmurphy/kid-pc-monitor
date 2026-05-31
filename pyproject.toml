@@ -15,6 +15,13 @@ dependencies = [
     'pywin32>=300; sys_platform == "win32"',
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.9",
+    "basedpyright>=1.29",
+]
+
 [project.scripts]
 kid-pc-web-panel = "kid_pc_monitor.web_panel:main"
 kid-pc-agent = "kid_pc_monitor.pc_control:main"
@@ -28,3 +35,27 @@ kid_pc_monitor = ["templates/*.html", "static/*.css"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+exclude = ["scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kid_pc_monitor"]
+
+[tool.basedpyright]
+include = ["src", "tests"]
+exclude = ["scripts"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = "venv"
+reportMissingImports = true
+reportUnusedImport = true
+reportUnusedVariable = true

@@ -25,9 +25,7 @@ class SignatureTests(unittest.TestCase):
 
     def test_verify_fails_with_wrong_key(self) -> None:
         sig = agent_auth.compute_signature(agent_auth.derive_key("a"), "msg")
-        self.assertFalse(
-            agent_auth.verify_signature(agent_auth.derive_key("b"), "msg", sig)
-        )
+        self.assertFalse(agent_auth.verify_signature(agent_auth.derive_key("b"), "msg", sig))
 
     def test_signature_is_base64url(self) -> None:
         sig = agent_auth.compute_signature(b"k", "payload")
@@ -53,21 +51,15 @@ class TimestampWindowTests(unittest.TestCase):
     def test_within_window(self) -> None:
         self.assertTrue(agent_auth.timestamp_in_window(1000, now=1000))
         self.assertTrue(
-            agent_auth.timestamp_in_window(
-                1000, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS
-            )
+            agent_auth.timestamp_in_window(1000, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS)
         )
 
     def test_outside_window(self) -> None:
         self.assertFalse(
-            agent_auth.timestamp_in_window(
-                1000, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS + 1
-            )
+            agent_auth.timestamp_in_window(1000, now=1000 + agent_auth.TIMESTAMP_WINDOW_SECONDS + 1)
         )
         self.assertFalse(
-            agent_auth.timestamp_in_window(
-                1000, now=1000 - agent_auth.TIMESTAMP_WINDOW_SECONDS - 1
-            )
+            agent_auth.timestamp_in_window(1000, now=1000 - agent_auth.TIMESTAMP_WINDOW_SECONDS - 1)
         )
 
 

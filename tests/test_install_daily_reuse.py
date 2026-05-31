@@ -67,13 +67,17 @@ class InstallDailyReuseTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(result)
+        assert result is not None
         daily, source = result
         self.assertEqual(source, profile)
-        self.assertEqual(daily, DailySettings(
-            bed_time=dtime(20, 30),
-            wake_time=dtime(6, 30),
-            allowance=45,
-        ))
+        self.assertEqual(
+            daily,
+            DailySettings(
+                bed_time=dtime(20, 30),
+                wake_time=dtime(6, 30),
+                allowance=45,
+            ),
+        )
 
     def test_find_complete_daily_settings_prefers_profile_over_program_data(self) -> None:
         profile = self.root / "profile" / "daily_settings.json"
@@ -93,6 +97,7 @@ class InstallDailyReuseTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(result)
+        assert result is not None
         _, source = result
         self.assertEqual(source, profile)
 
@@ -110,6 +115,7 @@ class InstallDailyReuseTests(unittest.TestCase):
         )
 
         self.assertIsNotNone(result)
+        assert result is not None
         daily, source = result
         self.assertEqual(source, program_data)
         self.assertEqual(daily.allowance, 120)

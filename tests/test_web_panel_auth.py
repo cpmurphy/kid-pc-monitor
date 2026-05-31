@@ -15,9 +15,7 @@ from kid_pc_monitor import web_panel as wp
 
 class WebPanelAuthTests(unittest.TestCase):
     def test_stored_password_hash_requires_canonical_key(self) -> None:
-        self.assertIsNotNone(
-            wp._stored_password_hash({"password_hash": "scrypt:abc"})
-        )
+        self.assertIsNotNone(wp._stored_password_hash({"password_hash": "scrypt:abc"}))
         self.assertIsNone(wp._stored_password_hash({"hash": "scrypt:abc"}))
         self.assertIsNone(wp._stored_password_hash({"password_hash": ""}))
         self.assertIsNone(wp._stored_password_hash({}))
@@ -42,6 +40,7 @@ class WebPanelAuthTests(unittest.TestCase):
             with mock.patch.object(wp, "_auth_path", return_value=auth_path):
                 record = wp.load_auth_record()
                 self.assertTrue(wp.password_is_configured())
+                assert record is not None
                 self.assertTrue(wp._verify_password(record, password))
                 self.assertFalse(wp._verify_password(record, "wrong"))
 

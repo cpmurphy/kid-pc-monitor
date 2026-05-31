@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import os
 import secrets
+from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from flask import (

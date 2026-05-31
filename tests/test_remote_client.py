@@ -104,7 +104,7 @@ class ScanForServersTests(unittest.TestCase):
                 while not stop.is_set():
                     try:
                         conn, _addr = server.accept()
-                    except socket.timeout:
+                    except TimeoutError:
                         continue
                     conn.close()
 
@@ -127,7 +127,9 @@ class ScanForServersTests(unittest.TestCase):
 class VerboseOutputTests(unittest.TestCase):
     """Tests for the -v / --verbose curl-style frame logging."""
 
-    def _serve_one(self, port_holder: list[int], ready: threading.Event, response_body: str) -> None:
+    def _serve_one(
+        self, port_holder: list[int], ready: threading.Event, response_body: str
+    ) -> None:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             server.bind(("127.0.0.1", 0))

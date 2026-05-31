@@ -7,8 +7,8 @@ import re
 import socket
 import struct
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 # RFC 5737 TEST-NET-1 — used only to ask the kernel which source address routing
 # would choose; no packets are sent for UDP connect().

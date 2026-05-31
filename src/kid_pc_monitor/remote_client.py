@@ -13,6 +13,7 @@ from typing import Any
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor import shared_secret
+from kid_pc_monitor.network import get_local_ip
 
 # Raised by send_request when the panel has no shared secret configured; the
 # broad ``except`` blocks below treat it like any other unreachable condition.
@@ -34,9 +35,6 @@ MIN_SCAN_PREFIXLEN = 24
 CUSTOM_PC_NAMES: dict[str, str] = {
     # Example: '192.168.1.105': "Tommy's Laptop",
 }
-
-
-from kid_pc_monitor.network import get_local_ip
 
 
 # Thread-safe lock so parallel scan threads don't interleave verbose output.
@@ -78,7 +76,10 @@ def _legacy_access_status(status: str, manual_lock: bool) -> str:
 
 def get_default_scan_network() -> ipaddress.IPv4Network:
     local_ip = get_local_ip()
-    return ipaddress.ip_network(f"{local_ip}/24", strict=False)
+    network = ipaddress.ip_network(f"{local_ip}/24", strict=False)
+    if not isinstance(network, ipaddress.IPv4Network):
+        raise ValueError("scan requires an IPv4 network")
+    return network
 
 
 def parse_scan_subnet(subnet_arg: str | None) -> tuple[ipaddress.IPv4Network, str]:
@@ -135,7 +136,9 @@ def _resolve_secret(secret: str | None) -> str:
     return shared_secret.require_shared_secret()
 
 
-def _discover_name(client: socket.socket, secret: str, *, verbose: bool = False, out: Any = sys.stdout) -> str:
+def _discover_name(
+    client: socket.socket, secret: str, *, verbose: bool = False, out: Any = sys.stdout
+) -> str:
     """Run the unnamed ``get name`` handshake and return the agent's hostname.
 
     The request is signed with the raw shared secret (no ``name`` yet); the
@@ -303,26 +306,50 @@ def perform_action(
         if action_name == "shutdown":
             return request_text(host, "shutdown", port=port, verbose=verbose, out=out)
         if action_name == "message":
-            return request_text(host, "message", val=p.get("message", ""), port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "message", val=p.get("message", ""), port=port, verbose=verbose, out=out
+            )
         if action_name == "extend_time":
-            return request_text(host, "extend", val=int(p["minutes"]), port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "extend", val=int(p["minutes"]), port=port, verbose=verbose, out=out
+            )
         if action_name == "clear_manual_lock":
-            return request_text(host, "clear", var="manual_lock", port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "clear", var="manual_lock", port=port, verbose=verbose, out=out
+            )
         if action_name == "clear_extensions":
-            return request_text(host, "clear", var="cumulative_extension", port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "clear", var="cumulative_extension", port=port, verbose=verbose, out=out
+            )
         if action_name == "set_daily_limit":
             minutes = p.get("minutes")
             if minutes is None or minutes == "":
-                return request_text(host, "clear", var="daily_limit", port=port, verbose=verbose, out=out)
-            return request_text(host, "set", var="daily_limit", val=int(minutes), port=port, verbose=verbose, out=out)
+                return request_text(
+                    host, "clear", var="daily_limit", port=port, verbose=verbose, out=out
+                )
+            return request_text(
+                host,
+                "set",
+                var="daily_limit",
+                val=int(minutes),
+                port=port,
+                verbose=verbose,
+                out=out,
+            )
         if action_name == "set_bed_time":
-            return request_text(host, "set", var="bed_time", val=p.get("time"), port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "set", var="bed_time", val=p.get("time"), port=port, verbose=verbose, out=out
+            )
         if action_name in ("clear_bed_time", "clear_lock_times"):
             return request_text(host, "clear", var="bed_time", port=port, verbose=verbose, out=out)
         if action_name == "set_wake_time":
-            return request_text(host, "set", var="wake_time", val=p.get("time"), port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "set", var="wake_time", val=p.get("time"), port=port, verbose=verbose, out=out
+            )
         if action_name == "clear_usage_limit":
-            return request_text(host, "clear", var="daily_limit", port=port, verbose=verbose, out=out)
+            return request_text(
+                host, "clear", var="daily_limit", port=port, verbose=verbose, out=out
+            )
     except (ValueError, KeyError, TypeError) as exc:
         return False, f"Invalid value for {action_name}: {exc}"
 
@@ -340,7 +367,12 @@ def is_pc_reachable(host: str, port: int = DEFAULT_PORT, timeout: float = QUERY_
 
 
 def refresh_discovered_entry(
-    ip: str, entry: dict[str, Any], port: int = DEFAULT_PORT, *, verbose: bool = False, out: Any = sys.stdout
+    ip: str,
+    entry: dict[str, Any],
+    port: int = DEFAULT_PORT,
+    *,
+    verbose: bool = False,
+    out: Any = sys.stdout,
 ) -> None:
     """Update a cached scan entry with current reachability, lock, and user."""
     reachable = is_pc_reachable(ip, port=port)
@@ -430,7 +462,9 @@ def scan_for_servers(
     return discovered
 
 
-def check_pc_status(ip: str, port: int = DEFAULT_PORT, *, verbose: bool = False, out: Any = sys.stdout) -> str:
+def check_pc_status(
+    ip: str, port: int = DEFAULT_PORT, *, verbose: bool = False, out: Any = sys.stdout
+) -> str:
     """Return LOCKED, UNLOCKED, or UNKNOWN."""
     try:
         resp = send_request(ip, "get", var="status", port=port, verbose=verbose, out=out)
@@ -439,7 +473,9 @@ def check_pc_status(ip: str, port: int = DEFAULT_PORT, *, verbose: bool = False,
     return str(resp.result) if resp.ok and resp.result else "UNKNOWN"
 
 
-def get_current_user(ip: str, port: int = DEFAULT_PORT, *, verbose: bool = False, out: Any = sys.stdout) -> str | None:
+def get_current_user(
+    ip: str, port: int = DEFAULT_PORT, *, verbose: bool = False, out: Any = sys.stdout
+) -> str | None:
     try:
         resp = send_request(ip, "get", var="current_user", port=port, verbose=verbose, out=out)
     except (OSError, proto.ProtocolError, SharedSecretMissing):

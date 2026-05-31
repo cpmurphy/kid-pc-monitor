@@ -107,10 +107,9 @@ class SharedSecretTests(unittest.TestCase):
         user = Path(self._tmpdir.name) / "user"
         name = shared_secret.SHARED_SECRET_NAME
         os.environ.pop(secrets_store._SECRETS_DIR_ENV, None)  # exercise real search order
-        with mock.patch.object(
-            secrets_store, "_machine_secrets_dir", return_value=machine
-        ), mock.patch.object(
-            secrets_store, "_user_secrets_dir", return_value=user
+        with (
+            mock.patch.object(secrets_store, "_machine_secrets_dir", return_value=machine),
+            mock.patch.object(secrets_store, "_user_secrets_dir", return_value=user),
         ):
             user.mkdir(parents=True, exist_ok=True)
             token = Fernet(secrets_store._derive_key()).encrypt(b"legacy")

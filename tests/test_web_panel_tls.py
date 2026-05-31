@@ -78,9 +78,7 @@ class WebPanelMainTlsTests(unittest.TestCase):
         key = "/tmp/test-key.pem"
         app = wp.create_app()
         with mock.patch.object(wp, "create_app", return_value=app):
-            with mock.patch.object(
-                wp, "resolve_tls_cert_paths", return_value=(cert, key)
-            ):
+            with mock.patch.object(wp, "resolve_tls_cert_paths", return_value=(cert, key)):
                 with mock.patch.object(app, "run") as mock_run:
                     with mock.patch.dict(
                         "os.environ",

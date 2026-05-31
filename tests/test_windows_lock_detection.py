@@ -20,28 +20,18 @@ from kid_pc_monitor.platforms.windows import (
 
 class SessionFlagsInterpretationTests(unittest.TestCase):
     def test_lock_flag_means_locked(self) -> None:
-        self.assertTrue(
-            _session_flags_indicate_locked(_WTS_SESSIONSTATE_LOCK, inverted=False)
-        )
+        self.assertTrue(_session_flags_indicate_locked(_WTS_SESSIONSTATE_LOCK, inverted=False))
 
     def test_unlock_flag_means_unlocked(self) -> None:
-        self.assertFalse(
-            _session_flags_indicate_locked(_WTS_SESSIONSTATE_UNLOCK, inverted=False)
-        )
+        self.assertFalse(_session_flags_indicate_locked(_WTS_SESSIONSTATE_UNLOCK, inverted=False))
 
     def test_unknown_flag_returns_none(self) -> None:
-        self.assertIsNone(
-            _session_flags_indicate_locked(_WTS_SESSIONSTATE_UNKNOWN, inverted=False)
-        )
+        self.assertIsNone(_session_flags_indicate_locked(_WTS_SESSIONSTATE_UNKNOWN, inverted=False))
 
     def test_inversion_reverses_lock_and_unlock(self) -> None:
         # Win7 / Server 2008 R2 defect: LOCK flag actually means unlocked.
-        self.assertFalse(
-            _session_flags_indicate_locked(_WTS_SESSIONSTATE_LOCK, inverted=True)
-        )
-        self.assertTrue(
-            _session_flags_indicate_locked(_WTS_SESSIONSTATE_UNLOCK, inverted=True)
-        )
+        self.assertFalse(_session_flags_indicate_locked(_WTS_SESSIONSTATE_LOCK, inverted=True))
+        self.assertTrue(_session_flags_indicate_locked(_WTS_SESSIONSTATE_UNLOCK, inverted=True))
 
     def test_unexpected_flag_value_returns_none(self) -> None:
         self.assertIsNone(_session_flags_indicate_locked(42, inverted=False))

@@ -46,7 +46,7 @@ class WebPanelSecurityTests(unittest.TestCase):
         if match:
             return match.group(1)
         match = re.search(r'name="csrf-token" content="([^"]+)"', html)
-        self.assertIsNotNone(match, "csrf token not found in page")
+        assert match is not None, "csrf token not found in page"
         return match.group(1)
 
     def _get_csrf(self, url: str) -> str:

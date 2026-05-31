@@ -60,9 +60,7 @@ def runtime_state_is_current(
     now: datetime | None = None,
 ) -> bool:
     now = now or datetime.now()
-    return usage_period_date(runtime.timestamp, wake_time) == usage_period_date(
-        now, wake_time
-    )
+    return usage_period_date(runtime.timestamp, wake_time) == usage_period_date(now, wake_time)
 
 
 def fresh_runtime_state(now: datetime | None = None) -> RuntimeState:
@@ -334,9 +332,7 @@ class AgentStateStore:
         daily = self._load_daily()
         runtime = self._load_runtime(daily.wake_time)
         if not runtime_state_is_current(runtime, daily.wake_time):
-            logger.info(
-                "Runtime state is from a previous usage period; resetting daily counters"
-            )
+            logger.info("Runtime state is from a previous usage period; resetting daily counters")
             reset_runtime_for_new_period(runtime)
         return daily, runtime
 

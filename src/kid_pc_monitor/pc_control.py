@@ -1,17 +1,16 @@
+import getpass
+import logging
 import math
 import os
-import sys
-import time
 import socket
+import sys
 import threading
-from datetime import datetime, time as dtime
-import getpass
-
-import logging
+import time
+from datetime import datetime
+from datetime import time as dtime
 from pathlib import Path
 
-from kid_pc_monitor import agent_protocol
-from kid_pc_monitor import shared_secret
+from kid_pc_monitor import agent_protocol, shared_secret
 from kid_pc_monitor.agent_state import (
     AgentStateStore,
     DailySettings,
@@ -21,17 +20,16 @@ from kid_pc_monitor.agent_state import (
     runtime_state_is_current,
 )
 from kid_pc_monitor.host_platform import HostPlatform, get_default_platform
-from kid_pc_monitor.network import get_primary_ipv4
 from kid_pc_monitor.lock_policy import (
     DEFAULT_WAKE_TIME,
     enforcement_state,
     format_access_status,
     lock_decision,
     minutes_until_lock,
-    parse_time_hhmm,
     should_monitor_user,
     usage_period_date,
 )
+from kid_pc_monitor.network import get_primary_ipv4
 
 # ============================================
 # CONFIGURATION
@@ -59,14 +57,15 @@ DEFAULT_WAKE_UP_TIME = DEFAULT_WAKE_TIME
 # Lives under the running user's profile so the agent can write even when
 # installed system-wide (e.g. C:\ProgramData\KidPCMonitor) from an admin
 # account while running in a non-admin child's session.
-data_dir = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'KidPCMonitor'
+data_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "KidPCMonitor"
 data_dir.mkdir(parents=True, exist_ok=True)
 
-log_file = data_dir / 'pc_control.log'
+log_file = data_dir / "pc_control.log"
 AGENT_PORT = 9999
 
+
 def _log_level_from_env() -> int:
-    raw = os.environ.get('KID_PC_MONITOR_LOG_LEVEL', 'INFO').strip().upper()
+    raw = os.environ.get("KID_PC_MONITOR_LOG_LEVEL", "INFO").strip().upper()
     return getattr(logging, raw, logging.INFO)
 
 
@@ -77,17 +76,20 @@ def _configure_logging():
     root.setLevel(level)
     for handler in root.handlers[:]:
         root.removeHandler(handler)
-    handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter(
-        '[%(asctime)s] %(levelname)s %(name)s: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-    ))
+    handler.setFormatter(
+        logging.Formatter(
+            "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
     root.addHandler(handler)
     return level
 
+
 _log_level = _configure_logging()
-logger = logging.getLogger('kid_pc_monitor')
+logger = logging.getLogger("kid_pc_monitor")
 
 
 def log_connectivity_diagnostics(platform: HostPlatform) -> None:
@@ -112,9 +114,7 @@ class PCTimeControl:
         start_background_threads: bool = True,
     ):
         self.platform = platform or get_default_platform()
-        self.monitored_users = (
-            MONITORED_USERS if monitored_users is None else monitored_users
-        )
+        self.monitored_users = MONITORED_USERS if monitored_users is None else monitored_users
         self.exempt_users = EXEMPT_USERS if exempt_users is None else exempt_users
 
         self.daily = DailySettings(
@@ -141,7 +141,7 @@ class PCTimeControl:
         base_dir.mkdir(parents=True, exist_ok=True)
         self.agent_log_path = base_dir / "pc_control.log"
         self.state_store = AgentStateStore(base_dir, current_user=self.current_user)
-        self.logger = logging.getLogger('PCTimeControl')
+        self.logger = logging.getLogger("PCTimeControl")
         self.warnings_sent = set()  # Track which warnings have been sent
         self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
         self.warnings_date = None
@@ -152,25 +152,23 @@ class PCTimeControl:
             print(f"[{datetime.now():%H:%M:%S}] Monitoring user: {self.current_user}")
         else:
             self.logger.info(f"User {self.current_user} is EXEMPT from monitoring")
-            print(f"[{datetime.now():%H:%M:%S}] User {self.current_user} is EXEMPT - no restrictions will apply")
+            print(
+                f"[{datetime.now():%H:%M:%S}] User {self.current_user} is EXEMPT - no restrictions will apply"
+            )
 
         # Load previous state if exists
         self.load_state()
         self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
 
         if start_background_threads:
-            self.monitor_thread = threading.Thread(
-                target=self.monitor_activity, daemon=True
-            )
+            self.monitor_thread = threading.Thread(target=self.monitor_activity, daemon=True)
             self.monitor_thread.start()
         else:
             self.monitor_thread = None
 
     def should_monitor_user(self):
         """Check if current user should be monitored based on configuration"""
-        return should_monitor_user(
-            self.current_user, self.monitored_users, self.exempt_users
-        )
+        return should_monitor_user(self.current_user, self.monitored_users, self.exempt_users)
 
     def load_state(self):
         """Load saved daily settings and runtime state from JSON files."""
@@ -248,11 +246,7 @@ class PCTimeControl:
         # brief detection flicker during curfew must not inflate usage.
         in_lock_window, _ = self.currently_in_lock_window()
 
-        if (
-            self.should_monitor_user()
-            and self.session_is_active()
-            and not in_lock_window
-        ):
+        if self.should_monitor_user() and self.session_is_active() and not in_lock_window:
             if self.last_tick_at is not None:
                 delta = (now - self.last_tick_at).total_seconds()
                 # Clamp to (0, 60): negative means clock went backwards;
@@ -272,7 +266,9 @@ class PCTimeControl:
             # Detect unlock
             if self.is_locked and not actual_locked:
                 self.is_locked = False
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] PC has been unlocked (detected by activity)")
+                print(
+                    f"[{datetime.now().strftime('%H:%M:%S')}] PC has been unlocked (detected by activity)"
+                )
 
             # Detect manual lock (not by our script)
             elif not self.is_locked and actual_locked:
@@ -381,7 +377,9 @@ class PCTimeControl:
             self.show_message(msg, "Warning")
             self.logger.info(
                 "Warning sent: %d %s remaining (threshold %d)",
-                actual_mins, unit, warning_mins,
+                actual_mins,
+                unit,
+                warning_mins,
             )
             print(f"[{datetime.now():%H:%M:%S}] Warning: {actual_mins} {unit} until lock")
             break
@@ -457,12 +455,13 @@ class PCTimeControl:
 
             time.sleep(1)
 
+
 # Simple Remote Control Server
 class RemoteControlServer:
     def __init__(self, port=9999, timeout=60):
         """
         Initialize the remote control server.
-        
+
         Args:
             port (int): Port number to listen on (default: 9999)
             timeout (int): Socket timeout in seconds (default: 60)
@@ -476,7 +475,7 @@ class RemoteControlServer:
         self.client_id_counter = 0
         self.last_primary_ip = None
         self.listener_ready = threading.Event()
-        self.logger = logging.getLogger('RemoteControlServer')
+        self.logger = logging.getLogger("RemoteControlServer")
         # The shared secret authenticates every protocol v2 frame.  It is
         # loaded lazily so a freshly installed agent reflects a secret added
         # after the process started.
@@ -496,7 +495,7 @@ class RemoteControlServer:
         """Close active client and listener sockets without changing run intent."""
         for client_id, client_info in list(self.clients.items()):
             try:
-                client_info['socket'].close()
+                client_info["socket"].close()
             except Exception as e:
                 self.logger.error(f"Error closing client socket {client_id}: {e}")
             del self.clients[client_id]
@@ -541,7 +540,7 @@ class RemoteControlServer:
                 self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.server_socket.settimeout(5)  # Allow periodic health checks.
-                self.server_socket.bind(('0.0.0.0', self.port))
+                self.server_socket.bind(("0.0.0.0", self.port))
                 self.server_socket.listen(5)
                 self.listener_ready.set()
 
@@ -570,16 +569,16 @@ class RemoteControlServer:
                         client_thread = threading.Thread(
                             target=self.handle_client,
                             args=(client_socket, client_address, client_id),
-                            daemon=True
+                            daemon=True,
                         )
                         self.clients[client_id] = {
-                            'thread': client_thread,
-                            'socket': client_socket,
-                            'address': client_address
+                            "thread": client_thread,
+                            "socket": client_socket,
+                            "address": client_address,
                         }
                         client_thread.start()
 
-                    except socket.timeout:
+                    except TimeoutError:
                         if self.check_for_ip_change():
                             break
                         continue
@@ -627,9 +626,7 @@ class RemoteControlServer:
                 except agent_protocol.ProtocolError as e:
                     self.logger.warning("Client %s framing error: %s", client_id, e)
                     break
-                self.logger.debug(
-                    "Structured request from %s (ID: %s)", client_address, client_id
-                )
+                self.logger.debug("Structured request from %s (ID: %s)", client_address, client_id)
                 secret = self.get_shared_secret()
                 if not secret:
                     self.logger.error(
@@ -638,15 +635,11 @@ class RemoteControlServer:
                         client_id,
                     )
                     break
-                response = agent_protocol.handle_request(
-                    self.pc_control, body, secret=secret
-                )
+                response = agent_protocol.handle_request(self.pc_control, body, secret=secret)
                 try:
                     client_socket.sendall(agent_protocol.encode_frame(response))
                 except OSError as e:
-                    self.logger.warning(
-                        "Client %s send error: %s", client_id, e
-                    )
+                    self.logger.warning("Client %s send error: %s", client_id, e)
                     break
 
         finally:
@@ -664,6 +657,7 @@ class RemoteControlServer:
         """Destructor to ensure proper cleanup."""
         self.stop_server()
 
+
 # Main
 def main() -> int:
     script_path = os.path.abspath(__file__)
@@ -671,14 +665,16 @@ def main() -> int:
     def check_port_availability(port):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('0.0.0.0', port))
+                s.bind(("0.0.0.0", port))
             return True
-        except socket.error:
+        except OSError:
             return False
 
     logger.info(
         "Agent process starting (pid=%s, user=%s, script=%s)",
-        os.getpid(), getpass.getuser(), script_path,
+        os.getpid(),
+        getpass.getuser(),
+        script_path,
     )
     platform = get_default_platform()
     log_connectivity_diagnostics(platform)
@@ -711,9 +707,8 @@ def main() -> int:
             log_file,
         )
         control.show_message(
-            "Failed to start network server!\n"
-            "Check firewall settings and try again.",
-            "Server Error"
+            "Failed to start network server!\nCheck firewall settings and try again.",
+            "Server Error",
         )
         return 1
 
