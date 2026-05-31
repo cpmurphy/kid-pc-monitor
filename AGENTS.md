@@ -40,6 +40,18 @@ pytest
 
 Install dev tools with `pip install -e ".[dev]"` or `pip install -r requirements-dev.txt` (after runtime deps).
 
+Optional git hooks (run once after dev install):
+
+```bash
+pre-commit install
+pre-commit install --hook-type pre-push
+```
+
+- **pre-commit**: `ruff format` and `ruff check` on every commit (`src/` and `tests/` only).
+- **pre-push**: `basedpyright` on the whole tree before `git push`.
+
+Run hooks manually with `pre-commit run --all-files` and `pre-commit run --hook-stage pre-push basedpyright --all-files`.
+
 ## Running from Checkout (No Install)
 
 ```bash

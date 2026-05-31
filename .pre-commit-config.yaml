@@ -1,0 +1,23 @@
+# Install: pre-commit install && pre-commit install --hook-type pre-push
+# See AGENTS.md "Code Quality".
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      - id: ruff-format
+        args: [src, tests]
+      - id: ruff-check
+        args: [--fix, src, tests]
+
+  - repo: local
+    hooks:
+      - id: basedpyright
+        name: basedpyright
+        entry: basedpyright
+        language: python
+        additional_dependencies:
+          - basedpyright==1.39.6
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
