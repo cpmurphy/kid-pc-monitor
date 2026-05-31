@@ -30,6 +30,15 @@
         <div class="action-group">
             <div class="action-title">📊 Today</div>
 
+            <p class="stat-row">🔒 <strong>Status:</strong>
+                <span class="{% if pc_info.access_status != 'Unlocked' and pc_info.access_status != 'Screen locked' %}locked-text{% endif %}">
+                    {{ pc_info.access_status }}
+                </span>
+                {% if pc_info.manual_lock_active and not pc_info.enforcement_active %}
+                    <button class="clear-inline" onclick="clearManualLock()">Clear</button>
+                {% endif %}
+            </p>
+
             <p class="stat-row">⏱️ <strong>Daily allowance:</strong>
                 <span class="readonly-value">
                 {% if pc_info.get('daily_limit') is not none %}
@@ -78,14 +87,6 @@
                 </span>
             </p>
 
-            <p class="stat-row">🔒 <strong>Status:</strong>
-                <span class="{% if pc_info.access_status != 'Unlocked' and pc_info.access_status != 'Screen locked' %}locked-text{% endif %}">
-                    {{ pc_info.access_status }}
-                </span>
-                {% if pc_info.manual_lock_active and not pc_info.enforcement_active %}
-                    <button class="clear-inline" onclick="clearManualLock()">Clear</button>
-                {% endif %}
-            </p>
             {% if pc_info.manual_lock_active and pc_info.enforcement_active %}
             <p class="stat-row">🔒 <strong>Manual lock:</strong> Active
                 <button class="clear-inline" onclick="clearManualLock()">Clear</button>
