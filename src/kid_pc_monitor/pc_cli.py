@@ -5,10 +5,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import pydoc
 import sys
 
+from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
+    AgentLogsUnavailable,
     DEFAULT_PORT,
+    get_agent_logs,
     inspect_pc,
     parse_scan_subnet,
     request_text,
@@ -162,6 +166,56 @@ def _cmd_action(args: argparse.Namespace) -> int:
     return 2
 
 
+def _cmd_logs(args: argparse.Namespace) -> int:
+    tail = proto.MAX_LOG_TAIL_LINES if args.full else args.tail
+    if tail < 1 or tail > proto.MAX_LOG_TAIL_LINES:
+        print(
+            f"Error: --tail must be between 1 and {proto.MAX_LOG_TAIL_LINES}",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        result = get_agent_logs(
+            args.host, port=args.port, tail=tail, verbose=args.verbose
+        )
+    except AgentLogsUnavailable as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    except ConnectionError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "path": result.path,
+                    "truncated": result.truncated,
+                    "lines": result.lines,
+                },
+                indent=2,
+            )
+        )
+        return 0
+
+    if result.truncated:
+        hint = "Use --full to fetch up to 5000 lines."
+        if not args.full and tail < proto.MAX_LOG_TAIL_LINES:
+            print(f"Note: older log lines omitted. {hint}", file=sys.stderr)
+        else:
+            print("Note: response was truncated to fit the protocol frame.", file=sys.stderr)
+
+    text = "\n".join(result.lines)
+    if not text:
+        text = "(log file is empty)"
+    if args.no_pager or not sys.stdout.isatty():
+        print(text)
+    else:
+        pydoc.pager(text)
+    return 0
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pc_cli",
@@ -175,6 +229,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "  %(prog)s add-lock-time 192.168.1.105 21:00\n"
             "  %(prog)s set-wake-time 192.168.1.105 07:00\n"
             "  %(prog)s lock 192.168.1.105\n"
+            "  %(prog)s logs 192.168.1.105\n"
+            "  %(prog)s logs 192.168.1.105 --full\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -206,6 +262,30 @@ def _build_parser() -> argparse.ArgumentParser:
     p_inspect = sub.add_parser("inspect", help="Show status and limits for one PC")
     _add_host_port(p_inspect)
     p_inspect.set_defaults(func=_cmd_inspect)
+
+    p_logs = sub.add_parser(
+        "logs",
+        help="Show the agent log file from a kid PC (requires agent protocol v4)",
+    )
+    _add_host_port(p_logs)
+    p_logs.add_argument(
+        "--tail",
+        type=int,
+        default=proto.DEFAULT_LOG_TAIL_LINES,
+        metavar="N",
+        help=f"Last N log lines to fetch (default {proto.DEFAULT_LOG_TAIL_LINES}, max {proto.MAX_LOG_TAIL_LINES})",
+    )
+    p_logs.add_argument(
+        "--full",
+        action="store_true",
+        help=f"Fetch up to {proto.MAX_LOG_TAIL_LINES} lines (one request)",
+    )
+    p_logs.add_argument(
+        "--no-pager",
+        action="store_true",
+        help="Print all lines to stdout instead of opening an interactive pager",
+    )
+    p_logs.set_defaults(func=_cmd_logs)
 
     def add_action(name: str, help_text: str, **kwargs) -> argparse.ArgumentParser:
         p = sub.add_parser(name, help=help_text)
