@@ -11,6 +11,7 @@ _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
+from kid_pc_monitor.agent_state import find_complete_daily_settings, program_data_daily_path
 from kid_pc_monitor.lock_policy import parse_time_hhmm
 from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret
 
@@ -52,6 +53,10 @@ if __name__ == "__main__":
 def _format_time_hhmm(raw: str) -> str:
     parsed = parse_time_hhmm(raw)
     return f"{parsed.hour:02d}:{parsed.minute:02d}"
+
+
+def _format_daily_time(value) -> str:
+    return f"{value.hour:02d}:{value.minute:02d}"
 
 
 def prompt_wake_up_time():
@@ -857,9 +862,25 @@ def run_install_flow():
     script_path = install_to_programdata(target_user, source_package)
     print(f"   Granted {target_user} read+execute on the install directory.")
 
-    bed_time = prompt_bed_time()
-    wake_time = prompt_wake_up_time()
-    allowance = prompt_daily_allowance()
+    profile_daily_path = agent_state_dir_for_user(target_user, same_user=is_self) / INSTALL_CONFIG_FILE
+    existing_daily = find_complete_daily_settings(
+        profile_path=profile_daily_path,
+        program_data_path=program_data_daily_path(),
+    )
+    if existing_daily is not None:
+        daily, source_path = existing_daily
+        wake_time = _format_daily_time(daily.wake_time)
+        bed_time = _format_daily_time(daily.bed_time)
+        allowance = daily.allowance
+        limit_label = f"{allowance} min/day"
+        print(f"\n📋 Reusing daily schedule from {source_path}")
+        print(
+            f"   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"
+        )
+    else:
+        bed_time = prompt_bed_time()
+        wake_time = prompt_wake_up_time()
+        allowance = prompt_daily_allowance()
     daily_path, state_ok = write_agent_daily_settings_to_state(
         target_user,
         wake_time=wake_time,

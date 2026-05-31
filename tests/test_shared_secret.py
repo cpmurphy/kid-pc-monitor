@@ -87,9 +87,12 @@ class SharedSecretTests(unittest.TestCase):
         def fail_getpass(prompt=""):
             raise AssertionError("should not prompt when keeping existing secret")
 
+        def fail_input(prompt=""):
+            raise AssertionError("should not prompt when reusing existing secret")
+
         result = shared_secret.prompt_and_store_shared_secret(
             getpass_fn=fail_getpass,
-            input_fn=lambda prompt="": "y",
+            input_fn=fail_input,
         )
         self.assertEqual(result, "already set")
         self.assertEqual(
@@ -113,22 +116,22 @@ class SharedSecretTests(unittest.TestCase):
             token = Fernet(secrets_store._derive_key()).encrypt(b"legacy")
             (user / f"{name}.enc").write_bytes(token)
 
+            def fail_input(prompt=""):
+                raise AssertionError("should not prompt when reusing existing secret")
+
             result = shared_secret.prompt_and_store_shared_secret(
                 getpass_fn=_FakeGetpass([]),
-                input_fn=lambda prompt="": "y",
+                input_fn=fail_input,
             )
 
             self.assertEqual(result, "legacy")
             self.assertTrue((machine / f"{name}.enc").is_file())
 
-
-    def test_prompt_and_store_replace_existing(self) -> None:
+    def test_prompt_and_store_new_secret_after_delete(self) -> None:
         secrets_store.save_secret(shared_secret.SHARED_SECRET_NAME, "old secret value")
+        secrets_store.delete_secret(shared_secret.SHARED_SECRET_NAME)
         getpass_fn = _FakeGetpass(["brand new secret", "brand new secret"])
-        result = shared_secret.prompt_and_store_shared_secret(
-            getpass_fn=getpass_fn,
-            input_fn=lambda prompt="": "n",
-        )
+        result = shared_secret.prompt_and_store_shared_secret(getpass_fn=getpass_fn)
         self.assertEqual(result, "brand new secret")
         self.assertEqual(
             secrets_store.load_secret(shared_secret.SHARED_SECRET_NAME),

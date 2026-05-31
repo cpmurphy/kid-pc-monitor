@@ -124,8 +124,8 @@ def save_secret(name: str, value: str) -> Path:
     raise last_error if last_error is not None else OSError("no writable secrets directory")
 
 
-def load_secret(name: str) -> str | None:
-    """Decrypt and return the named secret, or None if it is not found."""
+def find_secret_path(name: str) -> Path | None:
+    """Return the path to the first decryptable secret file, or None if not found."""
     fernet: Fernet | None = None
     for directory in secrets_dirs():
         path = directory / f"{name}.enc"
@@ -134,10 +134,20 @@ def load_secret(name: str) -> str | None:
         try:
             if fernet is None:
                 fernet = Fernet(_derive_key())
-            return fernet.decrypt(path.read_bytes()).decode("utf-8")
+            fernet.decrypt(path.read_bytes())
+            return path
         except Exception:
             continue
     return None
+
+
+def load_secret(name: str) -> str | None:
+    """Decrypt and return the named secret, or None if it is not found."""
+    path = find_secret_path(name)
+    if path is None:
+        return None
+    fernet = Fernet(_derive_key())
+    return fernet.decrypt(path.read_bytes()).decode("utf-8")
 
 def delete_secret(name: str) -> bool:
     """Remove the named secret from every location.  True if any existed."""

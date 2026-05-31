@@ -126,6 +126,42 @@ def load_daily_from_dict(data: dict) -> DailySettings:
     )
 
 
+def is_complete_daily_dict(data: dict) -> bool:
+    """True when wake_time, bed_time, and a positive allowance are all configured."""
+    wake_raw = data.get("wake_time")
+    bed_raw = data.get("bed_time")
+    allowance_raw = data.get("allowance")
+    if not wake_raw or not bed_raw or allowance_raw is None:
+        return False
+    try:
+        allowance = int(allowance_raw)
+        if allowance <= 0:
+            return False
+        daily = load_daily_from_dict(data)
+    except (ValueError, TypeError):
+        return False
+    return daily.bed_time is not None and daily.allowance is not None and daily.allowance > 0
+
+
+def find_complete_daily_settings(
+    *,
+    profile_path: Path | None,
+    program_data_path: Path | None,
+) -> tuple[DailySettings, Path] | None:
+    """Return daily settings and source path when a complete schedule file exists."""
+    for path in (profile_path, program_data_path):
+        if path is None:
+            continue
+        data = _read_json(path)
+        if data is None or not is_complete_daily_dict(data):
+            continue
+        try:
+            return load_daily_from_dict(data), path
+        except ValueError:
+            continue
+    return None
+
+
 def load_runtime_from_dict(data: dict) -> RuntimeState:
     timestamp_raw = data.get("timestamp")
     if not isinstance(timestamp_raw, str):

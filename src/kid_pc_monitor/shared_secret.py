@@ -54,6 +54,8 @@ def _print_guidance() -> None:
     print("     • Hard for your child (or anyone else) to guess")
     print("     • Like a password — but NOT one you use anywhere else")
     print("\n   A short phrase of a few unrelated words works well.")
+    print("\n   To change an existing secret, delete its .enc file under the secrets")
+    print("   directory and re-run the installer.")
 
 
 def prompt_for_shared_secret(*, getpass_fn=getpass.getpass) -> str | None:
@@ -104,23 +106,24 @@ def prompt_and_store_shared_secret(
 ) -> str | None:
     """Show guidance, prompt for the shared secret, and persist it.
 
-    If a secret is already stored, the parent is offered a short prompt to reuse
-    it without re-reading the full guidance. Either way the secret is (re-)saved
-    to the machine-wide location so cross-user installs work. Returns the stored
-    secret, or ``None`` if the parent cancelled without saving.
+    If a secret is already stored, it is reused automatically without prompting.
+    Either way the secret is (re-)saved to the machine-wide location so
+    cross-user installs work. Returns the stored secret, or ``None`` if the
+    parent cancelled without saving.
     """
     existing = secrets_store.load_secret(SHARED_SECRET_NAME)
     if existing is not None:
-        try:
-            keep = input_fn(
-                "\n🔑 A shared secret is already stored. Reuse it? (Y/n): "
-            ).strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            keep = ""
-        if keep in ("", "y", "yes"):
-            path = _persist_shared_secret(existing)
-            print(f"   Keeping the existing shared secret (stored at {path}).")
-            return existing
+        source = secrets_store.find_secret_path(SHARED_SECRET_NAME)
+        dest = _persist_shared_secret(existing)
+        source_label = str(source) if source is not None else "stored location"
+        if source is not None and source != dest:
+            print(
+                f"\n🔑 Reusing existing shared secret from {source_label} "
+                f"(also saved to {dest})."
+            )
+        else:
+            print(f"\n🔑 Reusing existing shared secret from {dest}.")
+        return existing
 
     _print_guidance()
 
