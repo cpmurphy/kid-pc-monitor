@@ -198,6 +198,20 @@ def _read_json(path: Path) -> dict | None:
         return None
 
 
+def program_data_target_user() -> str | None:
+    """Return the monitored account from ProgramData daily_settings.json, if set."""
+    path = program_data_daily_path()
+    if path is None:
+        return None
+    data = _read_json(path)
+    if data is None:
+        return None
+    target = data.get("target_user")
+    if isinstance(target, str) and target.strip():
+        return target.strip()
+    return None
+
+
 def _write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")

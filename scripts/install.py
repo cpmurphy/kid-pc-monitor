@@ -11,7 +11,11 @@ _SRC = _REPO_ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from kid_pc_monitor.agent_state import find_complete_daily_settings, program_data_daily_path
+from kid_pc_monitor.agent_state import (
+    find_complete_daily_settings,
+    program_data_daily_path,
+    program_data_target_user,
+)
 from kid_pc_monitor.lock_policy import parse_time_hhmm
 from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret
 
@@ -353,13 +357,23 @@ def warn_self_install(current_user):
     return choice in ("y", "yes")
 
 
-def prompt_target_user(current_user):
+def prompt_target_user(current_user, *, default_user: str | None = None):
     """Ask for the monitored Windows username and validate it exists locally.
 
     Entering the current account is permitted after a warning + confirmation.
+    When *default_user* is set (from a previous install), Enter accepts it.
     """
     while True:
-        name = input("\nWhich Windows account should be monitored (the child's username): ").strip()
+        if default_user:
+            raw = input(
+                f"\nWhich Windows account should be monitored "
+                f"(the child's username) [{default_user}]: "
+            ).strip()
+            name = raw or default_user
+        else:
+            name = input(
+                "\nWhich Windows account should be monitored (the child's username): "
+            ).strip()
         if not name:
             print("❌ Username cannot be empty.")
             continue
@@ -368,6 +382,7 @@ def prompt_target_user(current_user):
             retry = input("Try a different name? (y/n): ").strip().lower()
             if retry != "y":
                 return None
+            default_user = None
             continue
         if current_user and name.lower() == current_user.lower():
             if not warn_self_install(current_user):
@@ -829,7 +844,12 @@ def run_install_flow():
     """Drive the install: gather the monitored account, paths, and create the task."""
     current_user = os.environ.get('USERNAME') or os.environ.get('USER') or ''
 
-    target_user = prompt_target_user(current_user)
+    existing_target = program_data_target_user()
+    if existing_target:
+        config_path = program_data_daily_path()
+        print(f"\n👤 Previous install targeted '{existing_target}' ({config_path}).")
+
+    target_user = prompt_target_user(current_user, default_user=existing_target)
     if not target_user:
         print("❌ No valid user provided. Aborting.")
         return False

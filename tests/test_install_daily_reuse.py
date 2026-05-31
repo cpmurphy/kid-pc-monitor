@@ -7,11 +7,13 @@ import tempfile
 import unittest
 from datetime import time as dtime
 from pathlib import Path
+from unittest import mock
 
 from kid_pc_monitor.agent_state import (
     DailySettings,
     find_complete_daily_settings,
     is_complete_daily_dict,
+    program_data_target_user,
 )
 
 
@@ -126,6 +128,34 @@ class InstallDailyReuseTests(unittest.TestCase):
         )
 
         self.assertIsNone(result)
+
+    def test_program_data_target_user_reads_target_user(self) -> None:
+        config_path = self.root / "daily_settings.json"
+        self._write_daily(
+            config_path,
+            {"target_user": "kidaccount", "wake_time": "07:00", "bed_time": "21:00"},
+        )
+        with mock.patch(
+            "kid_pc_monitor.agent_state.program_data_daily_path",
+            return_value=config_path,
+        ):
+            self.assertEqual(program_data_target_user(), "kidaccount")
+
+    def test_program_data_target_user_returns_none_when_missing(self) -> None:
+        config_path = self.root / "daily_settings.json"
+        self._write_daily(config_path, {"wake_time": "07:00", "bed_time": "21:00"})
+        with mock.patch(
+            "kid_pc_monitor.agent_state.program_data_daily_path",
+            return_value=config_path,
+        ):
+            self.assertIsNone(program_data_target_user())
+
+    def test_program_data_target_user_returns_none_when_file_missing(self) -> None:
+        with mock.patch(
+            "kid_pc_monitor.agent_state.program_data_daily_path",
+            return_value=self.root / "missing.json",
+        ):
+            self.assertIsNone(program_data_target_user())
 
 
 if __name__ == "__main__":
