@@ -156,6 +156,10 @@ def _discover_name(client: socket.socket, secret: str, *, verbose: bool = False,
     return str(resp.name)
 
 
+class AgentLogsUnavailable(ConnectionError):
+    """The agent does not support log retrieval (protocol v4 required)."""
+
+
 def send_request(
     host: str,
     action: str,
@@ -166,6 +170,8 @@ def send_request(
     timeout: float = CONNECT_TIMEOUT,
     secret: str | None = None,
     name: str | None = None,
+    version: int = proto.CLIENT_DEFAULT_VERSION,
+    tail: int | None = None,
     verbose: bool = False,
     out: Any = sys.stdout,
 ) -> proto.Response:
@@ -189,7 +195,14 @@ def send_request(
         if name is None and action in proto.WRITE_ACTIONS:
             name = _discover_name(client, secret, verbose=verbose, out=out)
         body = proto.build_request(
-            action, secret=secret, var=var, val=val, req_id=secrets.token_hex(3), name=name
+            action,
+            secret=secret,
+            var=var,
+            val=val,
+            req_id=secrets.token_hex(3),
+            name=name,
+            version=version,
+            tail=tail,
         )
         if verbose:
             _print_frame(">", body, out=out)
@@ -197,7 +210,54 @@ def send_request(
         response_body = proto.read_frame(client)
     if verbose:
         _print_frame("<", response_body, out=out)
-    return proto.parse_response(response_body, secret=secret, expected_name=name)
+    return proto.parse_response(
+        response_body, secret=secret, expected_name=name, expected_version=version
+    )
+
+
+def get_agent_logs(
+    host: str,
+    *,
+    tail: int = proto.DEFAULT_LOG_TAIL_LINES,
+    port: int = DEFAULT_PORT,
+    timeout: float = CONNECT_TIMEOUT,
+    name: str | None = None,
+    verbose: bool = False,
+    out: Any = sys.stdout,
+) -> proto.LogsResult:
+    """Fetch the tail of the agent log file (requires protocol v4 on the agent)."""
+    try:
+        resp = send_request(
+            host,
+            "get_logs",
+            port=port,
+            timeout=timeout,
+            name=name,
+            version=4,
+            tail=tail,
+            verbose=verbose,
+            out=out,
+        )
+    except proto.ProtocolError as exc:
+        if exc.code == proto.UNSUPPORTED_VERSION:
+            raise AgentLogsUnavailable(
+                "This PC's agent does not support log retrieval yet. "
+                "Update the Kid PC Monitor agent on that computer."
+            ) from exc
+        raise ConnectionError(str(exc)) from exc
+
+    if not resp.ok:
+        if resp.error_code == proto.UNSUPPORTED_VERSION:
+            raise AgentLogsUnavailable(
+                "This PC's agent does not support log retrieval yet. "
+                "Update the Kid PC Monitor agent on that computer."
+            )
+        raise ConnectionError(resp.text or "get_logs failed")
+
+    if resp.logs is None:
+        raise ConnectionError("get_logs returned no log data")
+
+    return resp.logs
 
 
 def request_text(

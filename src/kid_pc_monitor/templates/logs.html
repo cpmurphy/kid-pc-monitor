@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Agent log — {{ hostname }}{% endblock %}
+{% block body_class %}page-logs{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="nav-row">
+            <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
+        </div>
+        <p class="account-links">
+            {% if not password_protected %}
+            <a href="{{ url_for('set_password') }}">Add password protection</a>
+            {% elif panel_auth %}
+            <a href="{{ url_for('logout') }}">Log out</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('set_password') }}">Change password</a>
+            {% else %}
+            <a href="{{ url_for('login', next=request.path) }}">Log in</a>
+            {% endif %}
+        </p>
+
+        <h1>📋 Agent log</h1>
+        <p class="subtitle">{{ hostname }} · {{ ip }}</p>
+
+        {% if error_message %}
+        <div class="status-message banner error">
+            {{ error_message }}
+        </div>
+        {% else %}
+        {% if log_path %}
+        <p class="subtitle log-path">{{ log_path }}</p>
+        {% endif %}
+        {% if truncated %}
+        <p class="note">Showing the most recent lines that fit in one request. Older log lines are omitted.</p>
+        {% endif %}
+        <pre class="agent-log-view" id="agent-log">{{ log_text }}</pre>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -95,6 +95,8 @@
             {% if pc_info.get('reachable', true) %}
             <p>
             <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('agent_logs', ip=ip) }}">Agent log</a>
             </p>
             {% endif %}
         </div>

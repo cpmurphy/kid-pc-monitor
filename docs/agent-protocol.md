@@ -69,6 +69,7 @@ One of
 - `shutdown` with an optional `val` giving the warning period in seconds
   (defaults to 60)
 - `list_capabilities`
+- `get_logs` (protocol **v4** only) with optional `tail` (last N lines, default 500, max 5000)
 
 Note there is deliberately no "reset" action: `accumulated_seconds` and
 `cumulative_extension` accumulate until the daily `wake_time` rollover and are
@@ -127,6 +128,54 @@ values {
  access_status "read-only, brief overall access status for the parent panel"
 }
 ```
+
+## Protocol versions 3 and 4
+
+**v3** is the current baseline: all actions listed above except `get_logs`,
+with v2 mutual authentication on every frame.
+
+**v4** is a **strict superset** of v3. An agent that speaks v4 accepts every
+v3-valid request at `v 4` with the same semantics, and adds v4-only actions
+(starting with `get_logs`). A request at `v 3` with a v4-only action receives
+`unknown_action`.
+
+This follows Postel's law:
+
+| Role | Behavior |
+|------|----------|
+| **Agent** | Accept `v 3` and `v 4`. Echo the request's `v` on the response. |
+| **Client** | Send **`v 3`** for existing actions (compatible with v3-only agents). Send **`v 4`** only when using a v4-only feature such as `get_logs`. |
+
+v3-only agents reject `v 4` frames with `unsupported_version`. Upgraded agents
+still serve `v 3` clients unchanged.
+
+### `get_logs` (v4)
+
+Read-only (optional `name`, same discovery rules as `get`). Parameters:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `tail` | int | Optional. Last N lines to return (default 500, max 5000). |
+
+Successful response includes a `logs` block:
+
+```
+v 4
+...
+status ok
+logs {
+  path "C:\\Users\\...\\KidPCMonitor\\pc_control.log"
+  truncated true
+  lines {
+    "[2026-05-31 12:00:00] INFO kid_pc_monitor: ..."
+    ...
+  }
+}
+```
+
+`truncated` is true when older lines were omitted (file longer than `tail`, or
+the frame size cap required dropping lines). Payloads are not encrypted; logs
+may contain usernames and paths — same LAN + shared-secret threat model as v2.
 
 ## On the Wire
 

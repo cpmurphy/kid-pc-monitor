@@ -317,14 +317,28 @@ class DispatchTests(unittest.TestCase):
             start_background_threads=False,
         )
 
-    def _handle(self, control: PCTimeControl, *, name=..., **req_kwargs) -> proto.Response:
+    def _handle(
+        self,
+        control: PCTimeControl,
+        *,
+        name=...,
+        version: int = proto.CLIENT_DEFAULT_VERSION,
+        **req_kwargs,
+    ) -> proto.Response:
         hostname = control.platform.get_hostname()
         # Default to a correctly-addressed, signed frame; tests can pass
         # ``name=None`` for the read-only discovery path.
         target = hostname if name is ... else name
-        body = proto.build_request(secret=SECRET, req_id="r1", name=target, **req_kwargs)
+        body = proto.build_request(
+            secret=SECRET, req_id="r1", name=target, version=version, **req_kwargs
+        )
         resp_body = proto.handle_request(control, body, secret=SECRET)
-        return proto.parse_response(resp_body, secret=SECRET, expected_name=hostname)
+        return proto.parse_response(
+            resp_body,
+            secret=SECRET,
+            expected_name=hostname,
+            expected_version=version,
+        )
 
     def test_get_settings_returns_all_variables(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -493,6 +507,54 @@ class DispatchTests(unittest.TestCase):
             control = self._control(tmp)
             resp = self._handle(control, action="list_capabilities", name=None)
             self.assertTrue(resp.ok)
+
+    def test_v4_lock_same_as_v3(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            resp = self._handle(control, action="lock", version=4)
+            self.assertTrue(resp.ok)
+            self.assertEqual(resp.version, 4)
+            self.assertTrue(control.runtime.manual_lock_active)
+
+    def test_v3_rejects_get_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            hostname = control.platform.get_hostname()
+            signed = [
+                Node("v", [3]),
+                Node("id", ["r1"]),
+                Node("name", [hostname]),
+                Node("timestamp", [agent_auth.now_timestamp()]),
+                Node("nonce", [agent_auth.make_nonce()]),
+                Node("action", ["get_logs"]),
+            ]
+            body = proto.serialize(signed + [proto._auth_node(signed, SECRET)])
+            resp_body = proto.handle_request(control, body, secret=SECRET)
+            resp = proto.parse_response(
+                resp_body, secret=SECRET, expected_name=hostname, expected_version=3
+            )
+            self.assertFalse(resp.ok)
+            self.assertEqual(resp.error_code, proto.UNKNOWN_ACTION)
+
+    def test_v4_get_logs_returns_tail(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            log_path = Path(tmp) / "pc_control.log"
+            log_path.write_text("line one\nline two\nline three\n", encoding="utf-8")
+            resp = self._handle(control, action="get_logs", version=4, tail=2)
+            self.assertTrue(resp.ok)
+            self.assertEqual(resp.version, 4)
+            self.assertIsNotNone(resp.logs)
+            assert resp.logs is not None
+            self.assertEqual(resp.logs.lines, ["line two", "line three"])
+            self.assertTrue(resp.logs.truncated)
+
+    def test_unsupported_version_v5(self) -> None:
+        body = proto.build_request("get", secret=SECRET, var="name", version=3)
+        body = body.replace("v 3", "v 5", 1)
+        with self.assertRaises(ProtocolError) as ctx:
+            proto.parse_request(body, secret=SECRET, hostname=HOSTNAME)
+        self.assertEqual(ctx.exception.code, proto.UNSUPPORTED_VERSION)
 
     def test_unauthenticated_request_yields_signed_failure(self) -> None:
         # The agent still signs its rejection so the panel can trust the error.
