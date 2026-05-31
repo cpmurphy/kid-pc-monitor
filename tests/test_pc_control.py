@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import datetime, timedelta, time as dtime
 from pathlib import Path
 
@@ -174,6 +175,32 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertEqual(control.runtime.cumulative_extension_seconds, 900)
             locked, _ = control.currently_in_lock_window()
             self.assertFalse(locked)
+
+    def test_extend_time_resets_warning_tracking(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.warnings_sent = {"15min", "5min", "1min"}
+
+            with mock.patch.object(
+                control, "get_time_remaining", return_value=14.0
+            ):
+                control.check_and_send_warnings()
+            self.assertEqual(platform.messages, [])
+
+            control.extend_time(30)
+
+            self.assertEqual(control.warnings_sent, set())
+            with mock.patch.object(
+                control, "get_time_remaining", return_value=14.0
+            ):
+                control.check_and_send_warnings()
+            self.assertEqual(len(platform.messages), 1)
+            self.assertIn("14 minutes", platform.messages[0][1])
 
     def test_currently_in_lock_window_manual_lock(self) -> None:
         platform = FakeHostPlatform()
