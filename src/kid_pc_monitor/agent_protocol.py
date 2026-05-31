@@ -940,9 +940,10 @@ def _do_set(control: Any, req: Request) -> list[Node]:
         result = f"{hour:02d}:{minute:02d}"
     else:  # manual_lock
         engaged = _parse_bool(val, req_id)
-        control.runtime.manual_lock_active = engaged
         if engaged:
-            control.lock_pc()
+            control.engage_manual_lock()
+        else:
+            control.clear_manual_lock()
         result = engaged
 
     control.save_state()
@@ -962,7 +963,7 @@ def _do_clear(control: Any, req: Request) -> list[Node]:
     elif var == "cumulative_extension":
         control.clear_extensions()
     else:  # manual_lock
-        control.runtime.manual_lock_active = False
+        control.clear_manual_lock()
 
     control.save_state()
     return ok_content("cleared")
@@ -976,7 +977,7 @@ def _do_extend(control: Any, req: Request) -> list[Node]:
 
 
 def _do_message(control: Any, req: Request) -> list[Node]:
-    control.show_message(str(req.val))
+    control.send_parent_message(str(req.val))
     return ok_content("message sent")
 
 
@@ -1079,12 +1080,11 @@ def dispatch(control: Any, req: Request) -> list[Node]:
     if req.action == "shutdown":
         return _do_shutdown(control, req)
     if req.action == "lock":
-        control.runtime.manual_lock_active = True
-        control.lock_pc()
+        control.engage_manual_lock()
         control.save_state()
         return ok_content("locked")
     if req.action == "unlock":
-        control.runtime.manual_lock_active = False
+        control.clear_manual_lock()
         control.save_state()
         return ok_content("unlocked")
     raise ProtocolError(UNKNOWN_ACTION, f"unknown action: {req.action}", req.id)

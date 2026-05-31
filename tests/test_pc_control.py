@@ -224,6 +224,35 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertEqual(platform.lock_calls, 1)
             self.assertTrue(platform.locked)
 
+    def test_engage_manual_lock_logs_parent_action(self) -> None:
+        platform = FakeHostPlatform(locked=False)
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                control.engage_manual_lock()
+            self.assertIn("Parent action: manual lock engaged", "\n".join(logs.output))
+            self.assertTrue(control.runtime.manual_lock_active)
+
+    def test_send_parent_message_logs_truncated_preview(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            long_text = "x" * 150
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                control.send_parent_message(long_text)
+            output = "\n".join(logs.output)
+            self.assertIn("Parent action: message sent:", output)
+            self.assertIn("...", output)
+            self.assertNotIn("x" * 150, output)
+
     def test_bootstraps_wake_time_from_program_data_daily(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:

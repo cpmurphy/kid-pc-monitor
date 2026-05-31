@@ -279,31 +279,57 @@ class PCTimeControl:
     def set_bed_time(self, hour: int, minute: int) -> None:
         """Set the nightly bedtime curfew start."""
         self.daily.bed_time = dtime(hour, minute)
+        self.logger.info("Parent action: bed time set to %02d:%02d", hour, minute)
 
     def clear_bed_time(self) -> None:
         self.daily.bed_time = None
+        self.logger.info("Parent action: bed time cleared")
 
     def set_wake_time(self, hour: int, minute: int) -> None:
         """Set the daily morning unlock time (end of bedtime curfew)."""
         self.daily.wake_time = dtime(hour, minute)
         self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
+        self.logger.info("Parent action: wake time set to %02d:%02d", hour, minute)
 
     def set_daily_allowance(self, minutes: int | None) -> None:
         """Set the default daily screen-time allowance in minutes."""
         self.daily.allowance = minutes
+        if minutes is None:
+            self.logger.info("Parent action: daily limit cleared")
+        else:
+            self.logger.info("Parent action: daily limit set to %d minutes", minutes)
 
     def extend_time(self, minutes: int) -> None:
         """Add temporary extra allowance for the current usage period."""
         self.runtime.cumulative_extension_seconds += minutes * 60
         self.runtime.manual_lock_active = False
         self.warnings_sent.clear()
+        self.logger.info("Parent action: extended time by %d minutes", minutes)
 
     def clear_extensions(self) -> None:
         self.runtime.cumulative_extension_seconds = 0
+        self.logger.info("Parent action: time extensions cleared")
 
     def show_message(self, message, title="PC Time Control"):
         """Display a message to the logged-in user (OS-specific UI)."""
         self.platform.show_message(message, title=title)
+
+    def send_parent_message(self, message: str, title: str = "PC Time Control") -> None:
+        """Show a parent-initiated popup and record it in the agent log."""
+        preview = message if len(message) <= 120 else f"{message[:120]}..."
+        self.logger.info("Parent action: message sent: %s", preview)
+        self.show_message(message, title=title)
+
+    def engage_manual_lock(self) -> None:
+        """Enable manual lock enforcement and lock the workstation."""
+        self.runtime.manual_lock_active = True
+        self.lock_pc()
+        self.logger.info("Parent action: manual lock engaged")
+
+    def clear_manual_lock(self) -> None:
+        """Clear manual lock enforcement."""
+        self.runtime.manual_lock_active = False
+        self.logger.info("Parent action: manual lock cleared")
 
     def lock_pc(self):
         """Lock the workstation for this session."""
@@ -318,7 +344,7 @@ class PCTimeControl:
         """Shutdown PC with warning."""
         try:
             self.platform.shutdown(seconds)
-            self.logger.info(f"Shutdown initiated ({seconds}s)")
+            self.logger.info("Parent action: shutdown in %ds", seconds)
         except Exception as e:
             self.logger.error(f"Error initiating shutdown: {e}")
             print(f"[{datetime.now():%H:%M:%S}] Error shutting down: {e}")

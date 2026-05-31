@@ -508,6 +508,62 @@ class DispatchTests(unittest.TestCase):
             assert isinstance(platform, FakeHostPlatform)
             self.assertEqual(platform.shutdown_calls, [60, 30])
 
+    def test_lock_unlock_log_parent_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="lock")
+            output = "\n".join(logs.output)
+            self.assertIn("Parent action: manual lock engaged", output)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="unlock")
+            self.assertIn("Parent action: manual lock cleared", "\n".join(logs.output))
+
+    def test_extend_logs_parent_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="extend", val=30)
+            self.assertIn("Parent action: extended time by 30 minutes", "\n".join(logs.output))
+
+    def test_shutdown_logs_parent_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="shutdown", val=45)
+            self.assertIn("Parent action: shutdown in 45s", "\n".join(logs.output))
+
+    def test_set_and_clear_log_parent_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="set", var="daily_limit", val=120)
+                self._handle(control, action="clear", var="daily_limit")
+                self._handle(control, action="set", var="bed_time", val="21:30")
+                self._handle(control, action="clear", var="bed_time")
+                self._handle(control, action="set", var="wake_time", val="07:00")
+                self._handle(control, action="extend", val=10)
+                self._handle(control, action="clear", var="cumulative_extension")
+                self._handle(control, action="set", var="manual_lock", val=True)
+                self._handle(control, action="clear", var="manual_lock")
+            output = "\n".join(logs.output)
+            self.assertIn("Parent action: daily limit set to 120 minutes", output)
+            self.assertIn("Parent action: daily limit cleared", output)
+            self.assertIn("Parent action: bed time set to 21:30", output)
+            self.assertIn("Parent action: bed time cleared", output)
+            self.assertIn("Parent action: wake time set to 07:00", output)
+            self.assertIn("Parent action: extended time by 10 minutes", output)
+            self.assertIn("Parent action: time extensions cleared", output)
+            self.assertIn("Parent action: manual lock engaged", output)
+            self.assertIn("Parent action: manual lock cleared", output)
+
+    def test_message_logs_parent_action(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                self._handle(control, action="message", val="dinner time")
+            self.assertIn("Parent action: message sent: dinner time", "\n".join(logs.output))
+
     def test_list_capabilities(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             control = self._control(tmp)
