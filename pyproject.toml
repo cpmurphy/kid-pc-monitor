@@ -7,7 +7,7 @@ name = "kid-pc-monitor"
 version = "4.0.0"
 description = "DIY parental control system for parents who code"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
     "cryptography>=3.0",
