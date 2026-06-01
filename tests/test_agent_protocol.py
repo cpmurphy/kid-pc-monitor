@@ -583,6 +583,19 @@ class DispatchTests(unittest.TestCase):
             self.assertEqual(resp.logs.lines, ["line two", "line three"])
             self.assertTrue(resp.logs.truncated)
 
+    def test_v3_get_logs_tail_from_large_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            log_path = Path(tmp) / "pc_control.log"
+            with log_path.open("w", encoding="utf-8") as handle:
+                for i in range(10_000):
+                    handle.write(f"line {i}\n")
+            resp = self._handle(control, action="get_logs", version=3, tail=3)
+            self.assertTrue(resp.ok)
+            assert resp.logs is not None
+            self.assertEqual(resp.logs.lines, ["line 9997", "line 9998", "line 9999"])
+            self.assertTrue(resp.logs.truncated)
+
     def test_unsupported_version_v4(self) -> None:
         body = proto.build_request("get", secret=SECRET, var="name", version=3)
         body = body.replace("v 3", "v 4", 1)

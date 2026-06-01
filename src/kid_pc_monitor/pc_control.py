@@ -8,6 +8,7 @@ import threading
 import time
 from datetime import datetime
 from datetime import time as dtime
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from kid_pc_monitor import agent_protocol, shared_secret
@@ -63,20 +64,28 @@ data_dir.mkdir(parents=True, exist_ok=True)
 log_file = data_dir / "pc_control.log"
 AGENT_PORT = 9999
 
+DEFAULT_LOG_MAX_BYTES = 200_000
+DEFAULT_LOG_BACKUP_COUNT = 4
+
 
 def _log_level_from_env() -> int:
     raw = os.environ.get("KID_PC_MONITOR_LOG_LEVEL", "INFO").strip().upper()
     return getattr(logging, raw, logging.INFO)
 
 
-def _configure_logging():
-    """Append to the per-user log (do not truncate — empty logs make debugging hard)."""
+def _configure_logging() -> int:
+    """Append to the per-user log; rotate by size into numbered backups."""
     level = _log_level_from_env()
     root = logging.getLogger()
     root.setLevel(level)
     for handler in root.handlers[:]:
         root.removeHandler(handler)
-    handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=DEFAULT_LOG_MAX_BYTES,
+        backupCount=DEFAULT_LOG_BACKUP_COUNT,
+        encoding="utf-8",
+    )
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(
         logging.Formatter(

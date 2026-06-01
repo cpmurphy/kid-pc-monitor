@@ -93,8 +93,10 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 ## State & Logging Paths
 
 - Agent: `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` and `pc_control_state.json` (Windows).
+- Agent log rotation: size-based via `RotatingFileHandler` (200 KiB active file, 4 backups → `pc_control.log.1` …).
 - Web panel auth: `%LOCALAPPDATA%\kid-pc-monitor\web_panel_auth.json` (Windows) or `~/.config/kid-pc-monitor/web_panel_auth.json` (Linux/macOS).
 - Log level: `KID_PC_MONITOR_LOG_LEVEL` env var (default `INFO`).
+- `get_logs` returns only the active `pc_control.log` tail; older lines may be in rotated `.N` siblings on disk.
 
 ## Daily Settings
 

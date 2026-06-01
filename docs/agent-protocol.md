@@ -173,7 +173,9 @@ logs {
 ```
 
 `truncated` is true when older lines were omitted (file longer than `tail`, or
-the frame size cap required dropping lines). Payloads are not encrypted; logs
+the frame size cap required dropping lines). Only the active `pc_control.log` is
+read; the agent rotates oversized logs to `pc_control.log.1`, `.2`, etc. on disk
+(those backups are not included in `get_logs`). Payloads are not encrypted; logs
 may contain usernames and paths — same LAN + shared-secret threat model as v2.
 
 ## On the Wire
