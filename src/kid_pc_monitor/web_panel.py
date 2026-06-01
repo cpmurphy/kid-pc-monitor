@@ -33,6 +33,8 @@ from kid_pc_monitor.paths import (
 )
 from kid_pc_monitor.remote_client import (
     AgentLogsUnavailable,
+    connection_failure_fields,
+    format_agent_connection_error,
     format_minutes_duration,
     format_seconds_duration,
     get_agent_logs,
@@ -259,8 +261,8 @@ def create_app() -> Flask:
                 try:
                     info = inspect_pc(ip)
                     entry.update(info)
-                except ConnectionError:
-                    entry["reachable"] = True
+                except ConnectionError as exc:
+                    entry.update(connection_failure_fields(exc))
             session["discovered_pcs"] = discovered
             session["last_scan"] = datetime.now()
             session["last_scan_network"] = label
@@ -282,16 +284,16 @@ def create_app() -> Flask:
                     pc_info = inspect_pc(ip)
                     pcs[ip].update(pc_info)
                     session["discovered_pcs"] = pcs
-                except ConnectionError:
+                except ConnectionError as exc:
                     pc_info = pcs[ip]
-                    pc_info["reachable"] = False
+                    pc_info.update(connection_failure_fields(exc))
         else:
             try:
                 pc_info = inspect_pc(ip)
-            except ConnectionError:
+            except ConnectionError as exc:
                 pc_info = {
                     "hostname": f"PC at {ip}",
-                    "reachable": False,
+                    **connection_failure_fields(exc),
                 }
         return render_template("control.html", ip=ip, pc_info=pc_info)
 
@@ -314,7 +316,7 @@ def create_app() -> Flask:
         except AgentLogsUnavailable as exc:
             error_message = str(exc)
         except ConnectionError as exc:
-            error_message = str(exc)
+            error_message = format_agent_connection_error(exc)
         return render_template(
             "logs.html",
             ip=ip,
@@ -329,8 +331,8 @@ def create_app() -> Flask:
     def daily_settings(ip: str):
         try:
             pc_info = inspect_pc(ip)
-        except ConnectionError:
-            flash("Could not reach that PC.", "error")
+        except ConnectionError as exc:
+            flash(format_agent_connection_error(exc), "error")
             return redirect(url_for("index"))
         return render_template("daily_settings.html", ip=ip, pc_info=pc_info)
 

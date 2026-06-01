@@ -263,6 +263,47 @@ def get_agent_logs(
     return resp.logs
 
 
+def format_agent_connection_error(exc: BaseException) -> str:
+    """Turn low-level agent/client errors into parent-friendly text."""
+    text = str(exc).strip()
+    lower = text.lower()
+
+    if "timestamp outside allowed window" in lower or "stale_timestamp" in lower:
+        return (
+            "This PC's clock is out of sync (common after sleep or pausing a VM). "
+            "Correct the date and time on that computer, then scan again."
+        )
+
+    if "no shared secret is configured" in lower:
+        return (
+            "No shared secret is configured on this computer. "
+            "Re-run the installer on the kid PC and web panel host."
+        )
+
+    if "authentication_failed" in lower or "signature did not verify" in lower:
+        return (
+            "Authentication failed — the shared secret on this panel may not match "
+            "the kid PC. Re-run the installers with the same secret."
+        )
+
+    marker = ": "
+    idx = text.rfind(marker)
+    if idx != -1 and "cannot reach agent at" in lower:
+        detail = text[idx + len(marker) :].strip()
+        if detail and detail.lower() != lower:
+            return format_agent_connection_error(ConnectionError(detail))
+
+    return text or "Could not communicate with the agent."
+
+
+def connection_failure_fields(exc: BaseException) -> dict[str, Any]:
+    """Session/template fields when inspect or control actions cannot reach an agent."""
+    return {
+        "reachable": False,
+        "connection_error": format_agent_connection_error(exc),
+    }
+
+
 def request_text(
     host: str,
     action: str,
@@ -277,7 +318,7 @@ def request_text(
     try:
         resp = send_request(host, action, var=var, val=val, port=port, verbose=verbose, out=out)
     except (OSError, proto.ProtocolError, SharedSecretMissing) as exc:
-        return False, str(exc)
+        return False, format_agent_connection_error(exc)
     return resp.ok, resp.text
 
 

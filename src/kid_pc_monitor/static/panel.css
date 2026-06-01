@@ -292,6 +292,11 @@ h1 {
     color: #155724;
 }
 
+.flash-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
 /* ============================================================
    Home page (PC scan)
    ============================================================ */
@@ -405,6 +410,7 @@ h1 {
 .status.online  { background-color: #4CAF50; color: white; }
 .status.locked  { background-color: #ff9800; color: white; }
 .status.offline { background-color: #9e9e9e; color: white; }
+.status.warning { background-color: #ff9800; color: white; }
 
 .last-scan {
     text-align: center;

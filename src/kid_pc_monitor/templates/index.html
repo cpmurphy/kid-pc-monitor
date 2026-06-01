@@ -21,6 +21,8 @@
             {% for category, message in messages %}
               {% if category == 'success' %}
               <p class="flash flash-success">{{ message }}</p>
+              {% elif category == 'error' %}
+              <p class="flash flash-error">{{ message }}</p>
               {% endif %}
             {% endfor %}
           {% endif %}
@@ -69,7 +71,9 @@
                 {% if info.get('current_user') %}
                 <div class="pc-ip">👤 User: {{ info.current_user }}</div>
                 {% endif %}
-                {% if not info.get('reachable', true) %}
+                {% if info.get('connection_error') %}
+                <span class="status warning">⚠ CAN'T CONTROL</span>
+                {% elif not info.get('reachable', true) %}
                 <span class="status offline">○ OFFLINE</span>
                 {% elif info.locked %}
                 <span class="status locked">🔒 LOCKED</span>
