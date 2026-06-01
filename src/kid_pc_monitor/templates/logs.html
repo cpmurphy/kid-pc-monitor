@@ -31,7 +31,71 @@
         {% if truncated %}
         <p class="note">Showing the most recent lines that fit in one request. Older log lines are omitted.</p>
         {% endif %}
-        <pre class="agent-log-view" id="agent-log">{{ log_text }}</pre>
+        <div class="log-toolbar">
+            <button type="button" class="link-btn log-nav-btn" id="log-top">Top</button>
+            <button type="button" class="link-btn log-nav-btn" id="log-bottom">Bottom</button>
+            <button type="button" class="link-btn log-nav-btn" id="log-refresh">Refresh</button>
+        </div>
+        <pre class="agent-log-view" id="agent-log" tabindex="0">{{ log_text }}</pre>
         {% endif %}
     </div>
+{% endblock %}
+
+{% block scripts %}
+{% if not error_message %}
+<script>
+(function () {
+    const STICK_KEY = "kid-pc-monitor-agent-log-stick-bottom";
+    const NEAR_BOTTOM_PX = 40;
+
+    function isNearBottom(el) {
+        return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX;
+    }
+
+    function scrollToTop(el) {
+        el.scrollTop = 0;
+    }
+
+    function scrollToBottom(el) {
+        el.scrollTop = el.scrollHeight;
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const el = document.getElementById("agent-log");
+        if (!el) {
+            return;
+        }
+
+        const stick = sessionStorage.getItem(STICK_KEY);
+        sessionStorage.removeItem(STICK_KEY);
+        if (stick === null || stick === "1") {
+            scrollToBottom(el);
+        }
+
+        document.getElementById("log-top")?.addEventListener("click", function () {
+            scrollToTop(el);
+            el.focus();
+        });
+        document.getElementById("log-bottom")?.addEventListener("click", function () {
+            scrollToBottom(el);
+            el.focus();
+        });
+        document.getElementById("log-refresh")?.addEventListener("click", function () {
+            sessionStorage.setItem(STICK_KEY, isNearBottom(el) ? "1" : "0");
+            location.reload();
+        });
+
+        el.addEventListener("keydown", function (e) {
+            if (e.key === "Home") {
+                e.preventDefault();
+                scrollToTop(el);
+            } else if (e.key === "End") {
+                e.preventDefault();
+                scrollToBottom(el);
+            }
+        });
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

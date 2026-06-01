@@ -254,8 +254,22 @@ h1 {
     font-size: 14px;
 }
 
-.page-logs .agent-log-view {
+.page-logs .log-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin-top: 16px;
+}
+
+.page-logs .log-nav-btn {
+    margin: 0;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.page-logs .agent-log-view {
+    margin-top: 10px;
     padding: 12px 14px;
     max-height: 75vh;
     overflow: auto;
