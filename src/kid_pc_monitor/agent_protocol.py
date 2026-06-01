@@ -1,4 +1,4 @@
-"""Structured request/response protocol for kid PC agents (v3/v4).
+"""Structured request/response protocol for kid PC agents (v3).
 
 The wire format is a length-prefixed body written in a small subset of
 `KDL <https://kdl.dev/spec>`_.  Each line is a node: a bare identifier name
@@ -24,14 +24,9 @@ from typing import Any
 
 from kid_pc_monitor import agent_auth
 
-# v4 is a strict superset of v3; clients default to v3 for backward compatibility.
-SUPPORTED_VERSIONS = frozenset({3, 4})
+SUPPORTED_VERSIONS = frozenset({3})
 CLIENT_DEFAULT_VERSION = 3
-PROTOCOL_VERSION = 4  # newest version this codebase implements
-
-V4_ONLY_ACTIONS: dict[str, str] = {
-    "get_logs": "read the agent log file (tail=N lines, default 500, max 5000)",
-}
+PROTOCOL_VERSION = 3
 
 DEFAULT_LOG_TAIL_LINES = 500
 MAX_LOG_TAIL_LINES = 5000
@@ -67,6 +62,7 @@ ACTIONS: dict[str, str] = {
     "message": "show a popup message on the PC (val=text)",
     "shutdown": "shut down the PC after a warning (val=seconds, default 60)",
     "list_capabilities": "describe supported actions and variables",
+    "get_logs": "read the agent log file (tail=N lines, default 500, max 5000)",
 }
 
 # Write/destructive actions must carry a ``name`` that matches the agent's
@@ -465,11 +461,8 @@ def verify_frame(
 # ===========================================================================
 # Requests
 # ===========================================================================
-def _actions_for_version(version: int) -> dict[str, str]:
-    actions = dict(ACTIONS)
-    if version >= 4:
-        actions.update(V4_ONLY_ACTIONS)
-    return actions
+def _actions_for_version(_version: int) -> dict[str, str]:
+    return dict(ACTIONS)
 
 
 def _peek_version(body: str) -> int:
@@ -517,13 +510,11 @@ def build_request(
     and optional for read-only ones.  Because ``name`` is part of the signed
     canonical string, the receiving agent can trust and enforce it.
 
-    Clients should pass ``version=3`` for existing actions and ``version=4`` for
-    v4-only features such as ``get_logs``.
+    All clients should use protocol version 3. New actions are attempted at v3;
+    agents that do not implement them respond with ``unknown_action``.
     """
     if version not in SUPPORTED_VERSIONS:
         raise ValueError(f"unsupported protocol version: {version}")
-    if action in V4_ONLY_ACTIONS and version < 4:
-        raise ValueError(f"{action} requires protocol version 4")
     nodes = [Node("v", [version])]
     if req_id is not None:
         nodes.append(Node("id", [req_id]))
@@ -1005,7 +996,7 @@ def _read_log_tail(path: Path, *, tail: int) -> tuple[list[str], bool]:
 
 
 def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
-    """Estimate UTF-8 size of a signed v4 response carrying these log lines."""
+    """Estimate UTF-8 size of a signed v3 response carrying these log lines."""
     lines_node = Node("lines", args=lines)
     block = Node(
         "logs",
@@ -1019,7 +1010,7 @@ def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
     return len(
         serialize(
             [
-                Node("v", [4]),
+                Node("v", [3]),
                 Node("name", ["hostname"]),
                 Node("timestamp", [0]),
                 Node("nonce", ["a" * 32]),

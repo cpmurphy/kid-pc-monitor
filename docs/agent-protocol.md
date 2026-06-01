@@ -69,7 +69,8 @@ One of
 - `shutdown` with an optional `val` giving the warning period in seconds
   (defaults to 60)
 - `list_capabilities`
-- `get_logs` (protocol **v4** only) with optional `tail` (last N lines, default 500, max 5000)
+- `get_logs` with optional `tail` (last N lines, default 500, max 5000); older agents
+  that do not implement this action respond with `unknown_action`
 
 Note there is deliberately no "reset" action: `accumulated_seconds` and
 `cumulative_extension` accumulate until the daily `wake_time` rollover and are
@@ -129,27 +130,25 @@ values {
 }
 ```
 
-## Protocol versions 3 and 4
+## Protocol version 3
 
-**v3** is the current baseline: all actions listed above except `get_logs`,
-with v2 mutual authentication on every frame.
+**v3** is the current wire version. It includes v2 mutual authentication on
+every frame and all actions listed above.
 
-**v4** is a **strict superset** of v3. An agent that speaks v4 accepts every
-v3-valid request at `v 4` with the same semantics, and adds v4-only actions
-(starting with `get_logs`). A request at `v 3` with a v4-only action receives
-`unknown_action`.
-
-This follows Postel's law:
+New capabilities are added as optional actions at **`v 3`** rather than by
+bumping the protocol version. Clients send `v 3` for every request. If an agent
+does not implement an action, it responds with `unknown_action` (same as any
+unrecognized action). Clients treat that as “feature not available on this
+agent” and may prompt the user to upgrade the agent software.
 
 | Role | Behavior |
 |------|----------|
-| **Agent** | Accept `v 3` and `v 4`. Echo the request's `v` on the response. |
-| **Client** | Send **`v 3`** for existing actions (compatible with v3-only agents). Send **`v 4`** only when using a v4-only feature such as `get_logs`. |
+| **Agent** | Accept **`v 3`** only. Echo the request's `v` on the response. |
+| **Client** | Always send **`v 3`**. Probe new features by action name; handle `unknown_action` as unsupported. |
 
-v3-only agents reject `v 4` frames with `unsupported_version`. Upgraded agents
-still serve `v 3` clients unchanged.
+Frames with any other `v` value receive `unsupported_version`.
 
-### `get_logs` (v4)
+### `get_logs`
 
 Read-only (optional `name`, same discovery rules as `get`). Parameters:
 
@@ -160,7 +159,7 @@ Read-only (optional `name`, same discovery rules as `get`). Parameters:
 Successful response includes a `logs` block:
 
 ```
-v 4
+v 3
 ...
 status ok
 logs {

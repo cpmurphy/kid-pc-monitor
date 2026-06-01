@@ -160,7 +160,7 @@ def _discover_name(
 
 
 class AgentLogsUnavailable(ConnectionError):
-    """The agent does not support log retrieval (protocol v4 required)."""
+    """The agent does not support log retrieval (unknown action)."""
 
 
 def send_request(
@@ -228,7 +228,7 @@ def get_agent_logs(
     verbose: bool = False,
     out: Any = sys.stdout,
 ) -> proto.LogsResult:
-    """Fetch the tail of the agent log file (requires protocol v4 on the agent)."""
+    """Fetch the tail of the agent log file (requires a current agent with ``get_logs``)."""
     try:
         resp = send_request(
             host,
@@ -236,13 +236,12 @@ def get_agent_logs(
             port=port,
             timeout=timeout,
             name=name,
-            version=4,
             tail=tail,
             verbose=verbose,
             out=out,
         )
     except proto.ProtocolError as exc:
-        if exc.code == proto.UNSUPPORTED_VERSION:
+        if exc.code == proto.UNKNOWN_ACTION:
             raise AgentLogsUnavailable(
                 "This PC's agent does not support log retrieval yet. "
                 "Update the Kid PC Monitor agent on that computer."
@@ -250,7 +249,7 @@ def get_agent_logs(
         raise ConnectionError(str(exc)) from exc
 
     if not resp.ok:
-        if resp.error_code == proto.UNSUPPORTED_VERSION:
+        if resp.error_code == proto.UNKNOWN_ACTION:
             raise AgentLogsUnavailable(
                 "This PC's agent does not support log retrieval yet. "
                 "Update the Kid PC Monitor agent on that computer."

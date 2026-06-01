@@ -261,7 +261,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_logs = sub.add_parser(
         "logs",
-        help="Show the agent log file from a kid PC (requires agent protocol v4)",
+        help="Show the agent log file from a kid PC (requires a current agent)",
     )
     _add_host_port(p_logs)
     p_logs.add_argument(

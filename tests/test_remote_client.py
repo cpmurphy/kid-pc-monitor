@@ -6,11 +6,14 @@ import io
 import socket
 import threading
 import unittest
+from unittest import mock
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
+    AgentLogsUnavailable,
     _legacy_access_status,
     _print_frame,
+    get_agent_logs,
     is_pc_reachable,
     parse_scan_subnet,
     refresh_discovered_entry,
@@ -278,6 +281,29 @@ class VerboseOutputTests(unittest.TestCase):
 
         self.assertTrue(resp.ok)
         self.assertEqual(out.getvalue(), "")
+
+
+class GetAgentLogsTests(unittest.TestCase):
+    def test_unknown_action_raises_agent_logs_unavailable(self) -> None:
+        failure = proto.Response(
+            version=3,
+            id="r1",
+            status="failure",
+            error_code=proto.UNKNOWN_ACTION,
+            error_message="unknown action",
+        )
+        with mock.patch("kid_pc_monitor.remote_client.send_request", return_value=failure):
+            with self.assertRaises(AgentLogsUnavailable) as ctx:
+                get_agent_logs("192.168.1.10")
+        self.assertIn("does not support log retrieval", str(ctx.exception))
+
+    def test_protocol_error_unknown_action_raises_agent_logs_unavailable(self) -> None:
+        with mock.patch(
+            "kid_pc_monitor.remote_client.send_request",
+            side_effect=proto.ProtocolError(proto.UNKNOWN_ACTION, "unknown action"),
+        ):
+            with self.assertRaises(AgentLogsUnavailable):
+                get_agent_logs("192.168.1.10")
 
 
 if __name__ == "__main__":
