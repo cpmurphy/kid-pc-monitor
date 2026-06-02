@@ -15,7 +15,7 @@ from unittest import mock
 from kid_pc_monitor import agent_auth
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import Node, ProtocolError
-from kid_pc_monitor.pc_control import PCTimeControl, RemoteControlServer
+from kid_pc_monitor.pc_control import PCTimeControl, RemoteControlServer, handle_request
 from test_pc_control import FakeHostPlatform
 
 SECRET = "test-shared-secret"
@@ -326,7 +326,7 @@ class DispatchTests(unittest.TestCase):
         body = proto.build_request(
             secret=SECRET, req_id="r1", name=target, version=version, **req_kwargs
         )
-        resp_body = proto.handle_request(control, body, secret=SECRET)
+        resp_body = handle_request(control, body, secret=SECRET)
         return proto.parse_response(
             resp_body,
             secret=SECRET,
@@ -615,7 +615,7 @@ class DispatchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             control = self._control(tmp, hostname="kid-pc")
             body = "this is not valid"
-            resp_body = proto.handle_request(control, body, secret=SECRET)
+            resp_body = handle_request(control, body, secret=SECRET)
             resp = proto.parse_response(resp_body, secret=SECRET, expected_name="kid-pc")
             self.assertFalse(resp.ok)
             self.assertEqual(resp.error_code, proto.INVALID_REQUEST)
@@ -627,7 +627,7 @@ class DispatchTests(unittest.TestCase):
                 "set", secret=SECRET, var="daily_limit", val=120, name="kid-pc"
             )
             tampered = body.replace("val 120", "val 999")
-            resp_body = proto.handle_request(control, tampered, secret=SECRET)
+            resp_body = handle_request(control, tampered, secret=SECRET)
             resp = proto.parse_response(resp_body, secret=SECRET, expected_name="kid-pc")
             self.assertFalse(resp.ok)
             self.assertEqual(resp.error_code, proto.AUTHENTICATION_FAILED)
