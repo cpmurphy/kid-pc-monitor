@@ -218,6 +218,48 @@ class PCTimeControl:
         except Exception as e:
             self.logger.error("Error saving state: %s", e, exc_info=True)
 
+    def read_log_tail(self, *, tail: int) -> tuple[list[str], bool]:
+        """Return up to ``tail`` lines from the end of the agent log and whether more exist."""
+        path = self.agent_log_path
+        if not path.is_file():
+            return [], False
+        with path.open("rb") as handle:
+            handle.seek(0, 2)
+            file_end = handle.tell()
+            if file_end == 0:
+                return [], False
+
+            block = 8192
+            remaining = file_end
+            fragment = b""
+            raw_lines: list[bytes] = []
+
+            while remaining > 0 and len(raw_lines) <= tail:
+                read_size = min(block, remaining)
+                remaining -= read_size
+                handle.seek(remaining)
+                chunk = handle.read(read_size)
+                fragment = chunk + fragment
+                parts = fragment.split(b"\n")
+                if remaining > 0:
+                    fragment = parts[0]
+                    parts = parts[1:]
+                else:
+                    fragment = b""
+                for part in reversed(parts):
+                    if part or raw_lines:
+                        raw_lines.append(part)
+                    if len(raw_lines) > tail:
+                        break
+
+            truncated = remaining > 0 or len(raw_lines) > tail
+            if len(raw_lines) > tail:
+                raw_lines = raw_lines[:tail]
+            raw_lines.reverse()
+            lines = [line.decode("utf-8", errors="replace") for line in raw_lines]
+
+        return lines, truncated
+
     def _effective_usage_allowance_minutes(self) -> float | None:
         return effective_daily_allowance_minutes(self.daily, self.runtime)
 

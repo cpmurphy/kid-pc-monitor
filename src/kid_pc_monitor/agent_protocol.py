@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 from kid_pc_monitor import agent_auth
@@ -980,51 +979,6 @@ def _do_shutdown(control: Any, req: Request) -> list[Node]:
     return ok_content(seconds)
 
 
-def _read_log_tail(path: Path, *, tail: int) -> tuple[list[str], bool]:
-    """Return up to ``tail`` lines from the end of ``path`` and whether more exist."""
-    if not path.is_file():
-        return [], False
-    try:
-        with path.open("rb") as handle:
-            handle.seek(0, 2)
-            file_end = handle.tell()
-            if file_end == 0:
-                return [], False
-
-            block = 8192
-            remaining = file_end
-            fragment = b""
-            raw_lines: list[bytes] = []
-
-            while remaining > 0 and len(raw_lines) <= tail:
-                read_size = min(block, remaining)
-                remaining -= read_size
-                handle.seek(remaining)
-                chunk = handle.read(read_size)
-                fragment = chunk + fragment
-                parts = fragment.split(b"\n")
-                if remaining > 0:
-                    fragment = parts[0]
-                    parts = parts[1:]
-                else:
-                    fragment = b""
-                for part in reversed(parts):
-                    if part or raw_lines:
-                        raw_lines.append(part)
-                    if len(raw_lines) > tail:
-                        break
-
-            truncated = remaining > 0 or len(raw_lines) > tail
-            if len(raw_lines) > tail:
-                raw_lines = raw_lines[:tail]
-            raw_lines.reverse()
-            lines = [line.decode("utf-8", errors="replace") for line in raw_lines]
-    except OSError as exc:
-        raise ProtocolError(FORBIDDEN, f"cannot read log file: {exc}", None) from exc
-
-    return lines, truncated
-
-
 def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
     """Estimate UTF-8 size of a signed v3 response carrying these log lines."""
     lines_node = Node("lines", args=lines)
@@ -1062,9 +1016,11 @@ def _fit_log_lines_to_frame(path: str, lines: list[str], truncated: bool) -> tup
 
 def _do_get_logs(control: Any, req: Request) -> list[Node]:
     tail = req.tail if req.tail is not None else DEFAULT_LOG_TAIL_LINES
-    log_path = Path(control.agent_log_path)
-    lines, truncated = _read_log_tail(log_path, tail=tail)
-    path_str = str(log_path)
+    try:
+        lines, truncated = control.read_log_tail(tail=tail)
+    except OSError as exc:
+        raise ProtocolError(FORBIDDEN, f"cannot read log file: {exc}", req.id) from exc
+    path_str = str(control.agent_log_path)
     lines, truncated = _fit_log_lines_to_frame(path_str, lines, truncated)
     lines_node = Node("lines", args=lines)
     block = Node(
