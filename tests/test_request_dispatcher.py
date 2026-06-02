@@ -12,8 +12,9 @@ from unittest import mock
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import ProtocolError
-from kid_pc_monitor.pc_control import PCTimeControl, handle_request
-from test_pc_control import FakeHostPlatform
+from kid_pc_monitor.pc_control import handle_request
+from kid_pc_monitor.pc_time_control import PCTimeControl
+from test_pc_time_control import FakeHostPlatform
 
 SECRET = "test-shared-secret"
 HOSTNAME = "kid-pc"
@@ -87,7 +88,7 @@ class DispatchTests(unittest.TestCase):
             control = self._control(tmp, hostname="kid-pc")
             control.set_bed_time(21, 0)
             control.runtime.manual_lock_active = True
-            with mock.patch("kid_pc_monitor.pc_control.datetime") as mock_dt:
+            with mock.patch("kid_pc_monitor.pc_time_control.datetime") as mock_dt:
                 mock_dt.now.return_value = fixed
                 resp = self._handle(control, action="get", var="settings")
             settings = resp.settings

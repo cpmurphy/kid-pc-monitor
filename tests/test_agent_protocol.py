@@ -11,8 +11,9 @@ from pathlib import Path
 from kid_pc_monitor import agent_auth
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import Node, ProtocolError
-from kid_pc_monitor.pc_control import PCTimeControl, RemoteControlServer
-from test_pc_control import FakeHostPlatform
+from kid_pc_monitor.pc_control import RemoteControlServer
+from kid_pc_monitor.pc_time_control import PCTimeControl
+from test_pc_time_control import FakeHostPlatform
 
 SECRET = "test-shared-secret"
 HOSTNAME = "kid-pc"

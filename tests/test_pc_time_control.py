@@ -11,7 +11,7 @@ from pathlib import Path
 from unittest import mock
 
 from kid_pc_monitor.host_platform import HostPlatform
-from kid_pc_monitor.pc_control import PCTimeControl
+from kid_pc_monitor.pc_time_control import PCTimeControl
 
 
 class FakeHostPlatform(HostPlatform):
