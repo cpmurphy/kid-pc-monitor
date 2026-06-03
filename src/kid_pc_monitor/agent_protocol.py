@@ -832,8 +832,3 @@ def parse_response(
         timestamp=by_name["timestamp"].arg if "timestamp" in by_name else None,
         nonce=by_name["nonce"].arg if "nonce" in by_name else None,
     )
-
-
-from kid_pc_monitor import request_dispatcher as _request_dispatcher  # noqa: E402
-
-dispatch = _request_dispatcher.dispatch
