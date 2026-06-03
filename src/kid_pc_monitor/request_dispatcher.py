@@ -230,7 +230,7 @@ def dispatch(control: Any, req: Request) -> list[Node]:
     """Execute a validated request against ``control`` and return content nodes.
 
     The returned nodes are the response body's ``status`` plus payload; the
-    signed v2 envelope is added by :func:`kid_pc_monitor.pc_control.handle_request`.
+    signed v2 envelope is added by :func:`kid_pc_monitor.remote_control_server.handle_request`.
     """
     if req.action == "list_capabilities":
         return capabilities_content(req.version)

@@ -9,13 +9,14 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from kid_pc_monitor import agent_protocol, shared_secret
+from kid_pc_monitor import agent_protocol, request_dispatcher, shared_secret
+from kid_pc_monitor.agent_diagnostics import AGENT_LISTEN_PORT, log_connectivity_diagnostics
 from kid_pc_monitor.network import get_primary_ipv4
 
 if TYPE_CHECKING:
     from kid_pc_monitor.pc_time_control import PCTimeControl
 
-DEFAULT_AGENT_PORT = 9999
+DEFAULT_AGENT_PORT = AGENT_LISTEN_PORT
 
 
 class RemoteControlServer:
@@ -84,9 +85,7 @@ class RemoteControlServer:
             )
             self.last_primary_ip = current_ip
             if self.pc_control is not None:
-                from kid_pc_monitor.pc_control import log_connectivity_diagnostics
-
-                log_connectivity_diagnostics(self.pc_control.platform)
+                log_connectivity_diagnostics(self.pc_control.platform, agent_port=self.port)
             return True
         return False
 
@@ -179,8 +178,6 @@ class RemoteControlServer:
         self, client_socket: socket.socket, client_address: tuple, client_id: int
     ) -> None:
         """Handle communication with a connected client using protocol v2."""
-        from kid_pc_monitor.pc_control import handle_request
-
         try:
             while self.running:
                 try:
@@ -224,3 +221,38 @@ class RemoteControlServer:
     def __del__(self) -> None:
         """Destructor to ensure proper cleanup."""
         self.stop_server()
+
+
+def handle_request(
+    control: PCTimeControl,
+    body: str,
+    *,
+    secret: str,
+    now: int | None = None,
+) -> str:
+    """Top-level server entry: authenticate, dispatch, and sign, never raising.
+
+    Any :class:`ProtocolError` becomes a signed failure response; unexpected
+    exceptions become a signed ``internal_error`` response.  Every response is
+    signed with this agent's per-host key so the panel can authenticate it.
+    """
+    hostname = control.platform.get_hostname()
+    req_id: str | None = None
+    response_version = agent_protocol.peek_version(body)
+    try:
+        req = agent_protocol.parse_request(body, secret=secret, hostname=hostname, now=now)
+        req_id = req.id
+        response_version = req.version
+        content = request_dispatcher.dispatch(control, req)
+    except agent_protocol.ProtocolError as exc:
+        content = agent_protocol.error_content(exc.code, exc.message)
+        req_id = exc.req_id or req_id
+    except Exception as exc:  # noqa: BLE001 - defensive catch-all per design
+        content = agent_protocol.error_content(agent_protocol.INTERNAL_ERROR, str(exc))
+    return agent_protocol.sign_response(
+        content,
+        secret=secret,
+        hostname=hostname,
+        req_id=req_id,
+        version=response_version,
+    )
