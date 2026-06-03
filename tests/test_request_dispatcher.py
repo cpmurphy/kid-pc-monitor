@@ -8,6 +8,7 @@ from datetime import datetime
 from datetime import time as dtime
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_protocol import Node, ProtocolError, Request
@@ -108,7 +109,7 @@ class DispatchTests(unittest.TestCase):
             control = self._control(tmp, hostname="kid-pc")
             control.set_bed_time(21, 0)
             control.runtime.manual_lock_active = True
-            with unittest.mock.patch("kid_pc_monitor.pc_time_control.datetime") as mock_dt:
+            with mock.patch("kid_pc_monitor.pc_time_control.datetime") as mock_dt:
                 mock_dt.now.return_value = fixed
                 settings = self._dispatch_settings(control, action="get", var="settings")
             self.assertTrue(settings["enforcement_active"])
