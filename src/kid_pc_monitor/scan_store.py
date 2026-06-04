@@ -4,10 +4,17 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from kid_pc_monitor.panel_db import connect
+
+
+def _json_default(value: Any) -> str:
+    """Serialize values json.dumps cannot handle natively (e.g. scan timestamps)."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
 def save_scan(
@@ -39,7 +46,10 @@ def save_scan(
                 INSERT INTO scan_pcs (scan_id, ip, payload_json)
                 VALUES (?, ?, ?)
                 """,
-                [(scan_id, ip, json.dumps({**info, "ip": ip})) for ip, info in pcs.items()],
+                [
+                    (scan_id, ip, json.dumps({**info, "ip": ip}, default=_json_default))
+                    for ip, info in pcs.items()
+                ],
             )
         conn.execute("DELETE FROM scans WHERE id != ?", (scan_id,))
         conn.commit()
