@@ -1,0 +1,248 @@
+"""Tests for web panel snapshot persistence."""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+import tempfile
+import unittest
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from unittest import mock
+
+from kid_pc_monitor import snapshot_store as store
+
+
+def _sample_pc_info(**overrides: object) -> dict:
+    base: dict = {
+        "ip": "192.168.1.10",
+        "port": 9999,
+        "hostname": "KidPC",
+        "status": "UNLOCKED",
+        "locked": False,
+        "current_user": "child",
+        "daily_limit": 120,
+        "usage_limit": 120,
+        "bed_time": "21:00",
+        "wake_time": "07:00",
+        "manual_lock_active": False,
+        "enforcement_active": False,
+        "enforcement_reason": None,
+        "access_status": "Unlocked",
+        "cumulative_extension_seconds": 0,
+        "accumulated_seconds": 1800,
+        "effective_limit_minutes": 120.0,
+        "time_remaining": "90 minutes",
+        "reachable": True,
+    }
+    base.update(overrides)
+    return base
+
+
+class SnapshotStoreTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.db_path = Path(self._tmpdir.name) / "panel_snapshots.db"
+        self._patch = mock.patch.object(store, "_db_path_override", self.db_path)
+        self._patch.start()
+
+    def tearDown(self) -> None:
+        self._patch.stop()
+        self._tmpdir.cleanup()
+
+    def _insert_row(
+        self,
+        *,
+        username: str,
+        hostname: str,
+        ip: str,
+        snapshot_date: str,
+        recorded_at: str,
+        payload: dict,
+    ) -> None:
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO snapshots
+                    (username, hostname, ip, snapshot_date, recorded_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (username, hostname, ip, snapshot_date, recorded_at, json.dumps(payload)),
+            )
+            conn.commit()
+
+    def test_save_skips_unreachable(self) -> None:
+        store.save_snapshot(_sample_pc_info(reachable=False))
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 0)
+
+    def test_save_skips_missing_user(self) -> None:
+        store.save_snapshot(_sample_pc_info(current_user=None))
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 0)
+
+    def test_same_day_replace(self) -> None:
+        store.save_snapshot(_sample_pc_info(accumulated_seconds=100))
+        store.save_snapshot(_sample_pc_info(accumulated_seconds=200))
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            rows = conn.execute("SELECT payload_json FROM snapshots").fetchall()
+        self.assertEqual(len(rows), 1)
+        payload = json.loads(rows[0][0])
+        self.assertEqual(payload["accumulated_seconds"], 200)
+
+    def test_same_user_two_hostnames(self) -> None:
+        store.save_snapshot(_sample_pc_info(hostname="PC-A"))
+        store.save_snapshot(_sample_pc_info(hostname="PC-B"))
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 2)
+
+    def test_same_hostname_two_users(self) -> None:
+        store.save_snapshot(_sample_pc_info(current_user="alice"))
+        store.save_snapshot(_sample_pc_info(current_user="bob"))
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 2)
+
+    def test_get_latest_snapshot_for_pc_by_hostname(self) -> None:
+        today = date.today().isoformat()
+        self._insert_row(
+            username="alice",
+            hostname="KidPC",
+            ip="10.0.0.1",
+            snapshot_date=today,
+            recorded_at="2026-06-01T10:00:00",
+            payload=_sample_pc_info(accumulated_seconds=100),
+        )
+        self._insert_row(
+            username="bob",
+            hostname="KidPC",
+            ip="10.0.0.1",
+            snapshot_date=today,
+            recorded_at="2026-06-01T12:00:00",
+            payload=_sample_pc_info(current_user="bob", accumulated_seconds=999),
+        )
+        result = store.get_latest_snapshot_for_pc(hostname="KidPC")
+        assert result is not None
+        _recorded_at, payload = result
+        self.assertEqual(_recorded_at, "2026-06-01T12:00:00")
+        self.assertEqual(payload["accumulated_seconds"], 999)
+
+    def test_get_latest_snapshot_for_pc_by_ip(self) -> None:
+        today = date.today().isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.55",
+            snapshot_date=today,
+            recorded_at="2026-06-01T09:00:00",
+            payload=_sample_pc_info(ip="192.168.1.55"),
+        )
+        result = store.get_latest_snapshot_for_pc(ip="192.168.1.55")
+        assert result is not None
+        self.assertEqual(result[1]["hostname"], "KidPC")
+
+    def test_get_latest_snapshot_falls_back_to_ip(self) -> None:
+        today = date.today().isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.10",
+            snapshot_date=today,
+            recorded_at="2026-06-01T09:00:00",
+            payload=_sample_pc_info(ip="192.168.1.10"),
+        )
+        result = store.get_latest_snapshot_for_pc(hostname="PC at 192.168.1.10", ip="192.168.1.10")
+        assert result is not None
+        self.assertEqual(result[1]["hostname"], "KidPC")
+
+    def test_usage_history_fills_seven_days(self) -> None:
+        today = date.today()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="10.0.0.1",
+            snapshot_date=today.isoformat(),
+            recorded_at=f"{today.isoformat()}T12:00:00",
+            payload=_sample_pc_info(accumulated_seconds=500),
+        )
+        groups = store.get_usage_history_for_user("child", days=7)
+        self.assertEqual(len(groups), 1)
+        self.assertEqual(groups[0]["hostname"], "KidPC")
+        self.assertEqual(len(groups[0]["days"]), 7)
+        self.assertFalse(groups[0]["days"][-1].get("no_data"))
+        self.assertEqual(groups[0]["days"][-1]["accumulated_seconds"], 500)
+        self.assertTrue(groups[0]["days"][0].get("no_data"))
+
+    def test_usage_history_groups_multiple_pcs(self) -> None:
+        today = date.today().isoformat()
+        self._insert_row(
+            username="child",
+            hostname="PC-A",
+            ip="10.0.0.1",
+            snapshot_date=today,
+            recorded_at=f"{today}T10:00:00",
+            payload=_sample_pc_info(hostname="PC-A"),
+        )
+        self._insert_row(
+            username="child",
+            hostname="PC-B",
+            ip="10.0.0.2",
+            snapshot_date=today,
+            recorded_at=f"{today}T10:00:00",
+            payload=_sample_pc_info(hostname="PC-B"),
+        )
+        groups = store.get_usage_history_for_user("child", days=7)
+        self.assertEqual([g["hostname"] for g in groups], ["PC-A", "PC-B"])
+
+    def test_trim_deletes_old_rows(self) -> None:
+        old_date = (date.today() - timedelta(days=10)).isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="10.0.0.1",
+            snapshot_date=old_date,
+            recorded_at=f"{old_date}T10:00:00",
+            payload=_sample_pc_info(),
+        )
+        store.maybe_trim_old_rows()
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+            last_trim = conn.execute(
+                "SELECT value FROM panel_meta WHERE key = ?", (store.META_LAST_TRIM_AT,)
+            ).fetchone()
+        self.assertEqual(count, 0)
+        self.assertIsNotNone(last_trim)
+
+    def test_trim_skipped_within_interval(self) -> None:
+        old_date = (date.today() - timedelta(days=10)).isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="10.0.0.1",
+            snapshot_date=old_date,
+            recorded_at=f"{old_date}T10:00:00",
+            payload=_sample_pc_info(),
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            store._set_meta(conn, store.META_LAST_TRIM_AT, datetime.now().astimezone().isoformat())
+            conn.commit()
+        store.maybe_trim_old_rows()
+        with sqlite3.connect(self.db_path) as conn:
+            store._ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

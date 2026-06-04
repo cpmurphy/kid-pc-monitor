@@ -26,7 +26,21 @@
         <p class="subtitle">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
         {% endif %}
 
-        {% if pc_info.get('reachable', true) %}
+        {% if pc_info.get('is_snapshot') %}
+        <div class="status-message banner snapshot">
+            📋 Showing recorded snapshot from {{ pc_info.snapshot_recorded_at }} — not live data.
+        </div>
+        {% elif pc_info.get('connection_error') %}
+        <div class="status-message banner warning">
+            ⚠ {{ pc_info.connection_error }}
+        </div>
+        {% elif not pc_info.get('reachable', true) %}
+        <div class="status-message banner info">
+            ○ This computer is offline or unreachable. Scan again after it is powered on.
+        </div>
+        {% endif %}
+
+        {% if pc_info.get('reachable', true) or pc_info.get('is_snapshot') %}
         <div class="action-group">
             <div class="action-title">📊 Today</div>
 
@@ -92,23 +106,23 @@
                 <button class="clear-inline" onclick="clearManualLock()">Clear</button>
             </p>
             {% endif %}
+            {% if pc_info.get('current_user') %}
+            <p>
+            <a href="{{ url_for('usage_history', username=pc_info.current_user) }}">7-day usage history</a>
             {% if pc_info.get('reachable', true) %}
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
+            &nbsp;·&nbsp;
+            <a href="{{ url_for('agent_logs', ip=ip) }}">Agent log</a>
+            {% endif %}
+            </p>
+            {% elif pc_info.get('reachable', true) %}
             <p>
             <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
             &nbsp;·&nbsp;
             <a href="{{ url_for('agent_logs', ip=ip) }}">Agent log</a>
             </p>
             {% endif %}
-        </div>
-        {% endif %}
-
-        {% if pc_info.get('connection_error') %}
-        <div class="status-message banner warning">
-            ⚠ {{ pc_info.connection_error }}
-        </div>
-        {% elif not pc_info.get('reachable', true) %}
-        <div class="status-message banner info">
-            ○ This computer is offline or unreachable. Scan again after it is powered on.
         </div>
         {% endif %}
 

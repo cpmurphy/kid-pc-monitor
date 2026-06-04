@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Usage — {{ username }}{% endblock %}
+{% block body_class %}page-usage{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="nav-row">
+            <a href="/" class="back-btn">← Back to PCs</a>
+        </div>
+
+        <h1>📈 Usage history</h1>
+        <p class="subtitle">👤 {{ username }}</p>
+        <p class="note usage-footnote">
+            Daily totals are from recorded snapshots (last scan of each calendar day).
+            Agent usage resets at wake-up time, not midnight.
+        </p>
+
+        {% if not pc_groups %}
+        <div class="status-message banner info">
+            No usage snapshots recorded for this user in the last 7 days.
+        </div>
+        {% else %}
+            {% for group in pc_groups %}
+            <div class="action-group usage-pc-group">
+                <div class="action-title">💻 {{ group.hostname }}</div>
+                <table class="usage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Used</th>
+                            <th>Allowance</th>
+                            <th>Extra</th>
+                            <th>Remaining</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in group.days %}
+                        <tr>
+                            <td>{{ day.date }}</td>
+                            {% if day.get('no_data') %}
+                            <td colspan="4" class="muted">No data</td>
+                            {% else %}
+                            <td>{{ format_seconds_duration(day.accumulated_seconds) }}</td>
+                            <td>
+                                {% if day.daily_limit is not none %}
+                                    {{ format_minutes_duration(day.daily_limit) }}
+                                {% else %}
+                                    <span class="muted">Not set</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if day.cumulative_extension_seconds > 0 %}
+                                    +{{ format_seconds_duration(day.cumulative_extension_seconds) }}
+                                {% else %}
+                                    <span class="muted">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if day.time_remaining and day.time_remaining != 'No limits set' %}
+                                    {{ day.time_remaining }}
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}

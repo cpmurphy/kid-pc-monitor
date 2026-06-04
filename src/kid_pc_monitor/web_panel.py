@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import secrets
 from collections.abc import Callable
@@ -45,6 +46,13 @@ from kid_pc_monitor.remote_client import (
     refresh_discovered_entry,
     scan_for_servers,
 )
+from kid_pc_monitor.snapshot_store import (
+    get_latest_snapshot_for_pc,
+    get_usage_history_for_user,
+    save_snapshot,
+)
+
+logger = logging.getLogger(__name__)
 
 PANEL_USERNAME = "Kid PC Monitor"
 AUTH_FILE = "web_panel_auth.json"
@@ -147,6 +155,29 @@ def save_password(password: str) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def _record_inspect(pc_info: dict[str, Any]) -> None:
+    try:
+        save_snapshot(pc_info)
+    except Exception:
+        logger.warning("Failed to save inspect snapshot", exc_info=True)
+
+
+def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
+    if pc_info.get("reachable", True) and not pc_info.get("connection_error"):
+        return pc_info
+    snapshot = get_latest_snapshot_for_pc(hostname=pc_info.get("hostname"), ip=ip)
+    if not snapshot:
+        return pc_info
+    recorded_at, payload = snapshot
+    return {
+        **payload,
+        "reachable": False,
+        "is_snapshot": True,
+        "snapshot_recorded_at": recorded_at,
+        "ip": ip,
+    }
 
 
 def create_app() -> Flask:
@@ -261,6 +292,7 @@ def create_app() -> Flask:
                 try:
                     info = inspect_pc(ip)
                     entry.update(info)
+                    _record_inspect(info)
                 except ConnectionError as exc:
                     entry.update(connection_failure_fields(exc))
             session["discovered_pcs"] = discovered
@@ -284,17 +316,20 @@ def create_app() -> Flask:
                     pc_info = inspect_pc(ip)
                     pcs[ip].update(pc_info)
                     session["discovered_pcs"] = pcs
+                    _record_inspect(pc_info)
                 except ConnectionError as exc:
                     pc_info = pcs[ip]
                     pc_info.update(connection_failure_fields(exc))
         else:
             try:
                 pc_info = inspect_pc(ip)
+                _record_inspect(pc_info)
             except ConnectionError as exc:
                 pc_info = {
                     "hostname": f"PC at {ip}",
                     **connection_failure_fields(exc),
                 }
+        pc_info = _apply_pc_snapshot(pc_info, ip)
         return render_template("control.html", ip=ip, pc_info=pc_info)
 
     @app.route("/logs/<ip>")
@@ -331,10 +366,21 @@ def create_app() -> Flask:
     def daily_settings(ip: str):
         try:
             pc_info = inspect_pc(ip)
+            _record_inspect(pc_info)
         except ConnectionError as exc:
             flash(format_agent_connection_error(exc), "error")
             return redirect(url_for("index"))
         return render_template("daily_settings.html", ip=ip, pc_info=pc_info)
+
+    @app.route("/usage/<path:username>")
+    @login_required
+    def usage_history(username: str):
+        pc_groups = get_usage_history_for_user(username, days=7)
+        return render_template(
+            "usage_history.html",
+            username=username,
+            pc_groups=pc_groups,
+        )
 
     @app.route("/action", methods=["POST"])
     @login_required
