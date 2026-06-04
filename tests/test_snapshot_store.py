@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
+from kid_pc_monitor import panel_db
 from kid_pc_monitor import snapshot_store as store
 
 
@@ -42,8 +43,8 @@ def _sample_pc_info(**overrides: object) -> dict:
 class SnapshotStoreTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
-        self.db_path = Path(self._tmpdir.name) / "panel_snapshots.db"
-        self._patch = mock.patch.object(store, "_db_path_override", self.db_path)
+        self.db_path = Path(self._tmpdir.name) / panel_db.DB_FILENAME
+        self._patch = mock.patch.object(panel_db, "_db_path_override", self.db_path)
         self._patch.start()
 
     def tearDown(self) -> None:
@@ -61,7 +62,7 @@ class SnapshotStoreTests(unittest.TestCase):
         payload: dict,
     ) -> None:
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             conn.execute(
                 """
                 INSERT OR REPLACE INTO snapshots
@@ -72,17 +73,17 @@ class SnapshotStoreTests(unittest.TestCase):
             )
             conn.commit()
 
-    def test_save_skips_unreachable(self) -> None:
+    def test_save_snapshot_skips_unreachable(self) -> None:
         store.save_snapshot(_sample_pc_info(reachable=False))
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 0)
 
-    def test_save_skips_missing_user(self) -> None:
+    def test_save_snapshot_skips_missing_user(self) -> None:
         store.save_snapshot(_sample_pc_info(current_user=None))
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 0)
 
@@ -90,7 +91,7 @@ class SnapshotStoreTests(unittest.TestCase):
         store.save_snapshot(_sample_pc_info(accumulated_seconds=100))
         store.save_snapshot(_sample_pc_info(accumulated_seconds=200))
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             rows = conn.execute("SELECT payload_json FROM snapshots").fetchall()
         self.assertEqual(len(rows), 1)
         payload = json.loads(rows[0][0])
@@ -100,7 +101,7 @@ class SnapshotStoreTests(unittest.TestCase):
         store.save_snapshot(_sample_pc_info(hostname="PC-A"))
         store.save_snapshot(_sample_pc_info(hostname="PC-B"))
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 2)
 
@@ -108,7 +109,7 @@ class SnapshotStoreTests(unittest.TestCase):
         store.save_snapshot(_sample_pc_info(current_user="alice"))
         store.save_snapshot(_sample_pc_info(current_user="bob"))
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 2)
 
@@ -164,6 +165,28 @@ class SnapshotStoreTests(unittest.TestCase):
         assert result is not None
         self.assertEqual(result[1]["hostname"], "KidPC")
 
+    def test_get_latest_reachable_snapshot_skips_errors(self) -> None:
+        today = date.today().isoformat()
+        self._insert_row(
+            username="",
+            hostname="KidPC",
+            ip="192.168.1.10",
+            snapshot_date=today,
+            recorded_at="2026-06-01T12:00:00",
+            payload=_sample_pc_info(reachable=False, connection_error="bad clock"),
+        )
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.10",
+            snapshot_date=today,
+            recorded_at="2026-06-01T10:00:00",
+            payload=_sample_pc_info(accumulated_seconds=500),
+        )
+        result = store.get_latest_snapshot_for_pc(ip="192.168.1.10", reachable_only=True)
+        assert result is not None
+        self.assertEqual(result[1]["accumulated_seconds"], 500)
+
     def test_usage_history_fills_seven_days(self) -> None:
         today = date.today()
         self._insert_row(
@@ -215,10 +238,11 @@ class SnapshotStoreTests(unittest.TestCase):
         )
         store.maybe_trim_old_rows()
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
             last_trim = conn.execute(
-                "SELECT value FROM panel_meta WHERE key = ?", (store.META_LAST_TRIM_AT,)
+                "SELECT value FROM panel_meta WHERE key = ?",
+                (store.META_LAST_TRIM_AT,),
             ).fetchone()
         self.assertEqual(count, 0)
         self.assertIsNotNone(last_trim)
@@ -234,12 +258,14 @@ class SnapshotStoreTests(unittest.TestCase):
             payload=_sample_pc_info(),
         )
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
-            store._set_meta(conn, store.META_LAST_TRIM_AT, datetime.now().astimezone().isoformat())
+            panel_db.ensure_schema(conn)
+            panel_db.set_meta(
+                conn, store.META_LAST_TRIM_AT, datetime.now().astimezone().isoformat()
+            )
             conn.commit()
         store.maybe_trim_old_rows()
         with sqlite3.connect(self.db_path) as conn:
-            store._ensure_schema(conn)
+            panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 1)
 

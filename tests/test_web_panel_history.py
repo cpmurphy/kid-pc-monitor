@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import snapshot_store as store
+from kid_pc_monitor import panel_db, snapshot_store
 from kid_pc_monitor import web_panel as wp
 
 
@@ -41,11 +41,11 @@ class WebPanelHistoryTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
         self.auth_path = Path(self._tmpdir.name) / wp.AUTH_FILE
-        self.db_path = Path(self._tmpdir.name) / "panel_snapshots.db"
+        self.db_path = Path(self._tmpdir.name) / panel_db.DB_FILENAME
         self._patches = [
             mock.patch.object(wp, "_auth_path", return_value=self.auth_path),
             mock.patch.object(wp, "_auth_save_path", return_value=self.auth_path),
-            mock.patch.object(store, "_db_path_override", self.db_path),
+            mock.patch.object(panel_db, "_db_path_override", self.db_path),
         ]
         for patch in self._patches:
             patch.start()
@@ -59,10 +59,9 @@ class WebPanelHistoryTests(unittest.TestCase):
         self._tmpdir.cleanup()
 
     def test_control_shows_snapshot_when_offline(self) -> None:
-        store.save_snapshot(_sample_pc_info(ip="192.168.1.10"))
+        snapshot_store.save_snapshot(_sample_pc_info(ip="192.168.1.10"))
         with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
-            with mock.patch.object(wp, "refresh_discovered_entry"):
-                response = self.client.get("/control/192.168.1.10")
+            response = self.client.get("/control/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
@@ -79,11 +78,11 @@ class WebPanelHistoryTests(unittest.TestCase):
                     data={"subnet": "", "csrf_token": self._csrf_from_index()},
                 )
         self.assertEqual(response.status_code, 302)
-        result = store.get_latest_snapshot_for_pc(hostname="KidPC")
+        result = snapshot_store.get_latest_snapshot_for_pc(hostname="KidPC")
         self.assertIsNotNone(result)
 
     def test_usage_page_renders_history(self) -> None:
-        store.save_snapshot(_sample_pc_info(current_user="child"))
+        snapshot_store.save_snapshot(_sample_pc_info(current_user="child"))
         response = self.client.get("/usage/child")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
@@ -92,8 +91,12 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertIn("30 min", html)
 
     def test_usage_page_multi_pc(self) -> None:
-        store.save_snapshot(_sample_pc_info(current_user="child", hostname="PC-A", ip="10.0.0.1"))
-        store.save_snapshot(_sample_pc_info(current_user="child", hostname="PC-B", ip="10.0.0.2"))
+        snapshot_store.save_snapshot(
+            _sample_pc_info(current_user="child", hostname="PC-A", ip="10.0.0.1")
+        )
+        snapshot_store.save_snapshot(
+            _sample_pc_info(current_user="child", hostname="PC-B", ip="10.0.0.2")
+        )
         response = self.client.get("/usage/child")
         html = response.get_data(as_text=True)
         self.assertIn("PC-A", html)

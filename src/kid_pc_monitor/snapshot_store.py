@@ -5,23 +5,13 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
-from kid_pc_monitor.paths import config_dir
+from kid_pc_monitor.panel_db import connect, get_meta, set_meta
 
-DB_FILENAME = "panel_snapshots.db"
 META_LAST_TRIM_AT = "last_trim_at"
 RETENTION_DAYS = 7
 TRIM_INTERVAL_DAYS = 7
-
-_db_path_override: Path | None = None
-
-
-def db_path() -> Path:
-    if _db_path_override is not None:
-        return _db_path_override
-    return config_dir() / DB_FILENAME
 
 
 def _local_today() -> date:
@@ -33,55 +23,16 @@ def _snapshot_date_str(when: datetime | None = None) -> str:
     return dt.date().isoformat()
 
 
-def _connect() -> sqlite3.Connection:
-    path = db_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
-    conn.row_factory = sqlite3.Row
-    _ensure_schema(conn)
-    return conn
-
-
-def _ensure_schema(conn: sqlite3.Connection) -> None:
-    conn.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS snapshots (
-            username TEXT NOT NULL,
-            hostname TEXT NOT NULL,
-            ip TEXT NOT NULL,
-            snapshot_date TEXT NOT NULL,
-            recorded_at TEXT NOT NULL,
-            payload_json TEXT NOT NULL,
-            PRIMARY KEY (username, hostname, snapshot_date)
-        );
-        CREATE INDEX IF NOT EXISTS idx_snapshots_hostname ON snapshots(hostname);
-        CREATE INDEX IF NOT EXISTS idx_snapshots_username ON snapshots(username);
-
-        CREATE TABLE IF NOT EXISTS panel_meta (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        );
-        """
-    )
-
-
-def _get_meta(conn: sqlite3.Connection, key: str) -> str | None:
-    row = conn.execute("SELECT value FROM panel_meta WHERE key = ?", (key,)).fetchone()
-    return row["value"] if row else None
-
-
-def _set_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
-    conn.execute(
-        "INSERT OR REPLACE INTO panel_meta (key, value) VALUES (?, ?)",
-        (key, value),
-    )
+def _snapshot_username(pc_info: dict[str, Any]) -> str:
+    user = pc_info.get("current_user")
+    return user if isinstance(user, str) and user else ""
 
 
 def save_snapshot(pc_info: dict[str, Any]) -> None:
     """Persist a successful inspect result (latest per user+PC per calendar day)."""
     if not pc_info.get("reachable"):
         return
-    username = pc_info.get("current_user")
+    username = _snapshot_username(pc_info)
     hostname = pc_info.get("hostname")
     if not username or not hostname:
         return
@@ -92,7 +43,7 @@ def save_snapshot(pc_info: dict[str, Any]) -> None:
     recorded_at = now.isoformat(timespec="seconds")
     payload_json = json.dumps(pc_info)
 
-    with _connect() as conn:
+    with connect() as conn:
         conn.execute(
             """
             INSERT OR REPLACE INTO snapshots
@@ -109,33 +60,38 @@ def get_latest_snapshot_for_pc(
     *,
     hostname: str | None = None,
     ip: str | None = None,
+    reachable_only: bool = False,
 ) -> tuple[str, dict[str, Any]] | None:
     """Return the most recent snapshot for a PC (any logged-in user)."""
     if hostname:
-        result = _query_latest_snapshot("hostname = ?", hostname)
+        result = _query_latest_snapshot("hostname = ?", hostname, reachable_only=reachable_only)
         if result is not None:
             return result
     if ip:
-        return _query_latest_snapshot("ip = ?", ip)
+        return _query_latest_snapshot("ip = ?", ip, reachable_only=reachable_only)
     return None
 
 
-def _query_latest_snapshot(clause: str, param: str) -> tuple[str, dict[str, Any]] | None:
-    with _connect() as conn:
-        row = conn.execute(
+def _query_latest_snapshot(
+    clause: str, param: str, *, reachable_only: bool = False
+) -> tuple[str, dict[str, Any]] | None:
+    with connect() as conn:
+        rows = conn.execute(
             f"""
             SELECT recorded_at, payload_json
             FROM snapshots
             WHERE {clause}
             ORDER BY recorded_at DESC
-            LIMIT 1
             """,
             (param,),
-        ).fetchone()
+        ).fetchall()
 
-    if not row:
-        return None
-    return row["recorded_at"], json.loads(row["payload_json"])
+    for row in rows:
+        payload = json.loads(row["payload_json"])
+        if reachable_only and not payload.get("reachable"):
+            continue
+        return row["recorded_at"], payload
+    return None
 
 
 def _day_entry_from_payload(snapshot_date: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -160,7 +116,7 @@ def get_usage_history_for_user(username: str, *, days: int = 7) -> list[dict[str
     start_str = start.isoformat()
     end_str = today.isoformat()
 
-    with _connect() as conn:
+    with connect() as conn:
         rows = conn.execute(
             """
             SELECT hostname, snapshot_date, recorded_at, payload_json
@@ -198,10 +154,10 @@ def maybe_trim_old_rows(*, conn: sqlite3.Connection | None = None) -> None:
     now = datetime.now().astimezone()
     own_conn = conn is None
     if own_conn:
-        conn = _connect()
+        conn = connect()
 
     assert conn is not None
-    last_trim_raw = _get_meta(conn, META_LAST_TRIM_AT)
+    last_trim_raw = get_meta(conn, META_LAST_TRIM_AT)
     if last_trim_raw:
         last_trim = datetime.fromisoformat(last_trim_raw)
         if last_trim.tzinfo is None:
@@ -213,7 +169,7 @@ def maybe_trim_old_rows(*, conn: sqlite3.Connection | None = None) -> None:
 
     cutoff = (_local_today() - timedelta(days=RETENTION_DAYS)).isoformat()
     conn.execute("DELETE FROM snapshots WHERE snapshot_date < ?", (cutoff,))
-    _set_meta(conn, META_LAST_TRIM_AT, now.isoformat(timespec="seconds"))
+    set_meta(conn, META_LAST_TRIM_AT, now.isoformat(timespec="seconds"))
     conn.commit()
     if own_conn:
         conn.close()

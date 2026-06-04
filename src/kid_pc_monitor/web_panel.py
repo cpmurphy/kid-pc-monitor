@@ -43,8 +43,14 @@ from kid_pc_monitor.remote_client import (
     inspect_pc,
     parse_scan_subnet,
     perform_action,
-    refresh_discovered_entry,
     scan_for_servers,
+)
+from kid_pc_monitor.scan_store import (
+    get_discovered_pcs,
+    get_scan_pc,
+    load_scan_metadata,
+    save_scan,
+    save_scan_error,
 )
 from kid_pc_monitor.snapshot_store import (
     get_latest_snapshot_for_pc,
@@ -167,7 +173,9 @@ def _record_inspect(pc_info: dict[str, Any]) -> None:
 def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
     if pc_info.get("reachable", True) and not pc_info.get("connection_error"):
         return pc_info
-    snapshot = get_latest_snapshot_for_pc(hostname=pc_info.get("hostname"), ip=ip)
+    snapshot = get_latest_snapshot_for_pc(
+        hostname=pc_info.get("hostname"), ip=ip, reachable_only=True
+    )
     if not snapshot:
         return pc_info
     recorded_at, payload = snapshot
@@ -269,14 +277,14 @@ def create_app() -> Flask:
     @app.route("/")
     @login_required
     def index():
-        pcs = session.get("discovered_pcs", {})
+        scan_meta = load_scan_metadata()
         return render_template(
             "index.html",
-            pcs=pcs,
-            last_scan=session.get("last_scan"),
-            last_scan_network=session.get("last_scan_network"),
-            scan_subnet=session.get("scan_subnet", ""),
-            scan_error=session.get("scan_error"),
+            pcs=get_discovered_pcs(),
+            last_scan=scan_meta["last_scan"],
+            last_scan_network=scan_meta["last_scan_network"],
+            scan_subnet=scan_meta["scan_subnet"],
+            scan_error=scan_meta["scan_error"],
             default_subnet=str(get_default_scan_network()),
         )
 
@@ -284,51 +292,41 @@ def create_app() -> Flask:
     @login_required
     def scan():
         subnet_arg = request.form.get("subnet", "").strip()
-        session.pop("scan_error", None)
         try:
             _network, label = parse_scan_subnet(subnet_arg or None)
             discovered = scan_for_servers(subnet=subnet_arg or None)
+            scan_entries: dict[str, dict[str, Any]] = {}
             for ip, entry in discovered.items():
+                entry["ip"] = ip
                 try:
                     info = inspect_pc(ip)
                     entry.update(info)
                     _record_inspect(info)
                 except ConnectionError as exc:
                     entry.update(connection_failure_fields(exc))
-            session["discovered_pcs"] = discovered
-            session["last_scan"] = datetime.now()
-            session["last_scan_network"] = label
-            session["scan_subnet"] = subnet_arg
+                scan_entries[ip] = entry
+            save_scan(
+                pcs=scan_entries,
+                scanned_at=datetime.now().astimezone(),
+                network_label=label,
+                subnet=subnet_arg,
+            )
         except ValueError as exc:
-            session["scan_error"] = str(exc)
+            save_scan_error(str(exc), subnet=subnet_arg)
         return redirect(url_for("index"))
 
     @app.route("/control/<ip>")
     @login_required
     def control(ip: str):
-        pcs = session.get("discovered_pcs", {})
-        if ip in pcs:
-            refresh_discovered_entry(ip, pcs[ip])
-            session["discovered_pcs"] = pcs
-            pc_info = pcs[ip]
-            if pc_info.get("reachable", True):
-                try:
-                    pc_info = inspect_pc(ip)
-                    pcs[ip].update(pc_info)
-                    session["discovered_pcs"] = pcs
-                    _record_inspect(pc_info)
-                except ConnectionError as exc:
-                    pc_info = pcs[ip]
-                    pc_info.update(connection_failure_fields(exc))
-        else:
-            try:
-                pc_info = inspect_pc(ip)
-                _record_inspect(pc_info)
-            except ConnectionError as exc:
-                pc_info = {
-                    "hostname": f"PC at {ip}",
-                    **connection_failure_fields(exc),
-                }
+        try:
+            pc_info = inspect_pc(ip)
+            _record_inspect(pc_info)
+        except ConnectionError as exc:
+            pc_info = {
+                "hostname": f"PC at {ip}",
+                "ip": ip,
+                **connection_failure_fields(exc),
+            }
         pc_info = _apply_pc_snapshot(pc_info, ip)
         return render_template("control.html", ip=ip, pc_info=pc_info)
 
@@ -336,9 +334,13 @@ def create_app() -> Flask:
     @login_required
     def agent_logs(ip: str):
         hostname = f"PC at {ip}"
-        pcs = session.get("discovered_pcs", {})
-        if ip in pcs:
-            hostname = pcs[ip].get("hostname", hostname)
+        scan_pc = get_scan_pc(ip)
+        if scan_pc:
+            hostname = scan_pc.get("hostname", hostname)
+        else:
+            snapshot = get_latest_snapshot_for_pc(ip=ip)
+            if snapshot:
+                hostname = snapshot[1].get("hostname", hostname)
         log_text = ""
         truncated = False
         error_message = None

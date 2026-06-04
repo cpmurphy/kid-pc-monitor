@@ -12,6 +12,7 @@ from unittest import mock
 from werkzeug.security import generate_password_hash
 
 from kid_pc_monitor import agent_protocol as proto
+from kid_pc_monitor import panel_db, scan_store
 from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.remote_client import (
     connection_failure_fields,
@@ -59,9 +60,11 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
         self.auth_path = Path(self._tmpdir.name) / wp.AUTH_FILE
+        self.db_path = Path(self._tmpdir.name) / panel_db.DB_FILENAME
         self._patches = [
             mock.patch.object(wp, "_auth_path", return_value=self.auth_path),
             mock.patch.object(wp, "_auth_save_path", return_value=self.auth_path),
+            mock.patch.object(panel_db, "_db_path_override", self.db_path),
         ]
         for patch in self._patches:
             patch.start()
@@ -110,10 +113,10 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
             response = self.client.post("/scan", data={"csrf_token": csrf, "subnet": ""})
         self.assertEqual(response.status_code, 302)
 
-        with self.client.session_transaction() as sess:
-            entry = sess["discovered_pcs"]["192.168.123.6"]
-            self.assertFalse(entry["reachable"])
-            self.assertIn("clock is out of sync", entry["connection_error"])
+        pcs = scan_store.get_discovered_pcs()
+        entry = pcs["192.168.123.6"]
+        self.assertFalse(entry["reachable"])
+        self.assertIn("clock is out of sync", entry["connection_error"])
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
