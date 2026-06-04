@@ -456,11 +456,9 @@ def verify_frame(
     canonical = serialize(rest)
     key = agent_auth.derive_key(secret)
     if not agent_auth.verify_signature(key, canonical, str(signature)):
-        expected = agent_auth.compute_signature(key, canonical)
         raise ProtocolError(
             AUTHENTICATION_FAILED,
-            f"signature did not verify (expected {expected}, got {signature}).\n"
-            f"Secret length: {len(secret)}. Canonical string used:\n---\n{canonical}\n---",
+            "signature did not verify.\n",
             req_id,
         )
 
