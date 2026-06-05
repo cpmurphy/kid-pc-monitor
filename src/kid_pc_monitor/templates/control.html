@@ -4,7 +4,7 @@
 {% block body_class %}page-control{% endblock %}
 
 {% block content %}
-    <div class="container">
+    <div class="container" data-ip="{{ ip }}">
         <div class="nav-row">
             <a href="/" class="back-btn">← Back to PCs</a>
         </div>
@@ -49,7 +49,7 @@
                     {{ pc_info.access_status }}
                 </span>
                 {% if pc_info.manual_lock_active and not pc_info.enforcement_active %}
-                    <button class="clear-inline" onclick="clearManualLock()">Clear</button>
+                    <button class="clear-inline" data-action="clear-manual-lock">Clear</button>
                 {% endif %}
             </p>
 
@@ -103,7 +103,7 @@
 
             {% if pc_info.manual_lock_active and pc_info.enforcement_active %}
             <p class="stat-row">🔒 <strong>Manual lock:</strong> Active
-                <button class="clear-inline" onclick="clearManualLock()">Clear</button>
+                <button class="clear-inline" data-action="clear-manual-lock">Clear</button>
             </p>
             {% endif %}
             {% if pc_info.get('current_user') %}
@@ -131,14 +131,14 @@
         {% if pc_info.get('reachable', true) %}
         <div class="action-group">
             <div class="action-title">🔒 Quick Actions</div>
-            <button class="btn btn-lock" onclick="performAction('lock')">Lock Computer Now</button>
-            <button class="btn btn-shutdown" onclick="confirmAndPerform('shutdown')">Shutdown Computer</button>
+            <button class="btn btn-lock" data-action="lock">Lock Computer Now</button>
+            <button class="btn btn-shutdown" data-action="shutdown">Shutdown Computer</button>
         </div>
 
         <div class="action-group">
             <div class="action-title">💬 Send Message</div>
             <input type="text" id="message-text" placeholder="Type your message here...">
-            <button class="btn btn-message" onclick="sendMessage()">Send Message</button>
+            <button class="btn btn-message" data-action="send-message">Send Message</button>
         </div>
 
         <div class="action-group">
@@ -147,120 +147,13 @@
                 Adds extra time for today only. Does not change the daily allowance default.
             </p>
             <div class="quick-limit-row">
-                <span class="quick-limit" onclick="setQuickExtension(15)">15 min</span>
-                <span class="quick-limit" onclick="setQuickExtension(30)">30 min</span>
-                <span class="quick-limit" onclick="setQuickExtension(60)">1 hour</span>
+                <span class="quick-limit" data-action="quick-extend" data-minutes="15">15 min</span>
+                <span class="quick-limit" data-action="quick-extend" data-minutes="30">30 min</span>
+                <span class="quick-limit" data-action="quick-extend" data-minutes="60">1 hour</span>
             </div>
             <input type="number" id="extension-minutes" placeholder="Or enter minutes...">
-            <button class="btn btn-limit" onclick="grantExtension()">Grant Extension</button>
+            <button class="btn btn-limit" data-action="grant-extension">Grant Extension</button>
         </div>
         {% endif %}
     </div>
-{% endblock %}
-
-{% block scripts %}
-    <script>
-        const csrfHeaders = {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        };
-
-        function showStatus(message, isSuccess) {
-            const statusEl = document.getElementById('status-message');
-            statusEl.textContent = message;
-            statusEl.className = 'status-message ' + (isSuccess ? 'success' : 'error');
-            statusEl.style.display = 'block';
-            setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
-        }
-
-        function performAction(action) {
-            fetch('/action', {
-                method: 'POST',
-                headers: csrfHeaders,
-                body: JSON.stringify({ ip: '{{ ip }}', action: action })
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus(data.response, data.success);
-                if (data.success && (action === 'lock' || action === 'shutdown')) {
-                    setTimeout(() => location.reload(), 2000);
-                }
-            });
-        }
-
-        function confirmAndPerform(action) {
-            if (confirm('Are you sure you want to shutdown this computer?')) {
-                performAction(action);
-            }
-        }
-
-        function sendMessage() {
-            const message = document.getElementById('message-text').value;
-            if (!message) {
-                showStatus('Please enter a message', false);
-                return;
-            }
-            fetch('/action', {
-                method: 'POST',
-                headers: csrfHeaders,
-                body: JSON.stringify({ ip: '{{ ip }}', action: 'message', message: message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus(data.response, data.success);
-                if (data.success) {
-                    document.getElementById('message-text').value = '';
-                }
-            });
-        }
-
-        function setQuickExtension(minutes) {
-            document.getElementById('extension-minutes').value = minutes;
-            grantExtension();
-        }
-
-        function grantExtension() {
-            const minutes = document.getElementById('extension-minutes').value;
-            if (!minutes) {
-                showStatus('Please enter time in minutes', false);
-                return;
-            }
-            fetch('/action', {
-                method: 'POST',
-                headers: csrfHeaders,
-                body: JSON.stringify({
-                    ip: '{{ ip }}',
-                    action: 'extend_time',
-                    minutes: parseInt(minutes, 10)
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus(data.response, data.success);
-                if (data.success) {
-                    setTimeout(() => location.reload(), 1000);
-                }
-            });
-        }
-
-        function clearManualLock() {
-            const action = 'clear_manual_lock';
-            const confirmMsg = 'Clear the manual lock?';
-            if (!confirm(confirmMsg)) {
-                return;
-            }
-            fetch('/action', {
-                method: 'POST',
-                headers: csrfHeaders,
-                body: JSON.stringify({ ip: '{{ ip }}', action: action })
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus(data.response, data.success);
-                if (data.success) {
-                    setTimeout(() => location.reload(), 1000);
-                }
-            });
-        }
-    </script>
 {% endblock %}

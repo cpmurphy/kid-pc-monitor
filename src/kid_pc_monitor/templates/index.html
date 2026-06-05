@@ -3,15 +3,6 @@
 {% block title %}Kids PC Control Panel{% endblock %}
 {% block body_class %}page-home{% endblock %}
 
-{% block head %}
-    <script>
-        // Auto-refresh every 30 seconds
-        setTimeout(function() {
-            location.reload();
-        }, 30000);
-    </script>
-{% endblock %}
-
 {% block content %}
     <div class="container">
         <h1>👨‍👩‍👧‍👦 Kids PC Control Panel</h1>
@@ -65,7 +56,7 @@
         {% if pcs %}
             <h2>Available PCs:</h2>
             {% for ip, info in pcs.items() %}
-            <div class="pc-card{% if not info.get('reachable', true) %} offline{% endif %}" onclick="location.href='/control/{{ ip }}'">
+            <div class="pc-card{% if not info.get('reachable', true) %} offline{% endif %}" data-action="navigate" data-href="{{ url_for('control', ip=ip) }}">
                 <div class="pc-name">💻 {{ info.hostname }}</div>
                 <div class="pc-ip">{{ ip }}</div>
                 {% if info.get('current_user') %}

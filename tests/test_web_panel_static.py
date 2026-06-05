@@ -1,0 +1,138 @@
+"""Tests for the externalized panel.js static module and template wiring.
+
+Behavioral testing of the JavaScript itself would require a JS toolchain this
+project does not have; these tests assert that the module is served and that the
+templates are wired to it (data-* attributes, no inline handlers/scripts).
+"""
+
+from __future__ import annotations
+
+import re
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from kid_pc_monitor import panel_db
+from kid_pc_monitor import web_panel as wp
+
+
+def _sample_pc_info(**overrides: object) -> dict:
+    base: dict = {
+        "ip": "192.168.1.10",
+        "port": 9999,
+        "hostname": "KidPC",
+        "status": "UNLOCKED",
+        "locked": False,
+        "current_user": "child",
+        "daily_limit": 120,
+        "usage_limit": 120,
+        "bed_time": "21:00",
+        "wake_time": "07:00",
+        "manual_lock_active": False,
+        "enforcement_active": False,
+        "enforcement_reason": None,
+        "access_status": "Unlocked",
+        "cumulative_extension_seconds": 0,
+        "accumulated_seconds": 1800,
+        "effective_limit_minutes": 120.0,
+        "time_remaining": "90 minutes",
+        "reachable": True,
+    }
+    base.update(overrides)
+    return base
+
+
+# Inline event-handler attributes that must no longer appear in rendered pages.
+_INLINE_HANDLER_RE = re.compile(r"on(click|change|submit|load|keydown)\s*=", re.I)
+
+
+class WebPanelStaticTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.auth_path = Path(self._tmpdir.name) / wp.AUTH_FILE
+        self.db_path = Path(self._tmpdir.name) / panel_db.DB_FILENAME
+        self._patches = [
+            mock.patch.object(wp, "_auth_path", return_value=self.auth_path),
+            mock.patch.object(wp, "_auth_save_path", return_value=self.auth_path),
+            mock.patch.object(panel_db, "_db_path_override", self.db_path),
+        ]
+        for patch in self._patches:
+            patch.start()
+        self.app = wp.create_app()
+        self.app.config["TESTING"] = True
+        self.client = self.app.test_client()
+
+    def tearDown(self) -> None:
+        for patch in self._patches:
+            patch.stop()
+        self._tmpdir.cleanup()
+
+    def _control_html(self) -> str:
+        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+            response = self.client.get("/control/192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def _daily_html(self) -> str:
+        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+            response = self.client.get("/daily_settings/192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def _index_html(self) -> str:
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def test_panel_js_served(self) -> None:
+        response = self.client.get("/static/panel.js")
+        self.assertEqual(response.status_code, 200)
+        body = response.get_data(as_text=True)
+        self.assertIn("data-action", body)
+        self.assertIn("postAction", body)
+
+    def test_base_references_panel_js(self) -> None:
+        html = self._index_html()
+        self.assertIn("panel.js", html)
+
+    def test_control_uses_data_attributes(self) -> None:
+        html = self._control_html()
+        self.assertIn('data-ip="192.168.1.10"', html)
+        self.assertIn('data-action="lock"', html)
+        self.assertIn('data-action="grant-extension"', html)
+        self.assertIn('data-action="quick-extend"', html)
+        self.assertNotRegex(html, _INLINE_HANDLER_RE)
+        self.assertNotIn("function performAction", html)
+
+    def test_daily_settings_uses_data_attributes(self) -> None:
+        html = self._daily_html()
+        self.assertIn('data-ip="192.168.1.10"', html)
+        self.assertIn('data-action="save-daily-limit"', html)
+        self.assertIn('data-action="save-bed-time"', html)
+        self.assertNotRegex(html, _INLINE_HANDLER_RE)
+        self.assertNotIn("function postAction", html)
+
+    def test_index_cards_navigate_via_data_attributes(self) -> None:
+        discovered = {"192.168.1.10": {"hostname": "KidPC", "reachable": True}}
+        with mock.patch.object(wp, "scan_for_servers", return_value=discovered):
+            with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+                self.client.post(
+                    "/scan",
+                    data={"subnet": "", "csrf_token": self._csrf_from_index()},
+                )
+        html = self._index_html()
+        self.assertIn('data-action="navigate"', html)
+        self.assertIn('data-href="/control/192.168.1.10"', html)
+        self.assertNotRegex(html, _INLINE_HANDLER_RE)
+        self.assertNotIn("setTimeout(", html)
+
+    def _csrf_from_index(self) -> str:
+        html = self._index_html()
+        match = re.search(r'name="csrf_token" value="([^"]+)"', html)
+        assert match is not None, "csrf token not found on index page"
+        return match.group(1)
+
+
+if __name__ == "__main__":
+    unittest.main()

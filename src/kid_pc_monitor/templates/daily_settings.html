@@ -4,7 +4,7 @@
 {% block body_class %}page-daily{% endblock %}
 
 {% block content %}
-    <div class="container">
+    <div class="container" data-ip="{{ ip }}">
         <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
 
         <h1>⚙️ Daily settings</h1>
@@ -21,9 +21,9 @@
             <input type="number" id="daily-limit-minutes"
                    placeholder="Minutes, e.g. 120"
                    value="{{ pc_info.daily_limit if pc_info.get('daily_limit') is not none else '' }}">
-            <button class="btn btn-save" onclick="saveDailyLimit()">Save daily allowance</button>
+            <button class="btn btn-save" data-action="save-daily-limit">Save daily allowance</button>
             {% if pc_info.get('daily_limit') is not none %}
-            <button class="btn btn-clear" onclick="clearDailyLimit()">Remove daily allowance</button>
+            <button class="btn btn-clear" data-action="clear-daily-limit">Remove daily allowance</button>
             {% endif %}
         </div>
 
@@ -31,9 +31,9 @@
             <div class="action-title">🕐 Bedtime</div>
             <p class="hint">PC locks at this time until wake-up.</p>
             <input type="time" id="bed-time" value="{{ pc_info.get('bed_time', '21:00') or '21:00' }}">
-            <button class="btn btn-save" onclick="saveBedTime()">Save bedtime</button>
+            <button class="btn btn-save" data-action="save-bed-time">Save bedtime</button>
             {% if pc_info.get('bed_time') %}
-            <button class="btn btn-clear" onclick="clearBedTime()">Remove bedtime</button>
+            <button class="btn btn-clear" data-action="clear-bed-time">Remove bedtime</button>
             {% endif %}
         </div>
 
@@ -41,76 +41,7 @@
             <div class="action-title">🌅 Wake-up time</div>
             <p class="hint">Bedtime locks lift here. Daily usage resets at wake-up.</p>
             <input type="time" id="wake-time" value="{{ pc_info.get('wake_time', '07:00') or '07:00' }}">
-            <button class="btn btn-save" onclick="saveWakeTime()">Save wake-up time</button>
+            <button class="btn btn-save" data-action="save-wake-time">Save wake-up time</button>
         </div>
     </div>
-{% endblock %}
-
-{% block scripts %}
-    <script>
-        const csrfHeaders = {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
-        };
-
-        function showStatus(message, isSuccess) {
-            const statusEl = document.getElementById('status-message');
-            statusEl.textContent = message;
-            statusEl.className = 'status-message ' + (isSuccess ? 'success' : 'error');
-            statusEl.style.display = 'block';
-            setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
-        }
-
-        function postAction(body) {
-            return fetch('/action', {
-                method: 'POST',
-                headers: csrfHeaders,
-                body: JSON.stringify(Object.assign({ ip: '{{ ip }}' }, body))
-            })
-            .then(response => response.json())
-            .then(data => {
-                showStatus(data.response, data.success);
-                if (data.success) {
-                    setTimeout(() => location.reload(), 1000);
-                }
-            });
-        }
-
-        function saveDailyLimit() {
-            const raw = document.getElementById('daily-limit-minutes').value;
-            if (!raw) {
-                showStatus('Enter minutes or use Remove', false);
-                return;
-            }
-            postAction({ action: 'set_daily_limit', minutes: parseInt(raw, 10) });
-        }
-
-        function clearDailyLimit() {
-            if (!confirm('Remove the daily allowance default?')) return;
-            postAction({ action: 'clear_usage_limit' });
-        }
-
-        function saveBedTime() {
-            const time = document.getElementById('bed-time').value;
-            if (!time) {
-                showStatus('Please select a bedtime', false);
-                return;
-            }
-            postAction({ action: 'set_bed_time', time: time });
-        }
-
-        function clearBedTime() {
-            if (!confirm('Remove the bedtime default?')) return;
-            postAction({ action: 'clear_bed_time' });
-        }
-
-        function saveWakeTime() {
-            const time = document.getElementById('wake-time').value;
-            if (!time) {
-                showStatus('Please select a wake-up time', false);
-                return;
-            }
-            postAction({ action: 'set_wake_time', time: time });
-        }
-    </script>
 {% endblock %}
