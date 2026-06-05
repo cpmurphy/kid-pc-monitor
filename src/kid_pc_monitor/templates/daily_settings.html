@@ -3,6 +3,11 @@
 {% block title %}Daily settings — {{ pc_info.hostname }}{% endblock %}
 {% block body_class %}page-daily{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/action-pages.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/daily-settings.css') }}">
+{% endblock %}
+
 {% block content %}
     <div class="container" data-ip="{{ ip }}">
         <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>

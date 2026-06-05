@@ -1,0 +1,43 @@
+/* Control page */
+
+h1 {
+    font-size: 24px;
+}
+
+.account-links {
+    text-align: right;
+    font-size: 13px;
+}
+
+.btn {
+    transition: background-color 0.3s;
+}
+
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.quick-limit {
+    display: inline-block;
+    padding: 8px 15px;
+    margin: 5px;
+    background-color: #e0e0e0;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.quick-limit:hover {
+    background-color: #d0d0d0;
+}
+
+.quick-limit-row {
+    text-align: center;
+}

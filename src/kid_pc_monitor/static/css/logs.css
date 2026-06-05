@@ -1,0 +1,36 @@
+/* Agent log page */
+
+.log-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.log-nav-btn {
+    margin: 0;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.agent-log-view {
+    margin-top: 10px;
+    padding: 12px 14px;
+    max-height: 75vh;
+    overflow: auto;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-radius: 6px;
+    border: 1px solid #333;
+}
+
+.log-path {
+    font-size: 0.85rem;
+    word-break: break-all;
+}

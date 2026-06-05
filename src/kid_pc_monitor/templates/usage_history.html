@@ -3,6 +3,11 @@
 {% block title %}Usage — {{ username }}{% endblock %}
 {% block body_class %}page-usage{% endblock %}
 
+{% block stylesheets %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/action-pages.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/usage.css') }}">
+{% endblock %}
+
 {% block content %}
     <div class="container">
         <div class="nav-row">

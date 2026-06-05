@@ -1,0 +1,99 @@
+/* Shared by control, daily settings, logs, and usage history */
+
+.action-group {
+    background: white;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.action-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.btn-lock     { background-color: #ff9800; color: white; }
+.btn-lock:hover     { background-color: #e68900; }
+.btn-shutdown { background-color: #f44336; color: white; }
+.btn-shutdown:hover { background-color: #da190b; }
+.btn-message  { background-color: #2196F3; color: white; }
+.btn-message:hover  { background-color: #0b7dda; }
+.btn-limit    { background-color: #9c27b0; color: white; }
+.btn-limit:hover    { background-color: #7b1fa2; }
+.btn-save     { background-color: #2196F3; color: white; }
+.btn-save:hover     { background-color: #0b7dda; }
+.btn-clear    { background-color: #f44336; color: white; }
+
+.status-message {
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+}
+
+.status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Server-rendered status banners (vs. the JS-driven toast which starts hidden) */
+.status-message.banner {
+    display: block;
+}
+
+.status-message.info {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.status-message.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.status-message.snapshot {
+    background-color: #e8f4fd;
+    color: #0c5460;
+}
+
+.note {
+    color: #666;
+    font-size: 14px;
+    margin: 0 0 10px 0;
+}
+
+.readonly-value { color: #333; }
+.muted          { color: #999; }
+.stat-row       { margin: 8px 0; line-height: 1.5; }
+.locked-text    { color: #c62828; font-weight: 600; }
+
+.clear-inline {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}

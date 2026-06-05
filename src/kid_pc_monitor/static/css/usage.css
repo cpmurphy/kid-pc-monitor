@@ -1,0 +1,27 @@
+/* Usage history page */
+
+.usage-footnote {
+    text-align: center;
+}
+
+.usage-pc-group {
+    margin-top: 20px;
+}
+
+.usage-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.usage-table th,
+.usage-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.usage-table th {
+    color: #555;
+    font-weight: 600;
+}

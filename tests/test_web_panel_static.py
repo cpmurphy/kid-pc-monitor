@@ -1,8 +1,9 @@
-"""Tests for the externalized panel JS static modules and template wiring.
+"""Tests for the externalized panel JS/CSS static modules and template wiring.
 
 Behavioral testing of the JavaScript itself would require a JS toolchain this
 project does not have; these tests assert that the modules are served and that
-templates load the right scripts (data-* attributes, no inline handlers/scripts).
+templates load the right scripts (data-* attributes, no inline handlers/scripts)
+and stylesheets (base plus page-specific CSS only).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from unittest import mock
 
 from kid_pc_monitor import panel_db
 from kid_pc_monitor import web_panel as wp
+from kid_pc_monitor.agent_protocol import LogsResult
 
 
 def _sample_pc_info(**overrides: object) -> dict:
@@ -89,6 +91,89 @@ class WebPanelStaticTests(unittest.TestCase):
         response = self.client.get("/set-password")
         self.assertEqual(response.status_code, 200)
         return response.get_data(as_text=True)
+
+    def _login_html_with_password(self) -> str:
+        with mock.patch.object(wp, "password_is_configured", return_value=True):
+            response = self.client.get("/login")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def _logs_html(self) -> str:
+        with mock.patch.object(
+            wp,
+            "get_agent_logs",
+            return_value=LogsResult(path="/tmp/log", truncated=False, lines=["line one"]),
+        ):
+            response = self.client.get("/logs/192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def _usage_html(self) -> str:
+        response = self.client.get("/usage/child")
+        self.assertEqual(response.status_code, 200)
+        return response.get_data(as_text=True)
+
+    def test_css_modules_served(self) -> None:
+        cases = [
+            ("/static/css/panel.css", "font-family"),
+            ("/static/css/home.css", "pc-card"),
+            ("/static/css/action-pages.css", "action-group"),
+            ("/static/css/control.css", "quick-limit"),
+            ("/static/css/daily-settings.css", 'input[type="time"]'),
+            ("/static/css/logs.css", "agent-log-view"),
+            ("/static/css/usage.css", "usage-table"),
+            ("/static/css/auth.css", "page-login"),
+        ]
+        for path, needle in cases:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                body = response.get_data(as_text=True)
+                self.assertIn(needle, body)
+
+    def test_legacy_panel_css_removed(self) -> None:
+        response = self.client.get("/static/panel.css")
+        self.assertEqual(response.status_code, 404)
+
+    def test_index_loads_home_css_only(self) -> None:
+        html = self._index_html()
+        self.assertIn("css/panel.css", html)
+        self.assertIn("css/home.css", html)
+        self.assertNotIn("css/action-pages.css", html)
+        self.assertNotIn("css/control.css", html)
+
+    def test_control_loads_action_and_control_css(self) -> None:
+        html = self._control_html()
+        self.assertIn("css/panel.css", html)
+        self.assertIn("css/action-pages.css", html)
+        self.assertIn("css/control.css", html)
+        self.assertNotIn("css/home.css", html)
+
+    def test_daily_settings_loads_action_and_daily_css(self) -> None:
+        html = self._daily_html()
+        self.assertIn("css/action-pages.css", html)
+        self.assertIn("css/daily-settings.css", html)
+        self.assertNotIn("css/control.css", html)
+
+    def test_auth_pages_load_auth_css_only(self) -> None:
+        for html in (self._set_password_html(), self._login_html_with_password()):
+            with self.subTest(page=html[:60]):
+                self.assertIn("css/panel.css", html)
+                self.assertIn("css/auth.css", html)
+                self.assertNotIn("css/home.css", html)
+                self.assertNotIn("css/action-pages.css", html)
+
+    def test_logs_loads_action_and_logs_css(self) -> None:
+        html = self._logs_html()
+        self.assertIn("css/action-pages.css", html)
+        self.assertIn("css/logs.css", html)
+        self.assertNotIn("css/control.css", html)
+
+    def test_usage_loads_action_and_usage_css(self) -> None:
+        html = self._usage_html()
+        self.assertIn("css/action-pages.css", html)
+        self.assertIn("css/usage.css", html)
+        self.assertNotIn("css/home.css", html)
 
     def test_js_modules_served(self) -> None:
         cases = [

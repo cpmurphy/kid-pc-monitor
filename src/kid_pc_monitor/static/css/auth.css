@@ -1,0 +1,89 @@
+/* Login and set-password pages */
+
+.page-login .box {
+    max-width: 400px;
+    margin: 40px auto;
+}
+
+.page-password .box {
+    max-width: 440px;
+    margin: 30px auto;
+}
+
+.page-login h1,
+.page-password h1 {
+    font-size: 20px;
+    margin-top: 0;
+}
+
+.page-login label,
+.page-password label {
+    display: block;
+    color: #444;
+    font-size: 14px;
+}
+
+.page-login label    { margin-top: 12px; }
+.page-password label { margin-top: 14px; }
+
+.page-login input[type="text"],
+.page-login input[type="password"],
+.page-password input[type="text"],
+.page-password input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.page-login button,
+.page-password button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.page-login button         { background: #4CAF50; }
+.page-login button:hover   { background: #45a049; }
+.page-password button       { background: #2196F3; }
+.page-password button:hover { background: #0b7dda; }
+
+.page-login .hint,
+.page-password .hint {
+    font-size: 13px;
+    color: #666;
+    margin-top: 14px;
+    line-height: 1.4;
+}
+
+.err {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.ok {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+a.back {
+    display: inline-block;
+    margin-bottom: 12px;
+    color: #666;
+}
