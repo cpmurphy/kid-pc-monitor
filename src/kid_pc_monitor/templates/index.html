@@ -89,3 +89,7 @@
         {% endif %}
     </div>
 {% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}

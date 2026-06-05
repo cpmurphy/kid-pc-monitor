@@ -40,3 +40,7 @@
         {% endif %}
     </div>
 {% endblock %}
+
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/logs.js') }}"></script>
+{% endblock %}

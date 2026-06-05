@@ -1,8 +1,8 @@
-"""Tests for the externalized panel.js static module and template wiring.
+"""Tests for the externalized panel JS static modules and template wiring.
 
 Behavioral testing of the JavaScript itself would require a JS toolchain this
-project does not have; these tests assert that the module is served and that the
-templates are wired to it (data-* attributes, no inline handlers/scripts).
+project does not have; these tests assert that the modules are served and that
+templates load the right scripts (data-* attributes, no inline handlers/scripts).
 """
 
 from __future__ import annotations
@@ -85,16 +85,44 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return response.get_data(as_text=True)
 
-    def test_panel_js_served(self) -> None:
-        response = self.client.get("/static/panel.js")
+    def _set_password_html(self) -> str:
+        response = self.client.get("/set-password")
         self.assertEqual(response.status_code, 200)
-        body = response.get_data(as_text=True)
-        self.assertIn("data-action", body)
-        self.assertIn("postAction", body)
+        return response.get_data(as_text=True)
 
-    def test_base_references_panel_js(self) -> None:
+    def test_js_modules_served(self) -> None:
+        cases = [
+            ("/static/js/core.js", "postAction"),
+            ("/static/js/home.js", "page-home"),
+            ("/static/js/control.js", "registerHandlers"),
+            ("/static/js/daily-settings.js", "save-daily-limit"),
+            ("/static/js/logs.js", "agent-log"),
+        ]
+        for path, needle in cases:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                body = response.get_data(as_text=True)
+                self.assertIn(needle, body)
+
+    def test_panel_js_removed(self) -> None:
+        response = self.client.get("/static/panel.js")
+        self.assertEqual(response.status_code, 404)
+
+    def test_index_loads_home_js(self) -> None:
         html = self._index_html()
-        self.assertIn("panel.js", html)
+        self.assertIn("js/home.js", html)
+        self.assertNotIn("panel.js", html)
+
+    def test_control_loads_control_js(self) -> None:
+        html = self._control_html()
+        self.assertIn("js/control.js", html)
+        self.assertNotIn("panel.js", html)
+
+    def test_passive_page_loads_no_panel_js(self) -> None:
+        html = self._set_password_html()
+        self.assertNotIn("js/", html)
+        self.assertNotIn("panel.js", html)
 
     def test_control_uses_data_attributes(self) -> None:
         html = self._control_html()
