@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from kid_pc_monitor.panel_db import connect, get_meta, set_meta
+from kid_pc_monitor.scan_store import get_tracked_ips
 
 META_LAST_TRIM_AT = "last_trim_at"
 RETENTION_DAYS = 7
@@ -54,6 +55,54 @@ def save_snapshot(pc_info: dict[str, Any]) -> None:
         )
         conn.commit()
         maybe_trim_old_rows(conn=conn)
+
+
+def save_poll_snapshot(pc_info: dict[str, Any]) -> None:
+    """Persist poll result for dashboard display (reachable or not)."""
+    ip = pc_info.get("ip")
+    if not ip:
+        return
+    hostname = pc_info.get("hostname") or f"PC at {ip}"
+    username = _snapshot_username(pc_info)
+    now = datetime.now().astimezone()
+    snapshot_date = _snapshot_date_str(now)
+    recorded_at = now.isoformat(timespec="seconds")
+    payload = {**pc_info, "ip": ip, "hostname": hostname}
+    payload_json = json.dumps(payload)
+
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO snapshots
+                (username, hostname, ip, snapshot_date, recorded_at, payload_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (username, hostname, ip, snapshot_date, recorded_at, payload_json),
+        )
+        conn.commit()
+
+
+def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
+    """Return tracked PCs with latest snapshot overlay for dashboard display."""
+    tracked = get_tracked_ips()
+    dashboard: dict[str, dict[str, Any]] = {}
+    last_poll_at: datetime | None = None
+
+    for ip, entry in tracked.items():
+        snapshot = get_latest_snapshot_for_pc(ip=ip)
+        if snapshot:
+            recorded_at, payload = snapshot
+            info = {**payload, "ip": ip, "snapshot_recorded_at": recorded_at}
+            poll_time = datetime.fromisoformat(recorded_at)
+            if poll_time.tzinfo is None:
+                poll_time = poll_time.astimezone()
+            if last_poll_at is None or poll_time > last_poll_at:
+                last_poll_at = poll_time
+        else:
+            info = {**entry, "ip": ip}
+        dashboard[ip] = info
+
+    return dashboard, last_poll_at
 
 
 def get_latest_snapshot_for_pc(

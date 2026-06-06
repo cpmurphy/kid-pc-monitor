@@ -269,6 +269,59 @@ class SnapshotStoreTests(unittest.TestCase):
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 1)
 
+    def test_save_poll_snapshot_stores_unreachable(self) -> None:
+        store.save_poll_snapshot(
+            _sample_pc_info(reachable=False, connection_error="offline", current_user=None)
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 1)
+
+    def test_save_poll_snapshot_stores_missing_user(self) -> None:
+        store.save_poll_snapshot(_sample_pc_info(current_user=None))
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
+        self.assertEqual(count, 1)
+
+    def test_get_dashboard_pcs_overlays_snapshot(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        store.save_poll_snapshot(_sample_pc_info(locked=True, accumulated_seconds=999))
+        dashboard, last_poll_at = store.get_dashboard_pcs()
+        self.assertIn("192.168.1.10", dashboard)
+        self.assertTrue(dashboard["192.168.1.10"]["locked"])
+        self.assertEqual(dashboard["192.168.1.10"]["accumulated_seconds"], 999)
+        self.assertIsNotNone(last_poll_at)
+
+    def test_get_dashboard_pcs_falls_back_to_scan_payload(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.10": {
+                    "hostname": "KidPC",
+                    "reachable": True,
+                    "locked": False,
+                    "ip": "192.168.1.10",
+                }
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        dashboard, last_poll_at = store.get_dashboard_pcs()
+        self.assertIn("192.168.1.10", dashboard)
+        self.assertEqual(dashboard["192.168.1.10"]["hostname"], "KidPC")
+        self.assertIsNone(last_poll_at)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,6 +25,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from kid_pc_monitor.agent_poller import start_agent_poller
 from kid_pc_monitor.paths import (
     config_dir,
     package_dir,
@@ -46,13 +47,13 @@ from kid_pc_monitor.remote_client import (
     scan_for_servers,
 )
 from kid_pc_monitor.scan_store import (
-    get_discovered_pcs,
     get_scan_pc,
     load_scan_metadata,
     save_scan,
     save_scan_error,
 )
 from kid_pc_monitor.snapshot_store import (
+    get_dashboard_pcs,
     get_latest_snapshot_for_pc,
     get_usage_history_for_user,
     save_snapshot,
@@ -278,13 +279,15 @@ def create_app() -> Flask:
     @login_required
     def index():
         scan_meta = load_scan_metadata()
+        pcs, last_poll_at = get_dashboard_pcs()
         return render_template(
             "index.html",
-            pcs=get_discovered_pcs(),
+            pcs=pcs,
             last_scan=scan_meta["last_scan"],
             last_scan_network=scan_meta["last_scan_network"],
             scan_subnet=scan_meta["scan_subnet"],
             scan_error=scan_meta["scan_error"],
+            last_poll_at=last_poll_at,
             default_subnet=str(get_default_scan_network()),
         )
 
@@ -403,6 +406,7 @@ def main() -> None:
     host = os.environ.get("KID_PC_MONITOR_HOST", "0.0.0.0")
     port = int(os.environ.get("KID_PC_MONITOR_PORT", "5000"))
     app = create_app()
+    start_agent_poller()
     tls = resolve_tls_cert_paths()
     scheme = "https" if tls else "http"
     print(f"Kid PC Monitor web panel on {scheme}://{host}:{port}")

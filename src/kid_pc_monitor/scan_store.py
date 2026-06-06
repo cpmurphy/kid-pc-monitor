@@ -25,7 +25,7 @@ def save_scan(
     subnet: str,
     error: str | None = None,
 ) -> None:
-    """Record the result of a network scan (replaces the previous scan)."""
+    """Record the result of a network scan (accumulates PCs across scans)."""
     with connect() as conn:
         conn.execute(
             """
@@ -51,18 +51,25 @@ def save_scan(
                     for ip, info in pcs.items()
                 ],
             )
-        conn.execute("DELETE FROM scans WHERE id != ?", (scan_id,))
         conn.commit()
 
 
 def save_scan_error(error: str, *, subnet: str = "") -> None:
-    save_scan(
-        pcs={},
-        scanned_at=datetime.now().astimezone(),
-        network_label="",
-        subnet=subnet,
-        error=error,
-    )
+    """Record a scan error without clearing previously tracked PCs."""
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO scans (scanned_at, network_label, subnet, error)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                datetime.now().astimezone().isoformat(timespec="seconds"),
+                "",
+                subnet,
+                error,
+            ),
+        )
+        conn.commit()
 
 
 def _latest_scan_row(conn: sqlite3.Connection) -> sqlite3.Row | None:
@@ -92,20 +99,33 @@ def load_scan_metadata() -> dict[str, Any]:
     }
 
 
-def get_discovered_pcs() -> dict[str, dict[str, Any]]:
-    """Return PC info from the most recent scan."""
+def get_tracked_ips() -> dict[str, dict[str, Any]]:
+    """Return all tracked PCs from successful scans (latest sighting per IP)."""
     with connect() as conn:
-        scan = _latest_scan_row(conn)
-        if not scan or scan["error"]:
-            return {}
         rows = conn.execute(
-            "SELECT ip, payload_json FROM scan_pcs WHERE scan_id = ? ORDER BY ip",
-            (scan["id"],),
+            """
+            SELECT sp.ip, sp.payload_json, sp.scan_id
+            FROM scan_pcs sp
+            INNER JOIN scans s ON sp.scan_id = s.id
+            WHERE s.error IS NULL
+            ORDER BY sp.ip, sp.scan_id DESC
+            """
         ).fetchall()
 
-    return {row["ip"]: json.loads(row["payload_json"]) for row in rows}
+    tracked: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        ip = row["ip"]
+        if ip in tracked:
+            continue
+        tracked[ip] = json.loads(row["payload_json"])
+    return tracked
+
+
+def get_discovered_pcs() -> dict[str, dict[str, Any]]:
+    """Return all tracked PCs from successful scans."""
+    return get_tracked_ips()
 
 
 def get_scan_pc(ip: str) -> dict[str, Any] | None:
-    """Return PC info for an IP from the most recent successful scan."""
-    return get_discovered_pcs().get(ip)
+    """Return PC info for an IP from tracked scan results."""
+    return get_tracked_ips().get(ip)

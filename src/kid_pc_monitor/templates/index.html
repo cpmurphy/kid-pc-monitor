@@ -89,6 +89,13 @@
             {% if last_scan_network %}
             on {{ last_scan_network }}
             {% endif %}
+            {% if last_poll_at %}
+            · Last updated: {{ last_poll_at.strftime('%I:%M %p') }}
+            {% endif %}
+        </div>
+        {% elif last_poll_at %}
+        <div class="last-scan">
+            Last updated: {{ last_poll_at.strftime('%I:%M %p') }}
         </div>
         {% endif %}
     </div>

@@ -82,7 +82,7 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(meta["scan_subnet"], "10.0.0.0/24")
         self.assertIsNone(meta["scan_error"])
 
-    def test_save_scan_error_clears_discovered_pcs(self) -> None:
+    def test_save_scan_error_keeps_discovered_pcs(self) -> None:
         store.save_scan(
             pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
             scanned_at=datetime.now().astimezone(),
@@ -92,7 +92,43 @@ class ScanStoreTests(unittest.TestCase):
         store.save_scan_error("bad subnet", subnet="bad")
         meta = store.load_scan_metadata()
         self.assertEqual(meta["scan_error"], "bad subnet")
-        self.assertEqual(store.get_discovered_pcs(), {})
+        pcs = store.get_discovered_pcs()
+        self.assertIn("10.0.0.1", pcs)
+        self.assertEqual(pcs["10.0.0.1"]["hostname"], "KidPC")
+
+    def test_multi_subnet_merge(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="SubnetA-PC")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="subnet-a",
+            subnet="10.0.0.0/24",
+        )
+        store.save_scan(
+            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10", hostname="SubnetB-PC")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="subnet-b",
+            subnet="192.168.1.0/24",
+        )
+        pcs = store.get_tracked_ips()
+        self.assertEqual(set(pcs.keys()), {"10.0.0.1", "192.168.1.10"})
+        self.assertEqual(pcs["10.0.0.1"]["hostname"], "SubnetA-PC")
+        self.assertEqual(pcs["192.168.1.10"]["hostname"], "SubnetB-PC")
+
+    def test_rescan_same_ip_uses_latest_payload(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="OldName")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="first",
+            subnet="10.0.0.0/24",
+        )
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="NewName")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="second",
+            subnet="10.0.0.0/24",
+        )
+        pcs = store.get_tracked_ips()
+        self.assertEqual(pcs["10.0.0.1"]["hostname"], "NewName")
 
 
 if __name__ == "__main__":
