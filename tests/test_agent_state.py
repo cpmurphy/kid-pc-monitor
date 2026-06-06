@@ -16,6 +16,7 @@ from kid_pc_monitor.agent_state import (
     effective_daily_allowance_minutes,
     migrate_legacy_state,
     reset_runtime_for_new_period,
+    reset_runtime_if_needed,
     runtime_state_is_current,
 )
 
@@ -143,6 +144,39 @@ class AgentStateTests(unittest.TestCase):
         self.assertEqual(runtime.accumulated_seconds, 0.0)
         self.assertFalse(runtime.manual_lock_active)
         self.assertEqual(runtime.cumulative_extension_seconds, 0)
+
+    def test_reset_runtime_if_needed_resets_stale_period(self) -> None:
+        runtime = RuntimeState(
+            timestamp=datetime(2026, 6, 5, 10, 0),
+            accumulated_seconds=14_400,
+            manual_lock_active=True,
+            cumulative_extension_seconds=3600,
+        )
+        did_reset = reset_runtime_if_needed(
+            runtime,
+            dtime(7, 0),
+            datetime(2026, 6, 6, 7, 9),
+        )
+        self.assertTrue(did_reset)
+        self.assertEqual(runtime.timestamp, datetime(2026, 6, 6, 7, 9))
+        self.assertEqual(runtime.accumulated_seconds, 0.0)
+        self.assertFalse(runtime.manual_lock_active)
+        self.assertEqual(runtime.cumulative_extension_seconds, 0)
+
+    def test_reset_runtime_if_needed_leaves_current_period_unchanged(self) -> None:
+        runtime = RuntimeState(
+            timestamp=datetime(2026, 6, 6, 7, 8),
+            accumulated_seconds=120,
+            manual_lock_active=False,
+            cumulative_extension_seconds=0,
+        )
+        did_reset = reset_runtime_if_needed(
+            runtime,
+            dtime(7, 0),
+            datetime(2026, 6, 6, 8, 0),
+        )
+        self.assertFalse(did_reset)
+        self.assertAlmostEqual(runtime.accumulated_seconds, 120.0)
 
 
 if __name__ == "__main__":

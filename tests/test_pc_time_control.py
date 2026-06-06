@@ -147,6 +147,59 @@ class PCTimeControlTests(unittest.TestCase):
             control.tick_accumulator()
             self.assertEqual(control.runtime.accumulated_seconds, 0.0)
 
+    def test_set_wake_time_before_now_resets_daily_runtime(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.daily.wake_time = dtime(9, 0)
+            control.runtime.timestamp = datetime(2026, 6, 6, 7, 8)
+            control.runtime.accumulated_seconds = 14_400
+            control.runtime.manual_lock_active = True
+            control.runtime.cumulative_extension_seconds = 3600
+
+            with mock.patch(
+                "kid_pc_monitor.pc_time_control.datetime", wraps=datetime
+            ) as mocked_datetime:
+                mocked_datetime.now.return_value = datetime(2026, 6, 6, 7, 9)
+                with self.assertLogs("PCTimeControl", level="INFO") as logs:
+                    control.set_wake_time(7, 0)
+
+            self.assertEqual(control.daily.wake_time, dtime(7, 0))
+            self.assertEqual(control.runtime.timestamp, datetime(2026, 6, 6, 7, 9))
+            self.assertEqual(control.runtime.accumulated_seconds, 0.0)
+            self.assertFalse(control.runtime.manual_lock_active)
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 0)
+            self.assertIsNone(control.last_tick_at)
+            self.assertIn(
+                "Wake-time change (09:00 -> 07:00): resetting daily runtime state",
+                "\n".join(logs.output),
+            )
+
+    def test_set_wake_time_later_than_now_keeps_daily_runtime(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=platform,
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            control.daily.wake_time = dtime(7, 0)
+            control.runtime.timestamp = datetime(2026, 6, 6, 7, 8)
+            control.runtime.accumulated_seconds = 120
+
+            with mock.patch(
+                "kid_pc_monitor.pc_time_control.datetime", wraps=datetime
+            ) as mocked_datetime:
+                mocked_datetime.now.return_value = datetime(2026, 6, 6, 8, 0)
+                control.set_wake_time(9, 0)
+
+            self.assertEqual(control.daily.wake_time, dtime(9, 0))
+            self.assertAlmostEqual(control.runtime.accumulated_seconds, 120.0)
+
     def test_extend_time_adds_to_cumulative_extension_only(self) -> None:
         platform = FakeHostPlatform()
         with tempfile.TemporaryDirectory() as tmp:

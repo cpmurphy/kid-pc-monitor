@@ -81,6 +81,18 @@ def reset_runtime_for_new_period(runtime: RuntimeState, now: datetime | None = N
     runtime.cumulative_extension_seconds = 0
 
 
+def reset_runtime_if_needed(
+    runtime: RuntimeState,
+    wake_time: dtime,
+    now: datetime | None = None,
+) -> bool:
+    now = now or datetime.now()
+    if runtime_state_is_current(runtime, wake_time, now):
+        return False
+    reset_runtime_for_new_period(runtime, now)
+    return True
+
+
 def daily_to_dict(daily: DailySettings) -> dict:
     payload: dict = {
         "wake_time": _format_time(daily.wake_time),
@@ -331,9 +343,8 @@ class AgentStateStore:
     def load(self) -> tuple[DailySettings, RuntimeState]:
         daily = self._load_daily()
         runtime = self._load_runtime(daily.wake_time)
-        if not runtime_state_is_current(runtime, daily.wake_time):
+        if reset_runtime_if_needed(runtime, daily.wake_time):
             logger.info("Runtime state is from a previous usage period; resetting daily counters")
-            reset_runtime_for_new_period(runtime)
         return daily, runtime
 
     def save(self, daily: DailySettings, runtime: RuntimeState) -> None:

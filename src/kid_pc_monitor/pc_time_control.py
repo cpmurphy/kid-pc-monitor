@@ -18,7 +18,7 @@ from kid_pc_monitor.agent_state import (
     RuntimeState,
     effective_daily_allowance_minutes,
     reset_runtime_for_new_period,
-    runtime_state_is_current,
+    reset_runtime_if_needed,
 )
 from kid_pc_monitor.host_platform import HostPlatform, get_default_platform
 from kid_pc_monitor.lock_policy import (
@@ -207,6 +207,22 @@ class PCTimeControl:
     def _effective_usage_allowance_minutes(self) -> float | None:
         return effective_daily_allowance_minutes(self.daily, self.runtime)
 
+    def _reset_runtime_if_needed(self, *, now: datetime | None = None) -> bool:
+        now = now or datetime.now()
+        used_minutes = self.runtime.accumulated_seconds / 60
+        extension_seconds = self.runtime.cumulative_extension_seconds
+        if not reset_runtime_if_needed(self.runtime, self.daily.wake_time, now):
+            return False
+        self.logger.info(
+            "Wake-time rollover (%02d:%02d): resetting daily runtime state "
+            "(was %.1f min used, %s extension sec)",
+            self.daily.wake_time.hour,
+            self.daily.wake_time.minute,
+            used_minutes,
+            extension_seconds,
+        )
+        return True
+
     def check_if_locked(self) -> bool:
         """True when this session's workstation is locked (OS-specific)."""
         return self.platform.check_session_locked()
@@ -222,18 +238,8 @@ class PCTimeControl:
         run_monitor.
         """
         now = datetime.now()
-        wake_time = self.daily.wake_time
 
-        if not runtime_state_is_current(self.runtime, wake_time, now):
-            self.logger.info(
-                "Wake-time rollover (%02d:%02d): resetting daily runtime state "
-                "(was %.1f min used, %s extension sec)",
-                wake_time.hour,
-                wake_time.minute,
-                self.runtime.accumulated_seconds / 60,
-                self.runtime.cumulative_extension_seconds,
-            )
-            reset_runtime_for_new_period(self.runtime, now)
+        if self._reset_runtime_if_needed(now=now):
             self.last_tick_at = None
 
         # Never credit usage while a lock window is active (bedtime curfew or
@@ -282,8 +288,28 @@ class PCTimeControl:
 
     def set_wake_time(self, hour: int, minute: int) -> None:
         """Set the daily morning unlock time (end of bedtime curfew)."""
+        now = datetime.now()
+        previous_wake_time = self.daily.wake_time
         self.daily.wake_time = dtime(hour, minute)
-        self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
+        if usage_period_date(now, previous_wake_time) < usage_period_date(
+            now, self.daily.wake_time
+        ):
+            used_minutes = self.runtime.accumulated_seconds / 60
+            extension_seconds = self.runtime.cumulative_extension_seconds
+            self.logger.info(
+                "Wake-time change (%02d:%02d -> %02d:%02d): resetting daily runtime state "
+                "(was %.1f min used, %s extension sec)",
+                previous_wake_time.hour,
+                previous_wake_time.minute,
+                self.daily.wake_time.hour,
+                self.daily.wake_time.minute,
+                used_minutes,
+                extension_seconds,
+            )
+            reset_runtime_for_new_period(self.runtime, now)
+            self.last_tick_at = None
+            self.warnings_sent.clear()
+        self.warnings_date = usage_period_date(now, self.daily.wake_time)
         self.logger.info("Parent action: wake time set to %02d:%02d", hour, minute)
 
     def set_daily_allowance(self, minutes: int | None) -> None:
