@@ -269,14 +269,23 @@ class SnapshotStoreTests(unittest.TestCase):
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 1)
 
-    def test_save_poll_snapshot_stores_unreachable(self) -> None:
+    def test_save_poll_snapshot_skips_unreachable(self) -> None:
         store.save_poll_snapshot(
             _sample_pc_info(reachable=False, connection_error="offline", current_user=None)
         )
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
-        self.assertEqual(count, 1)
+        self.assertEqual(count, 0)
+
+    def test_unreachable_poll_does_not_overwrite_reachable_snapshot(self) -> None:
+        store.save_snapshot(_sample_pc_info(accumulated_seconds=1800))
+        store.save_poll_snapshot(
+            _sample_pc_info(reachable=False, connection_error="offline", accumulated_seconds=0)
+        )
+        result = store.get_latest_snapshot_for_pc(ip="192.168.1.10", reachable_only=True)
+        assert result is not None
+        self.assertEqual(result[1]["accumulated_seconds"], 1800)
 
     def test_save_poll_snapshot_stores_missing_user(self) -> None:
         store.save_poll_snapshot(_sample_pc_info(current_user=None))
@@ -300,6 +309,36 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertTrue(dashboard["192.168.1.10"]["locked"])
         self.assertEqual(dashboard["192.168.1.10"]["accumulated_seconds"], 999)
         self.assertIsNotNone(last_poll_at)
+
+    def test_get_dashboard_pcs_uses_scan_entry_when_unreachable(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.10": {
+                    "hostname": "KidPC",
+                    "reachable": True,
+                    "locked": False,
+                    "ip": "192.168.1.10",
+                }
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        store.save_snapshot(_sample_pc_info(locked=True, accumulated_seconds=999))
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {
+                "hostname": "KidPC",
+                "reachable": False,
+                "locked": False,
+                "ip": "192.168.1.10",
+            },
+        )
+        dashboard, _last_poll_at = store.get_dashboard_pcs()
+        self.assertFalse(dashboard["192.168.1.10"]["reachable"])
+        self.assertFalse(dashboard["192.168.1.10"]["locked"])
 
     def test_get_dashboard_pcs_falls_back_to_scan_payload(self) -> None:
         from kid_pc_monitor import scan_store

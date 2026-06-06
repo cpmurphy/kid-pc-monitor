@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -66,6 +67,29 @@ class WebPanelHistoryTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("30 min", html)
+
+    def test_control_shows_snapshot_after_unreachable_poll(self) -> None:
+        from kid_pc_monitor import agent_poller, scan_store
+
+        scan_store.save_scan(
+            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        snapshot_store.save_snapshot(_sample_pc_info(ip="192.168.1.10"))
+        unreachable = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: [Errno 113] No route to host"
+        )
+        with mock.patch.object(agent_poller, "inspect_pc", side_effect=unreachable):
+            agent_poller.poll_once()
+        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
+            response = self.client.get("/control/192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("recorded snapshot", html.lower())
+        self.assertIn("30 min", html)
+        self.assertNotIn("offline or unreachable", html.lower())
 
     def test_scan_records_snapshot(self) -> None:
         discovered = {"192.168.1.10": {"hostname": "KidPC", "reachable": True}}

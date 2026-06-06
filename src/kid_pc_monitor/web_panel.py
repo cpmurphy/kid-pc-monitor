@@ -325,8 +325,10 @@ def create_app() -> Flask:
             pc_info = inspect_pc(ip)
             _record_inspect(pc_info)
         except ConnectionError as exc:
+            scan_pc = get_scan_pc(ip)
+            hostname = (scan_pc or {}).get("hostname") or f"PC at {ip}"
             pc_info = {
-                "hostname": f"PC at {ip}",
+                "hostname": hostname,
                 "ip": ip,
                 **connection_failure_fields(exc),
             }

@@ -75,7 +75,7 @@ class AgentPollerTests(unittest.TestCase):
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
-        self.assertEqual(count, 1)
+        self.assertEqual(count, 0)
 
     def test_poll_once_no_targets(self) -> None:
         with mock.patch.object(agent_poller, "inspect_pc") as inspect_mock:

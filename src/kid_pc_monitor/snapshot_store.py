@@ -58,7 +58,13 @@ def save_snapshot(pc_info: dict[str, Any]) -> None:
 
 
 def save_poll_snapshot(pc_info: dict[str, Any]) -> None:
-    """Persist poll result for dashboard display (reachable or not)."""
+    """Persist a successful poll result for dashboard display.
+
+    Unreachable poll failures are tracked in the scan registry only so we do
+    not overwrite the last reachable per-day snapshot used on the control page.
+    """
+    if not pc_info.get("reachable", True):
+        return
     ip = pc_info.get("ip")
     if not ip:
         return
@@ -89,6 +95,10 @@ def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
     last_poll_at: datetime | None = None
 
     for ip, entry in tracked.items():
+        if not entry.get("reachable", True) or entry.get("connection_error"):
+            dashboard[ip] = {**entry, "ip": ip}
+            continue
+
         snapshot = get_latest_snapshot_for_pc(ip=ip)
         if snapshot:
             recorded_at, payload = snapshot
