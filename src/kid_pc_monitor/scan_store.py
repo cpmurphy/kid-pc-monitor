@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from kid_pc_monitor.panel_db import connect
+
+STALE_TRACKED_HOURS = 12
 
 
 def _json_default(value: Any) -> str:
@@ -129,3 +131,90 @@ def get_discovered_pcs() -> dict[str, dict[str, Any]]:
 def get_scan_pc(ip: str) -> dict[str, Any] | None:
     """Return PC info for an IP from tracked scan results."""
     return get_tracked_ips().get(ip)
+
+
+def _parse_db_datetime(value: str) -> datetime:
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        dt = dt.astimezone()
+    return dt
+
+
+def _latest_reachable_snapshot_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
+    rows = conn.execute(
+        """
+        SELECT recorded_at, payload_json
+        FROM snapshots
+        WHERE ip = ?
+        ORDER BY recorded_at DESC
+        """,
+        (ip,),
+    ).fetchall()
+    for row in rows:
+        payload = json.loads(row["payload_json"])
+        if payload.get("reachable"):
+            return _parse_db_datetime(row["recorded_at"])
+    return None
+
+
+def _latest_scan_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
+    row = conn.execute(
+        """
+        SELECT s.scanned_at
+        FROM scan_pcs sp
+        INNER JOIN scans s ON sp.scan_id = s.id
+        WHERE sp.ip = ? AND s.error IS NULL
+        ORDER BY s.id DESC
+        LIMIT 1
+        """,
+        (ip,),
+    ).fetchone()
+    if not row:
+        return None
+    return _parse_db_datetime(row["scanned_at"])
+
+
+def tracked_ip_last_updated(conn: sqlite3.Connection, ip: str) -> datetime | None:
+    """Return when a tracked IP was last scanned or last known reachable."""
+    candidates = [
+        ts
+        for ts in (_latest_scan_time(conn, ip), _latest_reachable_snapshot_time(conn, ip))
+        if ts is not None
+    ]
+    if not candidates:
+        return None
+    return max(candidates)
+
+
+def _stale_tracked_hours() -> float:
+    return float(STALE_TRACKED_HOURS)
+
+
+def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
+    """Remove tracked PCs with no scan or reachable update within max_age_hours."""
+    max_age = timedelta(
+        hours=max_age_hours if max_age_hours is not None else _stale_tracked_hours()
+    )
+    cutoff = datetime.now().astimezone() - max_age
+    pruned: list[str] = []
+
+    with connect() as conn:
+        ips = [
+            row["ip"]
+            for row in conn.execute(
+                """
+                SELECT DISTINCT sp.ip
+                FROM scan_pcs sp
+                INNER JOIN scans s ON sp.scan_id = s.id
+                WHERE s.error IS NULL
+                """
+            ).fetchall()
+        ]
+        for ip in ips:
+            last_updated = tracked_ip_last_updated(conn, ip)
+            if last_updated is None or last_updated < cutoff:
+                conn.execute("DELETE FROM scan_pcs WHERE ip = ?", (ip,))
+                pruned.append(ip)
+        conn.commit()
+
+    return pruned

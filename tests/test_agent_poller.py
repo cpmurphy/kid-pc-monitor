@@ -82,6 +82,22 @@ class AgentPollerTests(unittest.TestCase):
             agent_poller.poll_once()
         inspect_mock.assert_not_called()
 
+    def test_poll_once_prunes_stale_tracked_ips(self) -> None:
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        with (
+            mock.patch.object(agent_poller, "inspect_pc", return_value=_sample_pc_info()),
+            mock.patch.object(
+                agent_poller, "prune_stale_tracked_ips", return_value=["192.168.1.10"]
+            ) as prune_mock,
+        ):
+            agent_poller.poll_once()
+        prune_mock.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

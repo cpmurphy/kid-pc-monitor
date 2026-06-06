@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
@@ -129,6 +129,71 @@ class ScanStoreTests(unittest.TestCase):
         )
         pcs = store.get_tracked_ips()
         self.assertEqual(pcs["10.0.0.1"]["hostname"], "NewName")
+
+    def test_prune_stale_tracked_ips_removes_old_scan(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, ["10.0.0.1"])
+        self.assertEqual(store.get_tracked_ips(), {})
+
+    def test_prune_stale_tracked_ips_keeps_recent_scan(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=1),
+            network_label="recent-net",
+            subnet="10.0.0.0/24",
+        )
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, [])
+        self.assertIn("10.0.0.1", store.get_tracked_ips())
+
+    def test_prune_stale_tracked_ips_keeps_recent_reachable_snapshot(self) -> None:
+        from kid_pc_monitor import snapshot_store
+
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        snapshot_store.save_poll_snapshot(_sample_pc_info(ip="10.0.0.1", reachable=True))
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, [])
+        self.assertIn("10.0.0.1", store.get_tracked_ips())
+
+    def test_prune_stale_tracked_ips_ignores_unreachable_snapshot(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO snapshots
+                    (username, hostname, ip, snapshot_date, recorded_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "",
+                    "KidPC",
+                    "10.0.0.1",
+                    datetime.now().astimezone().date().isoformat(),
+                    datetime.now().astimezone().isoformat(timespec="seconds"),
+                    '{"reachable": false, "ip": "10.0.0.1", "hostname": "KidPC"}',
+                ),
+            )
+            conn.commit()
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, ["10.0.0.1"])
+        self.assertEqual(store.get_tracked_ips(), {})
 
 
 if __name__ == "__main__":

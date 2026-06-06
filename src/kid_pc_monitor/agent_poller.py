@@ -3,28 +3,23 @@
 from __future__ import annotations
 
 import logging
-import os
 import random
 import threading
 import time
 
 from kid_pc_monitor.remote_client import connection_failure_fields, inspect_pc
-from kid_pc_monitor.scan_store import get_tracked_ips
+from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips
 from kid_pc_monitor.snapshot_store import save_poll_snapshot, save_snapshot
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_POLL_INTERVAL_SEC = 60
+POLL_INTERVAL_SEC = 60
 INITIAL_JITTER_MIN_SEC = 5
 INITIAL_JITTER_MAX_SEC = 55
 
 
 def _poll_interval_sec() -> float:
-    raw = os.environ.get("KID_PC_MONITOR_POLL_INTERVAL_SEC", str(DEFAULT_POLL_INTERVAL_SEC))
-    try:
-        return float(raw)
-    except ValueError:
-        return float(DEFAULT_POLL_INTERVAL_SEC)
+    return float(POLL_INTERVAL_SEC)
 
 
 def _cycle_sleep_sec(interval: float) -> float:
@@ -52,6 +47,9 @@ def poll_once() -> None:
             save_poll_snapshot(failure)
         except Exception:
             logger.warning("Failed to poll agent at %s", ip, exc_info=True)
+    pruned = prune_stale_tracked_ips()
+    if pruned:
+        logger.info("Pruned stale tracked PC(s): %s", ", ".join(sorted(pruned)))
     logger.debug("Agent poll cycle finished")
 
 
