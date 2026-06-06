@@ -171,11 +171,22 @@ def _record_inspect(pc_info: dict[str, Any]) -> None:
         logger.warning("Failed to save inspect snapshot", exc_info=True)
 
 
+def _snapshot_lookup_hostname(pc_info: dict[str, Any], ip: str) -> str | None:
+    """Prefer a stable agent hostname so snapshots survive DHCP IP changes."""
+    hostname = pc_info.get("hostname")
+    if hostname and hostname != f"PC at {ip}":
+        return hostname
+    scan_pc = get_scan_pc(ip)
+    if scan_pc and scan_pc.get("hostname"):
+        return str(scan_pc["hostname"])
+    return hostname
+
+
 def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
     if pc_info.get("reachable", True) and not pc_info.get("connection_error"):
         return pc_info
     snapshot = get_latest_snapshot_for_pc(
-        hostname=pc_info.get("hostname"), ip=ip, reachable_only=True
+        hostname=_snapshot_lookup_hostname(pc_info, ip), ip=ip, reachable_only=True
     )
     if not snapshot:
         return pc_info
@@ -325,10 +336,9 @@ def create_app() -> Flask:
             pc_info = inspect_pc(ip)
             _record_inspect(pc_info)
         except ConnectionError as exc:
-            scan_pc = get_scan_pc(ip)
-            hostname = (scan_pc or {}).get("hostname") or f"PC at {ip}"
             pc_info = {
-                "hostname": hostname,
+                "hostname": _snapshot_lookup_hostname({"hostname": f"PC at {ip}"}, ip)
+                or f"PC at {ip}",
                 "ip": ip,
                 **connection_failure_fields(exc),
             }

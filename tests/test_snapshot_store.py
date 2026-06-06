@@ -165,6 +165,40 @@ class SnapshotStoreTests(unittest.TestCase):
         assert result is not None
         self.assertEqual(result[1]["hostname"], "KidPC")
 
+    def test_get_latest_reachable_finds_prior_ip_by_hostname(self) -> None:
+        today = date.today().isoformat()
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.50",
+            snapshot_date=yesterday,
+            recorded_at="2026-06-05T14:16:54",
+            payload=_sample_pc_info(
+                hostname="KidPC",
+                ip="192.168.1.50",
+                accumulated_seconds=12396,
+            ),
+        )
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.55",
+            snapshot_date=today,
+            recorded_at="2026-06-06T14:30:26",
+            payload=_sample_pc_info(
+                hostname="KidPC",
+                ip="192.168.1.55",
+                reachable=False,
+                connection_error="timed out",
+            ),
+        )
+        self.assertIsNone(store.get_latest_snapshot_for_pc(ip="192.168.1.55", reachable_only=True))
+        result = store.get_latest_snapshot_for_pc(hostname="KidPC", reachable_only=True)
+        assert result is not None
+        self.assertEqual(result[1]["accumulated_seconds"], 12396)
+        self.assertEqual(result[1]["ip"], "192.168.1.50")
+
     def test_get_latest_reachable_snapshot_skips_errors(self) -> None:
         today = date.today().isoformat()
         self._insert_row(

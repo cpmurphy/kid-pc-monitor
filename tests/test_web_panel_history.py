@@ -68,6 +68,37 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("30 min", html)
 
+    def test_control_shows_snapshot_when_ip_changed(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.55": {
+                    "hostname": "KidPC",
+                    "reachable": False,
+                    "ip": "192.168.1.55",
+                }
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        snapshot_store.save_snapshot(
+            _sample_pc_info(
+                hostname="KidPC",
+                ip="192.168.1.50",
+                accumulated_seconds=12396,
+            )
+        )
+        unreachable = ConnectionError("Cannot reach agent at 192.168.1.55:9999: timed out")
+        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
+            response = self.client.get("/control/192.168.1.55")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("recorded snapshot", html.lower())
+        self.assertIn("3:27", html)
+        self.assertNotIn("offline or unreachable", html.lower())
+
     def test_control_shows_snapshot_after_unreachable_poll(self) -> None:
         from kid_pc_monitor import agent_poller, scan_store
 
