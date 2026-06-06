@@ -70,6 +70,39 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("30 min", html)
 
+    def test_control_shows_friendly_snapshot_time_for_today(self) -> None:
+        now = datetime.now().astimezone()
+        recorded = now.replace(hour=14, minute=16, second=54, microsecond=0)
+        payload = _sample_pc_info(ip="192.168.1.10")
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO snapshots
+                    (username, hostname, ip, snapshot_date, recorded_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "child",
+                    "KidPC",
+                    "192.168.1.10",
+                    recorded.date().isoformat(),
+                    recorded.isoformat(timespec="seconds"),
+                    json.dumps(payload),
+                ),
+            )
+            conn.commit()
+        expected = wp.format_snapshot_recorded_at(
+            recorded.isoformat(timespec="seconds"),
+            now=now,
+        )
+        with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
+            response = self.client.get("/control/192.168.1.10")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn(expected, html)
+        self.assertNotIn(recorded.isoformat(timespec="seconds"), html)
+
     def test_control_shows_unreachable_snapshot_with_panel_data(self) -> None:
         from kid_pc_monitor import scan_store
 

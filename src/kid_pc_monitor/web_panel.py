@@ -39,6 +39,7 @@ from kid_pc_monitor.remote_client import (
     format_agent_connection_error,
     format_minutes_duration,
     format_seconds_duration,
+    format_snapshot_recorded_at,
     get_agent_logs,
     get_default_scan_network,
     inspect_pc,
@@ -229,6 +230,7 @@ def create_app() -> Flask:
             "panel_username": PANEL_USERNAME,
             "format_minutes_duration": format_minutes_duration,
             "format_seconds_duration": format_seconds_duration,
+            "format_snapshot_recorded_at": format_snapshot_recorded_at,
             "csrf_token": _csrf_token,
         }
 

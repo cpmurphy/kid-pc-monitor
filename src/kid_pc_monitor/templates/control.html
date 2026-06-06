@@ -33,7 +33,7 @@
 
         {% if pc_info.get('is_snapshot') %}
         <div class="status-message banner snapshot">
-            📋 Showing recorded snapshot from {{ pc_info.snapshot_recorded_at }} — not live data.
+            📋 Showing recorded snapshot from {{ format_snapshot_recorded_at(pc_info.snapshot_recorded_at) }} — not live data.
         </div>
         {% elif pc_info.get('connection_error') %}
         <div class="status-message banner warning">
