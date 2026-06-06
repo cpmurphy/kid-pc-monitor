@@ -54,6 +54,7 @@ from kid_pc_monitor.scan_store import (
 )
 from kid_pc_monitor.snapshot_store import (
     get_dashboard_pcs,
+    get_latest_panel_snapshot_for_pc,
     get_latest_snapshot_for_pc,
     get_usage_history_for_user,
     save_snapshot,
@@ -185,19 +186,21 @@ def _snapshot_lookup_hostname(pc_info: dict[str, Any], ip: str) -> str | None:
 def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
     if pc_info.get("reachable", True) and not pc_info.get("connection_error"):
         return pc_info
-    snapshot = get_latest_snapshot_for_pc(
-        hostname=_snapshot_lookup_hostname(pc_info, ip), ip=ip, reachable_only=True
+    snapshot = get_latest_panel_snapshot_for_pc(
+        hostname=_snapshot_lookup_hostname(pc_info, ip), ip=ip
     )
     if not snapshot:
         return pc_info
     recorded_at, payload = snapshot
-    return {
+    panel_info = {
         **payload,
         "reachable": False,
         "is_snapshot": True,
         "snapshot_recorded_at": recorded_at,
         "ip": ip,
     }
+    panel_info.pop("connection_error", None)
+    return panel_info
 
 
 def create_app() -> Flask:

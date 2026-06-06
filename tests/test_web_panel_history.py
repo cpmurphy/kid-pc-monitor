@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import sqlite3
 import tempfile
 import unittest
 from datetime import datetime
@@ -67,6 +69,58 @@ class WebPanelHistoryTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("30 min", html)
+
+    def test_control_shows_unreachable_snapshot_with_panel_data(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.55": {
+                    "hostname": "KidPC",
+                    "reachable": False,
+                    "ip": "192.168.1.55",
+                }
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        today = datetime.now().astimezone().date().isoformat()
+        payload = _sample_pc_info(
+            ip="192.168.1.55",
+            reachable=False,
+            connection_error="timed out",
+            locked=True,
+            status="LOCKED",
+            accumulated_seconds=28801,
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO snapshots
+                    (username, hostname, ip, snapshot_date, recorded_at, payload_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "child",
+                    "KidPC",
+                    "192.168.1.55",
+                    today,
+                    datetime.now().astimezone().isoformat(timespec="seconds"),
+                    json.dumps(payload),
+                ),
+            )
+            conn.commit()
+        unreachable = ConnectionError("Cannot reach agent at 192.168.1.55:9999: timed out")
+        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
+            response = self.client.get("/control/192.168.1.55")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("recorded snapshot", html.lower())
+        self.assertIn("8:00", html)
+        self.assertNotIn("timed out", html)
+        self.assertNotIn("offline or unreachable", html.lower())
 
     def test_control_shows_snapshot_when_ip_changed(self) -> None:
         from kid_pc_monitor import scan_store

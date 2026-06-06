@@ -115,6 +115,11 @@ def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
     return dashboard, last_poll_at
 
 
+def snapshot_has_panel_data(payload: dict[str, Any]) -> bool:
+    """True when a snapshot row carries a full inspect result, not a bare failure."""
+    return payload.get("status") is not None
+
+
 def get_latest_snapshot_for_pc(
     *,
     hostname: str | None = None,
@@ -128,6 +133,21 @@ def get_latest_snapshot_for_pc(
             return result
     if ip:
         return _query_latest_snapshot("ip = ?", ip, reachable_only=reachable_only)
+    return None
+
+
+def get_latest_panel_snapshot_for_pc(
+    *,
+    hostname: str | None = None,
+    ip: str | None = None,
+) -> tuple[str, dict[str, Any]] | None:
+    """Return the best snapshot for the control-page stale-data fallback."""
+    snapshot = get_latest_snapshot_for_pc(hostname=hostname, ip=ip, reachable_only=True)
+    if snapshot is not None:
+        return snapshot
+    snapshot = get_latest_snapshot_for_pc(hostname=hostname, ip=ip, reachable_only=False)
+    if snapshot is not None and snapshot_has_panel_data(snapshot[1]):
+        return snapshot
     return None
 
 
