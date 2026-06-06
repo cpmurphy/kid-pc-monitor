@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 import tempfile
 import unittest
@@ -10,10 +9,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from werkzeug.security import generate_password_hash
-
+from kid_pc_monitor import agent_poller, panel_db, scan_store
 from kid_pc_monitor import agent_protocol as proto
-from kid_pc_monitor import panel_db, scan_store
 from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.remote_client import (
     connection_failure_fields,
@@ -68,6 +65,18 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
         self.assertFalse(fields["reachable"])
         self.assertNotIn("connection_error", fields)
 
+    def test_request_text_formats_stale_timestamp(self) -> None:
+        with mock.patch(
+            "kid_pc_monitor.remote_client.send_request",
+            side_effect=proto.ProtocolError(
+                proto.STALE_TIMESTAMP,
+                "timestamp outside allowed window",
+            ),
+        ):
+            ok, message = request_text("192.168.123.6", "lock")
+        self.assertFalse(ok)
+        self.assertIn("clock is out of sync", message)
+
 
 class WebPanelConnectionErrorTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -90,25 +99,12 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
             patch.stop()
         self._tmpdir.cleanup()
 
-    def _write_auth(self, password: str = "supersecret1") -> None:
-        auth = {
-            "secret_key": "c" * 32,
-            "password_hash": generate_password_hash(password, method="scrypt"),
-        }
-        self.auth_path.write_text(json.dumps(auth), encoding="utf-8")
-
     def _csrf_from_html(self, html: str) -> str:
         match = re.search(r'name="csrf_token" value="([^"]+)"', html)
         assert match is not None, "csrf token not found in page"
         return match.group(1)
 
-    def _login(self) -> None:
-        self._write_auth()
-        csrf = self._csrf_from_html(self.client.get("/login").get_data(as_text=True))
-        self.client.post("/login", data={"password": "supersecret1", "csrf_token": csrf})
-
     def test_scan_records_connection_error_for_stale_clock(self) -> None:
-        self._login()
         csrf = self._csrf_from_html(self.client.get("/").get_data(as_text=True))
         stale = ConnectionError(
             "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
@@ -136,7 +132,6 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         self.assertIn("CAN'T CONTROL", html)
 
     def test_poll_shows_offline_for_no_route_to_host(self) -> None:
-        self._login()
         os_exc = OSError(113, "No route to host")
         unreachable = ConnectionError(
             "Cannot reach agent at 192.168.123.6:9999: [Errno 113] No route to host"
@@ -148,10 +143,8 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
             network_label="lan",
             subnet="192.168.123.0/24",
         )
-        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
-            from kid_pc_monitor.agent_poller import poll_once
-
-            poll_once()
+        with mock.patch.object(agent_poller, "inspect_pc", side_effect=unreachable):
+            agent_poller.poll_once()
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
@@ -159,7 +152,6 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         self.assertNotIn("CAN'T CONTROL", html)
 
     def test_control_page_shows_connection_error(self) -> None:
-        self._login()
         stale = ConnectionError(
             "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
         )
@@ -168,18 +160,6 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("clock is out of sync", html)
-
-    def test_request_text_formats_stale_timestamp(self) -> None:
-        with mock.patch(
-            "kid_pc_monitor.remote_client.send_request",
-            side_effect=proto.ProtocolError(
-                proto.STALE_TIMESTAMP,
-                "timestamp outside allowed window",
-            ),
-        ):
-            ok, message = request_text("192.168.123.6", "lock")
-        self.assertFalse(ok)
-        self.assertIn("clock is out of sync", message)
 
 
 if __name__ == "__main__":
