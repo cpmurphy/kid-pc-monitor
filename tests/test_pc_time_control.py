@@ -238,7 +238,7 @@ class PCTimeControlTests(unittest.TestCase):
                 data_directory=Path(tmp),
                 start_background_threads=False,
             )
-            control.warnings_sent = {"15min", "5min", "1min"}
+            control.warnings_sent = {"30min", "15min", "5min", "1min"}
 
             with mock.patch.object(control, "get_time_remaining", return_value=14.0):
                 control.check_and_send_warnings()

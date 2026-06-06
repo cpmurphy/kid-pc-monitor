@@ -96,7 +96,7 @@ class PCTimeControl:
         self.state_store = AgentStateStore(base_dir, current_user=self.current_user)
         self.logger = logging.getLogger("PCTimeControl")
         self.warnings_sent = set()  # Track which warnings have been sent
-        self.warning_intervals = [15, 5, 1]  # Warning times in minutes before lock
+        self.warning_intervals = [30, 15, 5, 1]  # Warning times in minutes before lock
         self.warnings_date = None
 
         # Log which user we're running as
@@ -388,7 +388,7 @@ class PCTimeControl:
 
     def check_and_send_warnings(self):
         """Check if warnings should be sent and send them"""
-        # Clear sent-warning memory at wake_time so the 15/5/1-minute warnings
+        # Clear sent-warning memory at wake_time so the 30/15/5/1-minute warnings
         # fire again for the next usage period if the agent runs continuously.
         today = usage_period_date(datetime.now(), self.daily.wake_time)
         if today != self.warnings_date:

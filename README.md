@@ -15,7 +15,7 @@ DIY parental control system for tech-savvy parents. If you know what 'pip instal
 - **⏱️ Daily usage limits** - Set maximum screen time
 - **💬 Send messages** - Display warnings or reminders
 - **🏠 Auto-discovery** - Finds all PCs on your network
-- **⏰ Grace period warnings** - 15, 5, and 1-minute warnings before locks
+- **⏰ Grace period warnings** - 30, 15, 5, and 1-minute warnings before locks
 - **💾 Persistent settings** - Limits survive PC restarts
 - **👤 User-specific restrictions** - Monitor only specific Windows accounts
 - **📊 Real-time status** - See current limits and time remaining
@@ -421,7 +421,7 @@ Parents and developers welcome! Please:
 3. Submit a pull request
 
 ### Recent Improvements (v2.0)
-- ✅ Grace period warnings (15, 5, 1 minute before lock)
+- ✅ Grace period warnings (30, 15, 5, 1 minute before lock)
 - ✅ Persistent state storage (settings survive restarts)
 - ✅ User-specific restrictions (monitor only certain accounts)
 - ✅ Fixed usage time calculation bug
