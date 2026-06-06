@@ -420,14 +420,20 @@ Parents and developers welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
-### Recent Improvements (v2.0)
-- ✅ Grace period warnings (30, 15, 5, 1 minute before lock)
-- ✅ Persistent state storage (settings survive restarts)
-- ✅ User-specific restrictions (monitor only certain accounts)
-- ✅ Fixed usage time calculation bug
-- ✅ Improved error handling and logging
-- ✅ Web UI shows current limits and time remaining
-- ✅ Better resource management
+### Recent Improvements
+- ✅ **Mutual authentication** — HMAC-signed agent protocol (v3); shared secret stored encrypted at rest
+- ✅ **Web panel security** — Optional password login; CSRF protection on state-changing actions
+- ✅ **Linux/macOS parent support** — Run the web panel on non-Windows machines; systemd user-service installer
+- ✅ **Cross-user install** — Admin installs the agent; the child's non-admin account runs it (harder to bypass)
+- ✅ **Wake-up time** — Bedtime curfew ends at wake-up, not midnight; configurable in the web panel and at install
+- ✅ **Smarter time tracking** — Only active use counts toward the daily allowance; locked sessions stop the clock
+- ✅ **Lock hardening** — Re-locks automatically if the kid unlocks while a limit is active; persistent manual locks
+- ✅ **Grace period warnings** — 30, 15, 5, and 1-minute warnings before lock; warnings reset after a time extension
+- ✅ **Live PC status** — Background polling with SQLite snapshot history; last-known state when a PC goes offline
+- ✅ **IP address changes** — Control pages keyed by hostname so DHCP changes do not break bookmarks
+- ✅ **Agent log viewer** — View agent logs remotely from the web panel or `kid-pc-cli logs`
+- ✅ **CLI tool** — `kid-pc-cli` for scan, inspect, lock, extend, and other remote commands
+- ✅ **Easier reinstall** — Installer reuses previous settings; skips firewall setup when the rule already exists
 
 ### Ideas for Future Contributions
 - Linux/macOS **agent** (kid-side monitoring; the web panel already runs on Linux/macOS/Windows)
@@ -435,7 +441,6 @@ Parents and developers welcome! Please:
 - Usage statistics/reports
 - Reward system integration
 - Application-specific time limits
-- Authentication/password protection
 
 ## 📄 License
 
