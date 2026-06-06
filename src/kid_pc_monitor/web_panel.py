@@ -26,6 +26,11 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from kid_pc_monitor.agent_poller import start_agent_poller
+from kid_pc_monitor.panel_format import (
+    format_minutes_duration,
+    format_seconds_duration,
+    format_snapshot_recorded_at,
+)
 from kid_pc_monitor.paths import (
     config_dir,
     package_dir,
@@ -37,9 +42,6 @@ from kid_pc_monitor.remote_client import (
     AgentLogsUnavailable,
     connection_failure_fields,
     format_agent_connection_error,
-    format_minutes_duration,
-    format_seconds_duration,
-    format_snapshot_recorded_at,
     get_agent_logs,
     get_default_scan_network,
     inspect_pc,

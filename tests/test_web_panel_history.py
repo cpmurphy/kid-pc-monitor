@@ -12,6 +12,7 @@ from unittest import mock
 
 from kid_pc_monitor import panel_db, snapshot_store
 from kid_pc_monitor import web_panel as wp
+from kid_pc_monitor.panel_format import format_snapshot_recorded_at
 
 
 def _sample_pc_info(**overrides: object) -> dict:
@@ -92,7 +93,7 @@ class WebPanelHistoryTests(unittest.TestCase):
                 ),
             )
             conn.commit()
-        expected = wp.format_snapshot_recorded_at(
+        expected = format_snapshot_recorded_at(
             recorded.isoformat(timespec="seconds"),
             now=now,
         )
