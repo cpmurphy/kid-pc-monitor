@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
 
@@ -56,6 +57,7 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS scan_pcs (
             scan_id INTEGER NOT NULL,
             ip TEXT NOT NULL,
+            hostname TEXT,
             payload_json TEXT NOT NULL,
             PRIMARY KEY (scan_id, ip),
             FOREIGN KEY (scan_id) REFERENCES scans(id) ON DELETE CASCADE
@@ -67,6 +69,43 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    _ensure_scan_pcs_hostname(conn)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_scan_pcs_hostname ON scan_pcs(hostname COLLATE NOCASE)"
+    )
+
+
+def _ensure_scan_pcs_hostname(conn: sqlite3.Connection) -> None:
+    columns = {
+        row["name"] if isinstance(row, sqlite3.Row) else row[1]
+        for row in conn.execute("PRAGMA table_info(scan_pcs)").fetchall()
+    }
+    if "hostname" not in columns:
+        conn.execute("ALTER TABLE scan_pcs ADD COLUMN hostname TEXT")
+    _backfill_scan_pcs_hostname(conn)
+
+
+def _backfill_scan_pcs_hostname(conn: sqlite3.Connection) -> None:
+    rows = conn.execute(
+        """
+        SELECT rowid, payload_json
+        FROM scan_pcs
+        WHERE hostname IS NULL OR hostname = ''
+        """
+    ).fetchall()
+    for row in rows:
+        rowid = row["rowid"] if isinstance(row, sqlite3.Row) else row[0]
+        payload_json = row["payload_json"] if isinstance(row, sqlite3.Row) else row[1]
+        try:
+            payload = json.loads(payload_json)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        hostname = payload.get("hostname")
+        if isinstance(hostname, str) and hostname:
+            conn.execute(
+                "UPDATE scan_pcs SET hostname = ? WHERE rowid = ?",
+                (hostname, rowid),
+            )
 
 
 def get_meta(conn: sqlite3.Connection, key: str) -> str | None:

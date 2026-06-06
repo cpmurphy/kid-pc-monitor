@@ -60,7 +60,7 @@
         {% if pcs %}
             <h2>Available PCs:</h2>
             {% for ip, info in pcs.items() %}
-            <div class="pc-card{% if not info.get('reachable', true) %} offline{% endif %}" data-action="navigate" data-href="{{ url_for('control', ip=ip) }}">
+            <div class="pc-card{% if not info.get('reachable', true) %} offline{% endif %}" data-action="navigate" data-href="{{ url_for('control', target=info.get('hostname') or ip) }}">
                 <div class="pc-name">💻 {{ info.hostname }}</div>
                 <div class="pc-ip">{{ ip }}</div>
                 {% if info.get('current_user') %}

@@ -11,7 +11,7 @@
 {% block content %}
     <div class="container">
         <div class="nav-row">
-            <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
+            <a href="{{ url_for('control', target=hostname or ip) }}" class="back-btn">← Back to control</a>
         </div>
         <p class="account-links">
             {% if not password_protected %}

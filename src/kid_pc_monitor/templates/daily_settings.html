@@ -10,7 +10,7 @@
 
 {% block content %}
     <div class="container" data-ip="{{ ip }}">
-        <a href="{{ url_for('control', ip=ip) }}" class="back-btn">← Back to control</a>
+        <a href="{{ url_for('control', target=pc_info.get('hostname') or ip) }}" class="back-btn">← Back to control</a>
 
         <h1>⚙️ Daily settings</h1>
         <p class="subtitle">{{ pc_info.hostname }} · {{ ip }}</p>

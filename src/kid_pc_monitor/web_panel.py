@@ -9,6 +9,7 @@ import secrets
 from collections.abc import Callable
 from datetime import datetime
 from functools import wraps
+from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -51,6 +52,7 @@ from kid_pc_monitor.remote_client import (
 )
 from kid_pc_monitor.scan_store import (
     get_scan_pc,
+    get_scan_pc_by_hostname,
     load_scan_metadata,
     save_scan,
     save_scan_error,
@@ -206,6 +208,23 @@ def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
     return panel_info
 
 
+def _is_ip_address(value: str) -> bool:
+    try:
+        ip_address(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _resolve_control_target(target: str) -> tuple[str, str | None]:
+    if _is_ip_address(target):
+        return target, None
+    scan_pc = get_scan_pc_by_hostname(target)
+    if not scan_pc or not scan_pc.get("ip"):
+        raise LookupError(target)
+    return str(scan_pc["ip"]), str(scan_pc.get("hostname") or target)
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -336,15 +355,23 @@ def create_app() -> Flask:
             save_scan_error(str(exc), subnet=subnet_arg)
         return redirect(url_for("index"))
 
-    @app.route("/control/<ip>")
+    @app.route("/control/<target>")
     @login_required
-    def control(ip: str):
+    def control(target: str):
+        try:
+            ip, requested_hostname = _resolve_control_target(target)
+        except LookupError:
+            return f"No recent scan result found for {target}. Scan again and try again.", 404
+
         try:
             pc_info = inspect_pc(ip)
+            pc_info["ip"] = ip
             _record_inspect(pc_info)
         except ConnectionError as exc:
             pc_info = {
-                "hostname": _snapshot_lookup_hostname({"hostname": f"PC at {ip}"}, ip)
+                "hostname": _snapshot_lookup_hostname(
+                    {"hostname": requested_hostname or f"PC at {ip}"}, ip
+                )
                 or f"PC at {ip}",
                 "ip": ip,
                 **connection_failure_fields(exc),

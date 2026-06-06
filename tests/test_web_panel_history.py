@@ -187,6 +187,46 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertIn("3:27", html)
         self.assertNotIn("offline or unreachable", html.lower())
 
+    def test_control_hostname_uses_latest_scan_ip(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.50": _sample_pc_info(ip="192.168.1.50", hostname="KidPC"),
+                "192.168.1.55": _sample_pc_info(ip="192.168.1.55", hostname="OtherPC"),
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        scan_store.save_scan(
+            pcs={"192.168.1.60": _sample_pc_info(ip="192.168.1.60", hostname="KidPC")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+
+        with mock.patch.object(
+            wp,
+            "inspect_pc",
+            return_value=_sample_pc_info(ip="192.168.1.60", hostname="KidPC"),
+        ) as inspect:
+            response = self.client.get("/control/KidPC")
+
+        self.assertEqual(response.status_code, 200)
+        inspect.assert_called_once_with("192.168.1.60")
+        html = response.get_data(as_text=True)
+        self.assertIn('data-ip="192.168.1.60"', html)
+        self.assertIn("KidPC", html)
+
+    def test_control_hostname_without_recent_scan_returns_404(self) -> None:
+        with mock.patch.object(wp, "inspect_pc") as inspect:
+            response = self.client.get("/control/KidPC")
+
+        self.assertEqual(response.status_code, 404)
+        inspect.assert_not_called()
+        self.assertIn("No recent scan result", response.get_data(as_text=True))
+
     def test_control_shows_snapshot_after_unreachable_poll(self) -> None:
         from kid_pc_monitor import agent_poller, scan_store
 

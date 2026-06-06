@@ -31,6 +31,11 @@ def _json_default(value: Any) -> str:
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
+def _payload_hostname(payload: dict[str, Any]) -> str | None:
+    hostname = payload.get("hostname")
+    return hostname if isinstance(hostname, str) and hostname else None
+
+
 def save_scan(
     *,
     pcs: dict[str, dict[str, Any]],
@@ -57,11 +62,16 @@ def save_scan(
         if pcs:
             conn.executemany(
                 """
-                INSERT INTO scan_pcs (scan_id, ip, payload_json)
-                VALUES (?, ?, ?)
+                INSERT INTO scan_pcs (scan_id, ip, hostname, payload_json)
+                VALUES (?, ?, ?, ?)
                 """,
                 [
-                    (scan_id, ip, json.dumps({**info, "ip": ip}, default=_json_default))
+                    (
+                        scan_id,
+                        ip,
+                        _payload_hostname(payload := {**info, "ip": ip}),
+                        json.dumps(payload, default=_json_default),
+                    )
                     for ip, info in pcs.items()
                 ],
             )
@@ -120,11 +130,18 @@ def _latest_scan_pc_for_ip(conn: sqlite3.Connection, ip: str) -> sqlite3.Row | N
     ).fetchone()
 
 
+def _payload_from_row(row: sqlite3.Row) -> dict[str, Any]:
+    payload = json.loads(row["payload_json"])
+    payload["ip"] = row["ip"]
+    return payload
+
+
 def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | None = None) -> None:
     """Update tracked scan registry from a poll inspect (coalesce by dashboard status)."""
     now = when or datetime.now().astimezone()
     payload = {**pc_info, "ip": ip}
     payload_json = json.dumps(payload, default=_json_default)
+    hostname = _payload_hostname(payload)
     status = dashboard_status_key(payload)
 
     with connect() as conn:
@@ -134,10 +151,10 @@ def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | No
             if dashboard_status_key(existing) == status:
                 conn.execute(
                     """
-                    UPDATE scan_pcs SET payload_json = ?
+                    UPDATE scan_pcs SET hostname = ?, payload_json = ?
                     WHERE scan_id = ? AND ip = ?
                     """,
-                    (payload_json, latest["scan_id"], ip),
+                    (hostname, payload_json, latest["scan_id"], ip),
                 )
                 conn.execute(
                     "UPDATE scans SET scanned_at = ? WHERE id = ?",
@@ -160,8 +177,8 @@ def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | No
         )
         scan_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         conn.execute(
-            "INSERT INTO scan_pcs (scan_id, ip, payload_json) VALUES (?, ?, ?)",
-            (scan_id, ip, payload_json),
+            "INSERT INTO scan_pcs (scan_id, ip, hostname, payload_json) VALUES (?, ?, ?, ?)",
+            (scan_id, ip, hostname, payload_json),
         )
         conn.commit()
 
@@ -226,6 +243,23 @@ def get_discovered_pcs() -> dict[str, dict[str, Any]]:
 def get_scan_pc(ip: str) -> dict[str, Any] | None:
     """Return PC info for an IP from tracked scan results."""
     return get_tracked_ips().get(ip)
+
+
+def get_scan_pc_by_hostname(hostname: str) -> dict[str, Any] | None:
+    """Return latest tracked PC info for a hostname from successful scans."""
+    with connect() as conn:
+        row = conn.execute(
+            """
+            SELECT sp.ip, sp.payload_json, sp.scan_id
+            FROM scan_pcs sp
+            INNER JOIN scans s ON sp.scan_id = s.id
+            WHERE sp.hostname COLLATE NOCASE = ? AND s.error IS NULL
+            ORDER BY sp.scan_id DESC, sp.ip
+            LIMIT 1
+            """,
+            (hostname,),
+        ).fetchone()
+    return _payload_from_row(row) if row else None
 
 
 def _parse_db_datetime(value: str) -> datetime:

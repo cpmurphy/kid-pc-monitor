@@ -236,7 +236,7 @@ class WebPanelStaticTests(unittest.TestCase):
                 )
         html = self._index_html()
         self.assertIn('data-action="navigate"', html)
-        self.assertIn('data-href="/control/192.168.1.10"', html)
+        self.assertIn('data-href="/control/KidPC"', html)
         self.assertNotRegex(html, _INLINE_HANDLER_RE)
         self.assertNotIn("setTimeout(", html)
 

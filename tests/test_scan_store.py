@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 import tempfile
 import unittest
@@ -69,6 +70,63 @@ class ScanStoreTests(unittest.TestCase):
         self.assertIn("192.168.1.10", pcs)
         self.assertEqual(pcs["192.168.1.10"]["hostname"], "KidPC")
 
+    def test_save_scan_stores_hostname_column(self) -> None:
+        store.save_scan(
+            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="192.168.1.0/24",
+            subnet="",
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            hostname = conn.execute("SELECT hostname FROM scan_pcs").fetchone()[0]
+        self.assertEqual(hostname, "KidPC")
+
+    def test_ensure_schema_backfills_scan_pcs_hostname(self) -> None:
+        payload = _sample_pc_info(ip="192.168.1.10", hostname="OldKidPC")
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executescript(
+                """
+                CREATE TABLE scans (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scanned_at TEXT NOT NULL,
+                    network_label TEXT NOT NULL,
+                    subnet TEXT NOT NULL,
+                    error TEXT
+                );
+                CREATE TABLE scan_pcs (
+                    scan_id INTEGER NOT NULL,
+                    ip TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    PRIMARY KEY (scan_id, ip)
+                );
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO scans (scanned_at, network_label, subnet, error)
+                VALUES (?, ?, ?, ?)
+                """,
+                (datetime.now().astimezone().isoformat(timespec="seconds"), "lan", "", None),
+            )
+            conn.execute(
+                "INSERT INTO scan_pcs (scan_id, ip, payload_json) VALUES (?, ?, ?)",
+                (1, "192.168.1.10", json.dumps(payload)),
+            )
+            conn.commit()
+
+            panel_db.ensure_schema(conn)
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(scan_pcs)")}
+            hostname = conn.execute("SELECT hostname FROM scan_pcs").fetchone()[0]
+            indexes = {row[1] for row in conn.execute("PRAGMA index_list(scan_pcs)")}
+
+        self.assertIn("hostname", columns)
+        self.assertEqual(hostname, "OldKidPC")
+        self.assertIn("idx_scan_pcs_hostname", indexes)
+        migrated_pc = store.get_scan_pc_by_hostname("oldkidpc")
+        assert migrated_pc is not None
+        self.assertEqual(migrated_pc["ip"], "192.168.1.10")
+
     def test_load_scan_metadata(self) -> None:
         scanned_at = datetime.now().astimezone()
         store.save_scan(
@@ -129,6 +187,26 @@ class ScanStoreTests(unittest.TestCase):
         )
         pcs = store.get_tracked_ips()
         self.assertEqual(pcs["10.0.0.1"]["hostname"], "NewName")
+
+    def test_get_scan_pc_by_hostname_uses_latest_successful_scan(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="KidPC")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="first",
+            subnet="10.0.0.0/24",
+        )
+        store.save_scan_error("bad subnet", subnet="bad")
+        store.save_scan(
+            pcs={"10.0.0.2": _sample_pc_info(ip="10.0.0.2", hostname="KidPC")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="second",
+            subnet="10.0.0.0/24",
+        )
+
+        pc = store.get_scan_pc_by_hostname("kidpc")
+
+        assert pc is not None
+        self.assertEqual(pc["ip"], "10.0.0.2")
 
     def test_prune_stale_tracked_ips_removes_old_scan(self) -> None:
         store.save_scan(
@@ -231,6 +309,27 @@ class ScanStoreTests(unittest.TestCase):
             self.assertEqual(
                 conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], initial_scans
             )
+
+    def test_record_poll_inspect_updates_hostname_column(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="OldName")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="10.0.0.0/24",
+        )
+
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1", hostname="NewName", locked=False),
+        )
+
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            hostname = conn.execute("SELECT hostname FROM scan_pcs").fetchone()[0]
+        self.assertEqual(hostname, "NewName")
+        renamed_pc = store.get_scan_pc_by_hostname("newname")
+        assert renamed_pc is not None
+        self.assertEqual(renamed_pc["ip"], "10.0.0.1")
 
     def test_record_poll_inspect_inserts_on_status_change(self) -> None:
         store.save_scan(
