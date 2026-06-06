@@ -15,10 +15,10 @@ class FormatSnapshotRecordedAtTests(unittest.TestCase):
     def test_today_shows_compact_local_time(self) -> None:
         self.assertEqual(
             format_snapshot_recorded_at(
-                "2026-06-05T14:16:54-05:00",
+                "2026-06-05T15:30:00-05:00",
                 now=self._NOW,
             ),
-            "2:16pm",
+            "3:30pm",
         )
 
     def test_today_morning_shows_am(self) -> None:
@@ -33,19 +33,19 @@ class FormatSnapshotRecordedAtTests(unittest.TestCase):
     def test_yesterday(self) -> None:
         self.assertEqual(
             format_snapshot_recorded_at(
-                "2026-06-04T14:16:54-05:00",
+                "2026-06-04T15:30:00-05:00",
                 now=self._NOW,
             ),
-            "2:16pm yesterday",
+            "3:30pm yesterday",
         )
 
     def test_older_date_shows_short_month_and_day(self) -> None:
         self.assertEqual(
             format_snapshot_recorded_at(
-                "2026-06-01T14:16:54-05:00",
+                "2026-06-01T15:30:00-05:00",
                 now=self._NOW,
             ),
-            "2:16pm Jun 1",
+            "3:30pm Jun 1",
         )
 
     def test_invalid_timestamp_is_returned_unchanged(self) -> None:

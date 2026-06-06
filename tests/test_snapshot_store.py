@@ -173,7 +173,7 @@ class SnapshotStoreTests(unittest.TestCase):
             hostname="KidPC",
             ip="192.168.1.50",
             snapshot_date=yesterday,
-            recorded_at="2026-06-05T14:16:54",
+            recorded_at="2026-06-01T10:00:00",
             payload=_sample_pc_info(
                 hostname="KidPC",
                 ip="192.168.1.50",
@@ -185,7 +185,7 @@ class SnapshotStoreTests(unittest.TestCase):
             hostname="KidPC",
             ip="192.168.1.55",
             snapshot_date=today,
-            recorded_at="2026-06-06T14:30:26",
+            recorded_at="2026-06-02T12:00:00",
             payload=_sample_pc_info(
                 hostname="KidPC",
                 ip="192.168.1.55",
@@ -206,7 +206,7 @@ class SnapshotStoreTests(unittest.TestCase):
             hostname="KidPC",
             ip="192.168.1.55",
             snapshot_date=today,
-            recorded_at="2026-06-06T14:40:09",
+            recorded_at="2026-06-02T12:00:00",
             payload=_sample_pc_info(
                 ip="192.168.1.55",
                 reachable=False,
@@ -221,7 +221,7 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(result[1]["accumulated_seconds"], 28801)
         self.assertFalse(result[1]["reachable"])
 
-    def test_get_latest_panel_snapshot_prefers_reachable(self) -> None:
+    def test_get_latest_panel_snapshot_prefers_recent_with_panel_data(self) -> None:
         today = date.today().isoformat()
         yesterday = (date.today() - timedelta(days=1)).isoformat()
         self._insert_row(
@@ -237,17 +237,55 @@ class SnapshotStoreTests(unittest.TestCase):
             hostname="KidPC",
             ip="192.168.1.10",
             snapshot_date=today,
-            recorded_at="2026-06-01T12:00:00",
+            recorded_at="2026-06-02T12:00:00",
             payload=_sample_pc_info(
                 reachable=False,
                 connection_error="timed out",
                 status="LOCKED",
+                locked=True,
                 accumulated_seconds=28801,
             ),
         )
         result = store.get_latest_panel_snapshot_for_pc(ip="192.168.1.10")
         assert result is not None
-        self.assertEqual(result[1]["accumulated_seconds"], 500)
+        self.assertEqual(result[1]["accumulated_seconds"], 28801)
+        self.assertEqual(result[0], "2026-06-02T12:00:00")
+
+    def test_get_latest_panel_snapshot_prefers_recent_after_ip_change(self) -> None:
+        today = date.today().isoformat()
+        yesterday = (date.today() - timedelta(days=1)).isoformat()
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.50",
+            snapshot_date=yesterday,
+            recorded_at="2026-06-01T10:00:00",
+            payload=_sample_pc_info(
+                hostname="KidPC",
+                ip="192.168.1.50",
+                accumulated_seconds=12396,
+            ),
+        )
+        self._insert_row(
+            username="child",
+            hostname="KidPC",
+            ip="192.168.1.55",
+            snapshot_date=today,
+            recorded_at="2026-06-02T12:00:00",
+            payload=_sample_pc_info(
+                hostname="KidPC",
+                ip="192.168.1.55",
+                reachable=False,
+                connection_error="timed out",
+                status="LOCKED",
+                locked=True,
+                accumulated_seconds=28801,
+            ),
+        )
+        result = store.get_latest_panel_snapshot_for_pc(hostname="KidPC", ip="192.168.1.55")
+        assert result is not None
+        self.assertEqual(result[1]["status"], "LOCKED")
+        self.assertEqual(result[0], "2026-06-02T12:00:00")
 
     def test_get_latest_reachable_snapshot_skips_errors(self) -> None:
         today = date.today().isoformat()

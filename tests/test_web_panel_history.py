@@ -73,7 +73,7 @@ class WebPanelHistoryTests(unittest.TestCase):
 
     def test_control_shows_friendly_snapshot_time_for_today(self) -> None:
         now = datetime.now().astimezone()
-        recorded = now.replace(hour=14, minute=16, second=54, microsecond=0)
+        recorded = now.replace(hour=10, minute=30, second=0, microsecond=0)
         payload = _sample_pc_info(ip="192.168.1.10")
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)

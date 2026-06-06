@@ -37,9 +37,9 @@ eth0\t0001A8C0\t00000000\t0001\t0\t0\t0\t00FFFFFF\t0\t0\t0
         with mock.patch("kid_pc_monitor.network.platform.system", return_value="Linux"):
             with mock.patch.object(network, "_linux_primary_ipv4", return_value=None):
                 with mock.patch.object(
-                    network, "_ipv4_from_routing_socket", return_value="192.168.1.113"
+                    network, "_ipv4_from_routing_socket", return_value="192.168.1.100"
                 ):
-                    self.assertEqual(network.get_primary_ipv4(), "192.168.1.113")
+                    self.assertEqual(network.get_primary_ipv4(), "192.168.1.100")
 
     def test_get_local_ip_defaults_to_loopback(self) -> None:
         with mock.patch.object(network, "get_primary_ipv4", return_value=None):

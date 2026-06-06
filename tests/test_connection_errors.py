@@ -32,7 +32,7 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
 
     def test_stale_timestamp_from_inspect_connection_error(self) -> None:
         exc = ConnectionError(
-            "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
         message = format_agent_connection_error(exc)
         self.assertIn("clock is out of sync", message)
@@ -48,7 +48,7 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
 
     def test_connection_failure_fields(self) -> None:
         exc = ConnectionError(
-            "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
         fields = connection_failure_fields(exc)
         self.assertFalse(fields["reachable"])
@@ -73,7 +73,7 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
                 "timestamp outside allowed window",
             ),
         ):
-            ok, message = request_text("192.168.123.6", "lock")
+            ok, message = request_text("192.168.1.20", "lock")
         self.assertFalse(ok)
         self.assertIn("clock is out of sync", message)
 
@@ -107,11 +107,11 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
     def test_scan_records_connection_error_for_stale_clock(self) -> None:
         csrf = self._csrf_from_html(self.client.get("/").get_data(as_text=True))
         stale = ConnectionError(
-            "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
         discovered = {
-            "192.168.123.6": {
-                "hostname": "win11-vm-1",
+            "192.168.1.20": {
+                "hostname": "KidPC",
                 "status": "online",
             }
         }
@@ -123,7 +123,7 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
 
         pcs = scan_store.get_discovered_pcs()
-        entry = pcs["192.168.123.6"]
+        entry = pcs["192.168.1.20"]
         self.assertFalse(entry["reachable"])
         self.assertIn("clock is out of sync", entry["connection_error"])
 
@@ -134,14 +134,14 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
     def test_poll_shows_offline_for_no_route_to_host(self) -> None:
         os_exc = OSError(113, "No route to host")
         unreachable = ConnectionError(
-            "Cannot reach agent at 192.168.123.6:9999: [Errno 113] No route to host"
+            "Cannot reach agent at 192.168.1.20:9999: [Errno 113] No route to host"
         )
         unreachable.__cause__ = os_exc
         scan_store.save_scan(
-            pcs={"192.168.123.6": {"hostname": "win11-vm-1", "reachable": True}},
+            pcs={"192.168.1.20": {"hostname": "KidPC", "reachable": True}},
             scanned_at=datetime.now().astimezone(),
             network_label="lan",
-            subnet="192.168.123.0/24",
+            subnet="192.168.1.0/24",
         )
         with mock.patch.object(agent_poller, "inspect_pc", side_effect=unreachable):
             agent_poller.poll_once()
@@ -153,10 +153,10 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
 
     def test_control_page_shows_connection_error(self) -> None:
         stale = ConnectionError(
-            "Cannot reach agent at 192.168.123.6:9999: timestamp outside allowed window"
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
         with mock.patch.object(wp, "inspect_pc", side_effect=stale):
-            response = self.client.get("/control/192.168.123.6")
+            response = self.client.get("/control/192.168.1.20")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("clock is out of sync", html)

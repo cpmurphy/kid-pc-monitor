@@ -142,13 +142,10 @@ def get_latest_panel_snapshot_for_pc(
     ip: str | None = None,
 ) -> tuple[str, dict[str, Any]] | None:
     """Return the best snapshot for the control-page stale-data fallback."""
-    snapshot = get_latest_snapshot_for_pc(hostname=hostname, ip=ip, reachable_only=True)
-    if snapshot is not None:
-        return snapshot
     snapshot = get_latest_snapshot_for_pc(hostname=hostname, ip=ip, reachable_only=False)
     if snapshot is not None and snapshot_has_panel_data(snapshot[1]):
         return snapshot
-    return None
+    return get_latest_snapshot_for_pc(hostname=hostname, ip=ip, reachable_only=True)
 
 
 def _query_latest_snapshot(
