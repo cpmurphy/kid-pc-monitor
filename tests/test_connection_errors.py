@@ -6,6 +6,7 @@ import json
 import re
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +18,7 @@ from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.remote_client import (
     connection_failure_fields,
     format_agent_connection_error,
+    is_offline_connection_error,
     request_text,
 )
 
@@ -54,6 +56,17 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
         fields = connection_failure_fields(exc)
         self.assertFalse(fields["reachable"])
         self.assertIn("clock is out of sync", fields["connection_error"])
+
+    def test_errno_113_is_offline(self) -> None:
+        os_exc = OSError(113, "No route to host")
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: [Errno 113] No route to host"
+        )
+        exc.__cause__ = os_exc
+        self.assertTrue(is_offline_connection_error(exc))
+        fields = connection_failure_fields(exc)
+        self.assertFalse(fields["reachable"])
+        self.assertNotIn("connection_error", fields)
 
 
 class WebPanelConnectionErrorTests(unittest.TestCase):
@@ -121,6 +134,29 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         home = self.client.get("/")
         html = home.get_data(as_text=True)
         self.assertIn("CAN'T CONTROL", html)
+
+    def test_poll_shows_offline_for_no_route_to_host(self) -> None:
+        self._login()
+        os_exc = OSError(113, "No route to host")
+        unreachable = ConnectionError(
+            "Cannot reach agent at 192.168.123.6:9999: [Errno 113] No route to host"
+        )
+        unreachable.__cause__ = os_exc
+        scan_store.save_scan(
+            pcs={"192.168.123.6": {"hostname": "win11-vm-1", "reachable": True}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.123.0/24",
+        )
+        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
+            from kid_pc_monitor.agent_poller import poll_once
+
+            poll_once()
+
+        home = self.client.get("/")
+        html = home.get_data(as_text=True)
+        self.assertIn("OFFLINE", html)
+        self.assertNotIn("CAN'T CONTROL", html)
 
     def test_control_page_shows_connection_error(self) -> None:
         self._login()

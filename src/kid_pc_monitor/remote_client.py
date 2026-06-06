@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import ipaddress
 import secrets
 import socket
@@ -295,8 +296,26 @@ def format_agent_connection_error(exc: BaseException) -> str:
     return text or "Could not communicate with the agent."
 
 
+def is_offline_connection_error(exc: BaseException) -> bool:
+    """True when the host is unreachable at the network layer (e.g. powered off)."""
+    offline_errnos: set[int] = {113}  # Linux EHOSTUNREACH
+    for name in ("EHOSTUNREACH", "EHOSTDOWN", "ENETUNREACH"):
+        val = getattr(errno, name, None)
+        if isinstance(val, int):
+            offline_errnos.add(val)
+
+    for err in (exc, exc.__cause__):
+        if isinstance(err, OSError) and err.errno in offline_errnos:
+            return True
+
+    lower = str(exc).lower()
+    return "no route to host" in lower or "[errno 113]" in lower
+
+
 def connection_failure_fields(exc: BaseException) -> dict[str, Any]:
     """Session/template fields when inspect or control actions cannot reach an agent."""
+    if is_offline_connection_error(exc):
+        return {"reachable": False}
     return {
         "reachable": False,
         "connection_error": format_agent_connection_error(exc),
