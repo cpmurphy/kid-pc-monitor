@@ -98,6 +98,20 @@ class AgentPollerTests(unittest.TestCase):
             agent_poller.poll_once()
         prune_mock.assert_called_once_with()
 
+    def test_poll_once_updates_scan_registry(self) -> None:
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        with mock.patch.object(
+            agent_poller, "inspect_pc", return_value=_sample_pc_info(locked=True)
+        ):
+            agent_poller.poll_once()
+        tracked = scan_store.get_tracked_ips()
+        self.assertTrue(tracked["192.168.1.10"]["locked"])
+
 
 if __name__ == "__main__":
     unittest.main()

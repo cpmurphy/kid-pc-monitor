@@ -10,6 +10,18 @@ from typing import Any
 from kid_pc_monitor.panel_db import connect
 
 STALE_TRACKED_HOURS = 12
+POLL_NETWORK_LABEL = "poll"
+
+
+def dashboard_status_key(pc_info: dict[str, Any]) -> str:
+    """Badge-level status for coalescing poll updates (not full payload equality)."""
+    if pc_info.get("connection_error"):
+        return "cant_control"
+    if not pc_info.get("reachable", True):
+        return "offline"
+    if pc_info.get("locked"):
+        return "locked"
+    return "online"
 
 
 def _json_default(value: Any) -> str:
@@ -80,9 +92,92 @@ def _latest_scan_row(conn: sqlite3.Connection) -> sqlite3.Row | None:
     ).fetchone()
 
 
+def _latest_metadata_scan_row(conn: sqlite3.Connection) -> sqlite3.Row | None:
+    """Latest scan row shown in panel metadata (excludes poll-sourced rows)."""
+    return conn.execute(
+        """
+        SELECT id, scanned_at, network_label, subnet, error
+        FROM scans
+        WHERE network_label != ?
+        ORDER BY id DESC
+        LIMIT 1
+        """,
+        (POLL_NETWORK_LABEL,),
+    ).fetchone()
+
+
+def _latest_scan_pc_for_ip(conn: sqlite3.Connection, ip: str) -> sqlite3.Row | None:
+    return conn.execute(
+        """
+        SELECT sp.scan_id, sp.payload_json
+        FROM scan_pcs sp
+        INNER JOIN scans s ON sp.scan_id = s.id
+        WHERE sp.ip = ? AND s.error IS NULL
+        ORDER BY sp.scan_id DESC
+        LIMIT 1
+        """,
+        (ip,),
+    ).fetchone()
+
+
+def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | None = None) -> None:
+    """Update tracked scan registry from a poll inspect (coalesce by dashboard status)."""
+    now = when or datetime.now().astimezone()
+    payload = {**pc_info, "ip": ip}
+    payload_json = json.dumps(payload, default=_json_default)
+    status = dashboard_status_key(payload)
+
+    with connect() as conn:
+        latest = _latest_scan_pc_for_ip(conn, ip)
+        if latest is not None:
+            existing = json.loads(latest["payload_json"])
+            if dashboard_status_key(existing) == status:
+                conn.execute(
+                    """
+                    UPDATE scan_pcs SET payload_json = ?
+                    WHERE scan_id = ? AND ip = ?
+                    """,
+                    (payload_json, latest["scan_id"], ip),
+                )
+                conn.execute(
+                    "UPDATE scans SET scanned_at = ? WHERE id = ?",
+                    (now.isoformat(timespec="seconds"), latest["scan_id"]),
+                )
+                conn.commit()
+                return
+
+        conn.execute(
+            """
+            INSERT INTO scans (scanned_at, network_label, subnet, error)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                now.isoformat(timespec="seconds"),
+                POLL_NETWORK_LABEL,
+                "",
+                None,
+            ),
+        )
+        scan_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        conn.execute(
+            "INSERT INTO scan_pcs (scan_id, ip, payload_json) VALUES (?, ?, ?)",
+            (scan_id, ip, payload_json),
+        )
+        conn.commit()
+
+
+def _prune_orphan_scans(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        DELETE FROM scans
+        WHERE id NOT IN (SELECT DISTINCT scan_id FROM scan_pcs)
+        """
+    )
+
+
 def load_scan_metadata() -> dict[str, Any]:
     with connect() as conn:
-        row = _latest_scan_row(conn)
+        row = _latest_metadata_scan_row(conn)
 
     if not row:
         return {
@@ -215,6 +310,7 @@ def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
             if last_updated is None or last_updated < cutoff:
                 conn.execute("DELETE FROM scan_pcs WHERE ip = ?", (ip,))
                 pruned.append(ip)
+        _prune_orphan_scans(conn)
         conn.commit()
 
     return pruned

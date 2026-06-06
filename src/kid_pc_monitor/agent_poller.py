@@ -8,7 +8,7 @@ import threading
 import time
 
 from kid_pc_monitor.remote_client import connection_failure_fields, inspect_pc
-from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips
+from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips, record_poll_inspect
 from kid_pc_monitor.snapshot_store import save_poll_snapshot, save_snapshot
 
 logger = logging.getLogger(__name__)
@@ -40,11 +40,13 @@ def poll_once() -> None:
             info = inspect_pc(ip)
             info["ip"] = ip
             save_poll_snapshot(info)
+            record_poll_inspect(ip, info)
             if info.get("reachable") and info.get("current_user"):
                 save_snapshot(info)
         except ConnectionError as exc:
             failure = {**entry, "ip": ip, **connection_failure_fields(exc)}
             save_poll_snapshot(failure)
+            record_poll_inspect(ip, failure)
         except Exception:
             logger.warning("Failed to poll agent at %s", ip, exc_info=True)
     pruned = prune_stale_tracked_ips()

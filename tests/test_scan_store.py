@@ -195,6 +195,119 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(pruned, ["10.0.0.1"])
         self.assertEqual(store.get_tracked_ips(), {})
 
+    def test_dashboard_status_key(self) -> None:
+        self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": False}), "online")
+        self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": True}), "locked")
+        self.assertEqual(store.dashboard_status_key({"reachable": False}), "offline")
+        self.assertEqual(
+            store.dashboard_status_key({"reachable": False, "connection_error": "bad clock"}),
+            "cant_control",
+        )
+
+    def test_record_poll_inspect_coalesces_same_status(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", locked=False)},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="10.0.0.0/24",
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            initial_scans = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
+
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1", locked=False, accumulated_seconds=100),
+        )
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1", locked=False, accumulated_seconds=200),
+        )
+
+        pcs = store.get_tracked_ips()
+        self.assertEqual(pcs["10.0.0.1"]["accumulated_seconds"], 200)
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            self.assertEqual(
+                conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], initial_scans
+            )
+
+    def test_record_poll_inspect_inserts_on_status_change(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", locked=False)},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="10.0.0.0/24",
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            initial_scans = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
+
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", locked=True))
+
+        pcs = store.get_tracked_ips()
+        self.assertTrue(pcs["10.0.0.1"]["locked"])
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            self.assertEqual(
+                conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], initial_scans + 1
+            )
+            poll_rows = conn.execute(
+                "SELECT COUNT(*) FROM scans WHERE network_label = ?",
+                (store.POLL_NETWORK_LABEL,),
+            ).fetchone()[0]
+            self.assertEqual(poll_rows, 1)
+
+    def test_record_poll_inspect_tracks_connection_failure(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="10.0.0.0/24",
+        )
+        store.record_poll_inspect(
+            "10.0.0.1",
+            {
+                "hostname": "KidPC",
+                "reachable": False,
+                "connection_error": "Cannot reach agent",
+            },
+        )
+        pcs = store.get_tracked_ips()
+        self.assertFalse(pcs["10.0.0.1"]["reachable"])
+        self.assertIn("connection_error", pcs["10.0.0.1"])
+
+    def test_load_scan_metadata_ignores_poll_rows(self) -> None:
+        scanned_at = datetime.now().astimezone() - timedelta(hours=1)
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=scanned_at,
+            network_label="home-lan",
+            subnet="10.0.0.0/24",
+        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", locked=True))
+        meta = store.load_scan_metadata()
+        self.assertEqual(meta["last_scan_network"], "home-lan")
+        self.assertEqual(meta["scan_subnet"], "10.0.0.0/24")
+
+    def test_prune_stale_tracked_ips_removes_orphan_scans(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 1)
+
+        store.prune_stale_tracked_ips(max_age_hours=12)
+
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 0)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scan_pcs").fetchone()[0], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
