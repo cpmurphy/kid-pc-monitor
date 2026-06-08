@@ -245,6 +245,12 @@ def get_scan_pc(ip: str) -> dict[str, Any] | None:
     return get_tracked_ips().get(ip)
 
 
+def get_pc_poll_updated_at(ip: str) -> datetime | None:
+    """Return when a tracked PC was last updated by the background poller."""
+    with connect() as conn:
+        return _latest_scan_time(conn, ip)
+
+
 def get_scan_pc_by_hostname(hostname: str) -> dict[str, Any] | None:
     """Return latest tracked PC info for a hostname from successful scans."""
     with connect() as conn:

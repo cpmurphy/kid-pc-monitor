@@ -31,12 +31,16 @@ export function getIp() {
     return el ? el.getAttribute("data-ip") : "";
 }
 
-export function refreshPageStats() {
+export function refreshPageStats(opts) {
+    opts = opts || {};
     const container = document.getElementById("today-stats");
     if (!container) {
         return Promise.resolve();
     }
-    const statsUrl = window.location.pathname.replace(/\/?$/, "") + "/stats";
+    let statsUrl = window.location.pathname.replace(/\/?$/, "") + "/stats";
+    if (opts.source === "poll") {
+        statsUrl += "?source=poll";
+    }
     return fetch(statsUrl, { headers: { Accept: "text/html" } })
         .then(function (response) {
             if (!response.ok) {
@@ -51,6 +55,63 @@ export function refreshPageStats() {
         })
         .catch(function () {
             // Leave the current stats visible if refresh fails.
+        });
+}
+
+export function startControlPagePoll() {
+    const container = document.getElementById("today-stats");
+    if (!container) {
+        return;
+    }
+    let lastUpdatedAt = container.getAttribute("data-poll-updated-at");
+    const metaUrl = window.location.pathname.replace(/\/?$/, "") + "/poll-meta";
+
+    function pollCheckIntervalMs(data) {
+        if (
+            data &&
+            typeof data.poll_interval_sec === "number" &&
+            data.poll_interval_sec > 0
+        ) {
+            return Math.max(5000, Math.round((data.poll_interval_sec * 1000) / 4));
+        }
+        return 15000;
+    }
+
+    function checkPollUpdate() {
+        fetch(metaUrl, { headers: { Accept: "application/json" } })
+            .then(function (response) {
+                if (!response.ok) {
+                    return null;
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data || !data.updated_at || data.updated_at === lastUpdatedAt) {
+                    return;
+                }
+                lastUpdatedAt = data.updated_at;
+                container.setAttribute("data-poll-updated-at", lastUpdatedAt);
+                return refreshPageStats({ source: "poll" });
+            })
+            .catch(function () {
+                // Ignore transient poll-meta failures.
+            });
+    }
+
+    fetch(metaUrl, { headers: { Accept: "application/json" } })
+        .then(function (response) {
+            if (!response.ok) {
+                return null;
+            }
+            return response.json();
+        })
+        .then(function (data) {
+            const intervalMs = pollCheckIntervalMs(data);
+            checkPollUpdate();
+            setInterval(checkPollUpdate, intervalMs);
+        })
+        .catch(function () {
+            setInterval(checkPollUpdate, 15000);
         });
 }
 

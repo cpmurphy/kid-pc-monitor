@@ -1,6 +1,12 @@
 "use strict";
 
-import { parsePositiveInt, postAction, registerHandlers, showStatus } from "./core.js";
+import {
+    parsePositiveInt,
+    postAction,
+    registerHandlers,
+    showStatus,
+    startControlPagePoll,
+} from "./core.js";
 
 function grantExtension(button) {
     const minutes = parsePositiveInt(
@@ -61,3 +67,7 @@ registerHandlers({
         );
     },
 });
+
+if (document.body.classList.contains("page-control")) {
+    startControlPagePoll();
+}

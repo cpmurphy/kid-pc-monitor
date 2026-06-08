@@ -45,7 +45,7 @@
         </div>
         {% endif %}
 
-        <div id="today-stats">
+        <div id="today-stats"{% if poll_updated_at %} data-poll-updated-at="{{ poll_updated_at }}"{% endif %}>
             {% include "control_today_stats.html" %}
         </div>
 

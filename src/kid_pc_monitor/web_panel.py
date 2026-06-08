@@ -26,7 +26,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from kid_pc_monitor.agent_poller import start_agent_poller
+from kid_pc_monitor.agent_poller import POLL_INTERVAL_SEC, start_agent_poller
 from kid_pc_monitor.panel_format import (
     format_minutes_duration,
     format_seconds_duration,
@@ -51,6 +51,7 @@ from kid_pc_monitor.remote_client import (
     scan_for_servers,
 )
 from kid_pc_monitor.scan_store import (
+    get_pc_poll_updated_at,
     get_scan_pc,
     get_scan_pc_by_hostname,
     load_scan_metadata,
@@ -248,6 +249,30 @@ def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[No
     return ip, pc_info
 
 
+def _fetch_control_pc_info_cached(target: str) -> tuple[str, dict[str, Any]] | tuple[None, str]:
+    try:
+        ip, requested_hostname = _resolve_control_target(target)
+    except LookupError:
+        return None, f"No recent scan result found for {target}. Scan again and try again."
+
+    entry = get_scan_pc(ip)
+    if entry is None:
+        return None, f"No recent scan result found for {target}. Scan again and try again."
+
+    pc_info = {**entry, "ip": ip}
+    if not pc_info.get("reachable", True) or pc_info.get("connection_error"):
+        pc_info = {
+            "hostname": _snapshot_lookup_hostname(
+                {"hostname": requested_hostname or pc_info.get("hostname") or f"PC at {ip}"}, ip
+            )
+            or pc_info.get("hostname")
+            or f"PC at {ip}",
+            **pc_info,
+        }
+        pc_info = _apply_pc_snapshot(pc_info, ip)
+    return ip, pc_info
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -385,12 +410,38 @@ def create_app() -> Flask:
         if fetched[0] is None:
             return fetched[1], 404
         ip, pc_info = fetched
-        return render_template("control.html", ip=ip, pc_info=pc_info)
+        poll_updated_at = get_pc_poll_updated_at(ip)
+        poll_updated_at_iso = (
+            poll_updated_at.isoformat(timespec="seconds") if poll_updated_at else None
+        )
+        return render_template(
+            "control.html",
+            ip=ip,
+            pc_info=pc_info,
+            poll_updated_at=poll_updated_at_iso,
+        )
+
+    @app.route("/control/<target>/poll-meta")
+    @login_required
+    def control_poll_meta(target: str):
+        try:
+            ip, _requested_hostname = _resolve_control_target(target)
+        except LookupError:
+            abort(404)
+        updated_at = get_pc_poll_updated_at(ip)
+        return {
+            "updated_at": updated_at.isoformat(timespec="seconds") if updated_at else None,
+            "poll_interval_sec": POLL_INTERVAL_SEC,
+        }
 
     @app.route("/control/<target>/stats")
     @login_required
     def control_stats(target: str):
-        fetched = _fetch_control_pc_info(target)
+        source = request.args.get("source", "live")
+        if source == "poll":
+            fetched = _fetch_control_pc_info_cached(target)
+        else:
+            fetched = _fetch_control_pc_info(target)
         if fetched[0] is None:
             abort(404)
         ip, pc_info = fetched

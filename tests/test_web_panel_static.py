@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -179,6 +180,7 @@ class WebPanelStaticTests(unittest.TestCase):
         cases = [
             ("/static/js/core.js", "postAction"),
             ("/static/js/core.js", "refreshPageStats"),
+            ("/static/js/core.js", "startControlPagePoll"),
             ("/static/js/home.js", "page-home"),
             ("/static/js/control.js", "registerHandlers"),
             ("/static/js/daily-settings.js", "save-daily-limit"),
@@ -218,6 +220,30 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertIn("Unlocked", html)
         self.assertIn("Daily allowance", html)
         self.assertNotIn('id="today-stats"', html)
+
+    def test_control_stats_poll_source_uses_cached_scan(self) -> None:
+        cached = _sample_pc_info(access_status="Locked", locked=True)
+        with mock.patch.object(wp, "get_scan_pc", return_value=cached):
+            with mock.patch.object(wp, "inspect_pc") as inspect_mock:
+                response = self.client.get("/control/192.168.1.10/stats?source=poll")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("Locked", html)
+        inspect_mock.assert_not_called()
+
+    def test_control_poll_meta_returns_updated_at(self) -> None:
+        updated = datetime.now().astimezone().replace(microsecond=0)
+        with mock.patch.object(
+            wp,
+            "get_pc_poll_updated_at",
+            return_value=updated,
+        ):
+            response = self.client.get("/control/192.168.1.10/poll-meta")
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        assert payload is not None
+        self.assertEqual(payload["updated_at"], updated.isoformat(timespec="seconds"))
+        self.assertEqual(payload["poll_interval_sec"], 60)
 
     def test_passive_page_loads_no_panel_js(self) -> None:
         html = self._set_password_html()
