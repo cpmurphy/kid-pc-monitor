@@ -31,10 +31,34 @@ export function getIp() {
     return el ? el.getAttribute("data-ip") : "";
 }
 
+export function refreshPageStats() {
+    const container = document.getElementById("today-stats");
+    if (!container) {
+        return Promise.resolve();
+    }
+    const statsUrl = window.location.pathname.replace(/\/?$/, "") + "/stats";
+    return fetch(statsUrl, { headers: { Accept: "text/html" } })
+        .then(function (response) {
+            if (!response.ok) {
+                return null;
+            }
+            return response.text();
+        })
+        .then(function (html) {
+            if (html !== null) {
+                container.innerHTML = html;
+            }
+        })
+        .catch(function () {
+            // Leave the current stats visible if refresh fails.
+        });
+}
+
 // Central POST helper for /action. `body` is merged with the page IP. opts:
-//   button      - element to disable while the request is in flight
-//   reloadDelay - if set and the action succeeds, reload after this many ms
-//   onSuccess   - callback run on a successful response
+//   button       - element to disable while the request is in flight
+//   refreshStats - if true and #today-stats exists, reload that section after success
+//   reloadDelay  - if set and the action succeeds, reload after this many ms
+//   onSuccess    - callback run on a successful response
 export function postAction(body, opts) {
     opts = opts || {};
     const button = opts.button || null;
@@ -64,7 +88,9 @@ export function postAction(body, opts) {
                 if (typeof opts.onSuccess === "function") {
                     opts.onSuccess();
                 }
-                if (opts.reloadDelay) {
+                if (opts.refreshStats) {
+                    refreshPageStats();
+                } else if (opts.reloadDelay) {
                     setTimeout(function () {
                         location.reload();
                     }, opts.reloadDelay);

@@ -225,6 +225,29 @@ def _resolve_control_target(target: str) -> tuple[str, str | None]:
     return str(scan_pc["ip"]), str(scan_pc.get("hostname") or target)
 
 
+def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[None, str]:
+    try:
+        ip, requested_hostname = _resolve_control_target(target)
+    except LookupError:
+        return None, f"No recent scan result found for {target}. Scan again and try again."
+
+    try:
+        pc_info = inspect_pc(ip)
+        pc_info["ip"] = ip
+        _record_inspect(pc_info)
+    except ConnectionError as exc:
+        pc_info = {
+            "hostname": _snapshot_lookup_hostname(
+                {"hostname": requested_hostname or f"PC at {ip}"}, ip
+            )
+            or f"PC at {ip}",
+            "ip": ip,
+            **connection_failure_fields(exc),
+        }
+    pc_info = _apply_pc_snapshot(pc_info, ip)
+    return ip, pc_info
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -358,26 +381,20 @@ def create_app() -> Flask:
     @app.route("/control/<target>")
     @login_required
     def control(target: str):
-        try:
-            ip, requested_hostname = _resolve_control_target(target)
-        except LookupError:
-            return f"No recent scan result found for {target}. Scan again and try again.", 404
-
-        try:
-            pc_info = inspect_pc(ip)
-            pc_info["ip"] = ip
-            _record_inspect(pc_info)
-        except ConnectionError as exc:
-            pc_info = {
-                "hostname": _snapshot_lookup_hostname(
-                    {"hostname": requested_hostname or f"PC at {ip}"}, ip
-                )
-                or f"PC at {ip}",
-                "ip": ip,
-                **connection_failure_fields(exc),
-            }
-        pc_info = _apply_pc_snapshot(pc_info, ip)
+        fetched = _fetch_control_pc_info(target)
+        if fetched[0] is None:
+            return fetched[1], 404
+        ip, pc_info = fetched
         return render_template("control.html", ip=ip, pc_info=pc_info)
+
+    @app.route("/control/<target>/stats")
+    @login_required
+    def control_stats(target: str):
+        fetched = _fetch_control_pc_info(target)
+        if fetched[0] is None:
+            abort(404)
+        ip, pc_info = fetched
+        return render_template("control_today_stats.html", ip=ip, pc_info=pc_info)
 
     @app.route("/logs/<ip>")
     @login_required

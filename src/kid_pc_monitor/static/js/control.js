@@ -12,19 +12,19 @@ function grantExtension(button) {
     }
     postAction(
         { action: "extend_time", minutes: minutes },
-        { button: button, reloadDelay: 1000 }
+        { button: button, refreshStats: true }
     );
 }
 
 registerHandlers({
     lock: function (el) {
-        postAction({ action: "lock" }, { button: el, reloadDelay: 2000 });
+        postAction({ action: "lock" }, { button: el, refreshStats: true });
     },
     shutdown: function (el) {
         if (!confirm("Are you sure you want to shutdown this computer?")) {
             return;
         }
-        postAction({ action: "shutdown" }, { button: el, reloadDelay: 2000 });
+        postAction({ action: "shutdown" }, { button: el, refreshStats: true });
     },
     "send-message": function (el) {
         const input = document.getElementById("message-text");
@@ -57,7 +57,7 @@ registerHandlers({
         }
         postAction(
             { action: "clear_manual_lock" },
-            { button: el, reloadDelay: 1000 }
+            { button: el, refreshStats: true }
         );
     },
 });

@@ -178,6 +178,7 @@ class WebPanelStaticTests(unittest.TestCase):
     def test_js_modules_served(self) -> None:
         cases = [
             ("/static/js/core.js", "postAction"),
+            ("/static/js/core.js", "refreshPageStats"),
             ("/static/js/home.js", "page-home"),
             ("/static/js/control.js", "registerHandlers"),
             ("/static/js/daily-settings.js", "save-daily-limit"),
@@ -203,6 +204,20 @@ class WebPanelStaticTests(unittest.TestCase):
         html = self._control_html()
         self.assertIn("js/control.js", html)
         self.assertNotIn("panel.js", html)
+
+    def test_control_has_today_stats_container(self) -> None:
+        html = self._control_html()
+        self.assertIn('id="today-stats"', html)
+
+    def test_control_stats_endpoint_returns_today_section(self) -> None:
+        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+            response = self.client.get("/control/192.168.1.10/stats")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("Today", html)
+        self.assertIn("Unlocked", html)
+        self.assertIn("Daily allowance", html)
+        self.assertNotIn('id="today-stats"', html)
 
     def test_passive_page_loads_no_panel_js(self) -> None:
         html = self._set_password_html()

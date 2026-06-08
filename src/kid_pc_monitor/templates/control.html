@@ -45,91 +45,9 @@
         </div>
         {% endif %}
 
-        {% if pc_info.get('reachable', true) or pc_info.get('is_snapshot') %}
-        <div class="action-group">
-            <div class="action-title">📊 Today</div>
-
-            <p class="stat-row">🔒 <strong>Status:</strong>
-                <span class="{% if pc_info.access_status != 'Unlocked' and pc_info.access_status != 'Screen locked' %}locked-text{% endif %}">
-                    {{ pc_info.access_status }}
-                </span>
-                {% if pc_info.manual_lock_active and not pc_info.enforcement_active %}
-                    <button class="clear-inline" data-action="clear-manual-lock">Clear</button>
-                {% endif %}
-            </p>
-
-            <p class="stat-row">⏱️ <strong>Daily allowance:</strong>
-                <span class="readonly-value">
-                {% if pc_info.get('daily_limit') is not none %}
-                    {{ format_minutes_duration(pc_info.daily_limit) }}
-                {% else %}
-                    <span class="muted">Not set</span>
-                {% endif %}
-                </span>
-            </p>
-
-            <p class="stat-row">➕ <strong>Extra today:</strong>
-                <span class="readonly-value">
-                {% if pc_info.get('cumulative_extension_seconds', 0) > 0 %}
-                    +{{ format_seconds_duration(pc_info.cumulative_extension_seconds) }}
-                {% else %}
-                    <span class="muted">None</span>
-                {% endif %}
-                </span>
-            </p>
-
-            <p class="stat-row">📈 <strong>Used today:</strong>
-                <span class="readonly-value">{{ format_seconds_duration(pc_info.get('accumulated_seconds', 0)) }}</span>
-            </p>
-
-            {% if pc_info.get('time_remaining') and pc_info.get('time_remaining') != 'No limits set' %}
-            <p class="stat-row">⏳ <strong>Remaining:</strong> {{ pc_info.time_remaining }}</p>
-            {% endif %}
-
-            <p class="stat-row">🕐 <strong>Bedtime:</strong>
-                <span class="readonly-value">
-                {% if pc_info.get('bed_time') %}
-                    {{ pc_info.bed_time }}
-                {% else %}
-                    <span class="muted">Not set</span>
-                {% endif %}
-                </span>
-            </p>
-
-            <p class="stat-row">🌅 <strong>Wake-up:</strong>
-                <span class="readonly-value">
-                {% if pc_info.get('wake_time') %}
-                    {{ pc_info.wake_time }}
-                {% else %}
-                    <span class="muted">Unknown</span>
-                {% endif %}
-                </span>
-            </p>
-
-            {% if pc_info.manual_lock_active and pc_info.enforcement_active %}
-            <p class="stat-row">🔒 <strong>Manual lock:</strong> Active
-                <button class="clear-inline" data-action="clear-manual-lock">Clear</button>
-            </p>
-            {% endif %}
-            {% if pc_info.get('current_user') %}
-            <p>
-            <a href="{{ url_for('usage_history', username=pc_info.current_user) }}">7-day usage history</a>
-            {% if pc_info.get('reachable', true) %}
-            &nbsp;·&nbsp;
-            <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
-            &nbsp;·&nbsp;
-            <a href="{{ url_for('agent_logs', ip=ip) }}">Agent log</a>
-            {% endif %}
-            </p>
-            {% elif pc_info.get('reachable', true) %}
-            <p>
-            <a href="{{ url_for('daily_settings', ip=ip) }}">Daily settings</a>
-            &nbsp;·&nbsp;
-            <a href="{{ url_for('agent_logs', ip=ip) }}">Agent log</a>
-            </p>
-            {% endif %}
+        <div id="today-stats">
+            {% include "control_today_stats.html" %}
         </div>
-        {% endif %}
 
         <div id="status-message" class="status-message"></div>
 
