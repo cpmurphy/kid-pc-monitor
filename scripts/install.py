@@ -116,7 +116,14 @@ def agent_state_dir_for_user(username: str, *, same_user: bool) -> Path:
     resolved = resolve_user_localappdata_dir(username)
     if resolved is not None:
         return resolved
-    return Path(os.environ.get("SystemDrive", "C:")) / "Users" / username / "AppData" / "Local" / "KidPCMonitor"
+    return (
+        Path(os.environ.get("SystemDrive", "C:"))
+        / "Users"
+        / username
+        / "AppData"
+        / "Local"
+        / "KidPCMonitor"
+    )
 
 
 def resolve_user_localappdata_dir(username: str) -> Path | None:
@@ -311,10 +318,7 @@ def write_agent_daily_settings_to_state(
 
     try:
         _merge_agent_daily_settings_into_file(
-            daily_path,
-            wake_time=wake_time,
-            bed_time=bed_time,
-            allowance=allowance
+            daily_path, wake_time=wake_time, bed_time=bed_time, allowance=allowance
         )
         _grant_user_modify_on_dir(username, state_dir)
         return daily_path, True
@@ -398,10 +402,11 @@ def validate_user_exists(name):
     )
     try:
         result = subprocess.run(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps],
-            capture_output=True, text=True
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps],
+            capture_output=True,
+            text=True,
         )
-        return 'OK' in result.stdout
+        return "OK" in result.stdout
     except Exception:
         return False
 
@@ -415,7 +420,7 @@ def find_system_python():
 
     # 1. PATH lookup
     try:
-        out = subprocess.run(['where', 'pythonw.exe'], capture_output=True, text=True)
+        out = subprocess.run(["where", "pythonw.exe"], capture_output=True, text=True)
         if out.returncode == 0:
             for line in out.stdout.splitlines():
                 line = line.strip()
@@ -472,8 +477,9 @@ def install_to_programdata(target_user, package_dir):
 
     # Grant read+execute to the child, recursively
     acl_result = subprocess.run(
-        ['icacls', str(dest), '/grant', f'{target_user}:(OI)(CI)RX', '/T', '/Q'],
-        capture_output=True, text=True
+        ["icacls", str(dest), "/grant", f"{target_user}:(OI)(CI)RX", "/T", "/Q"],
+        capture_output=True,
+        text=True,
     )
     if acl_result.returncode != 0:
         print(f"\n⚠️  icacls warning while granting access to {target_user}:")
@@ -495,12 +501,12 @@ def create_task_with_power_settings(target_user, script_path, python_path, *, is
     print(f"   Runs as:    {target_user}{' (self-install)' if is_self else ''}")
 
     confirm = input("\nProceed with these settings? (y/n): ").lower()
-    if confirm != 'y':
+    if confirm != "y":
         print("❌ Setup cancelled.")
         return False
 
     # Logon trigger pinned to the monitored account; runs unelevated in their session.
-    domain = os.environ.get('COMPUTERNAME', '.')
+    domain = os.environ.get("COMPUTERNAME", ".")
     triggers_block = (
         f"$triggers = @( New-ScheduledTaskTrigger -AtLogon -User '{domain}\\{target_user}' )"
     )
@@ -551,9 +557,9 @@ def create_task_with_power_settings(target_user, script_path, python_path, *, is
 
     try:
         result = subprocess.run(
-            ['powershell', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            ["powershell", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         print("\n=== PowerShell Output ===")
@@ -593,17 +599,17 @@ def create_task_simple_schtasks(target_user, script_path, python_path):
 
     print(f"\n📋 Creating task with XML method...")
 
-    domain = os.environ.get('COMPUTERNAME', '.')
+    domain = os.environ.get("COMPUTERNAME", ".")
     user_id = f"{domain}\\{target_user}"
-    trigger_block = f'''    <LogonTrigger>
+    trigger_block = f"""    <LogonTrigger>
       <Enabled>true</Enabled>
       <UserId>{user_id}</UserId>
-    </LogonTrigger>'''
-    principal_block = f'''    <Principal id="Author">
+    </LogonTrigger>"""
+    principal_block = f"""    <Principal id="Author">
       <UserId>{user_id}</UserId>
       <LogonType>InteractiveToken</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>'''
+    </Principal>"""
 
     xml_content = f'''<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -649,17 +655,17 @@ def create_task_simple_schtasks(target_user, script_path, python_path):
 </Task>'''
 
     try:
-        with open('task_config.xml', 'w', encoding='utf-16') as f:
+        with open("task_config.xml", "w", encoding="utf-16") as f:
             f.write(xml_content)
 
         result = subprocess.run(
             f'schtasks /create /tn "{task_name}" /xml "task_config.xml" /f',
             shell=True,
             capture_output=True,
-            text=True
+            text=True,
         )
 
-        os.remove('task_config.xml')
+        os.remove("task_config.xml")
 
         if result.returncode == 0:
             print("\n✅ Task created successfully with battery settings!")
@@ -694,6 +700,7 @@ def check_admin():
     """Check if running as administrator"""
     try:
         import ctypes
+
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
@@ -777,7 +784,7 @@ def find_existing_agent_firewall_rule(python_path: str) -> dict | None:
 
     try:
         result = subprocess.run(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
             capture_output=True,
             text=True,
             timeout=30,
@@ -794,6 +801,17 @@ def find_existing_agent_firewall_rule(python_path: str) -> dict | None:
     if _normalize_program_path(parsed["program"]) != _normalize_program_path(python_path):
         return None
     return parsed
+
+
+def prompt_enable_legacy_direct_control() -> bool:
+    """Ask whether to keep the legacy inbound TCP control path enabled."""
+    print("\n🔁 Legacy direct control")
+    print("\n   Current agents use outbound polling to the web panel on TCP 5000, so")
+    print("   Windows Firewall does not need to expose inbound TCP 9999 by default.")
+    print("\n   Enable the legacy inbound port only if you still use kid-pc-cli direct")
+    print("   IP commands or need compatibility with an older parent web panel.")
+    choice = input("\nEnable legacy inbound TCP 9999 control? (y/N): ").strip().lower()
+    return choice in ("y", "yes")
 
 
 def configure_agent_firewall(python_path: str) -> None:
@@ -827,9 +845,9 @@ def prompt_allow_public_firewall():
     print("   until you fix the network profile or re-run this installer.")
     print("\n   Desktop PCs rarely join random networks; laptops are the main case.")
     print("   You can allow Public networks below if you accept that trade-off.")
-    choice = input(
-        f"\nAllow inbound TCP {AGENT_PORT} on Public networks too? (y/N): "
-    ).strip().lower()
+    choice = (
+        input(f"\nAllow inbound TCP {AGENT_PORT} on Public networks too? (y/N): ").strip().lower()
+    )
     return choice in ("y", "yes")
 
 
@@ -881,7 +899,7 @@ def add_agent_firewall_rule(python_path, *, allow_public=False):
 
     try:
         result = subprocess.run(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
             capture_output=True,
             text=True,
         )
@@ -913,7 +931,7 @@ def remove_agent_firewall_rule():
     """
     try:
         result = subprocess.run(
-            ['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', ps_script],
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
             capture_output=True,
             text=True,
         )
@@ -931,10 +949,7 @@ def remove_task():
     print(f"\n🗑️  Removing task '{task_name}'...")
 
     result = subprocess.run(
-        f'schtasks /delete /tn "{task_name}" /f',
-        shell=True,
-        capture_output=True,
-        text=True
+        f'schtasks /delete /tn "{task_name}" /f', shell=True, capture_output=True, text=True
     )
 
     if result.returncode == 0:
@@ -948,7 +963,7 @@ def remove_task():
 
 def run_install_flow():
     """Drive the install: gather the monitored account, paths, and create the task."""
-    current_user = os.environ.get('USERNAME') or os.environ.get('USER') or ''
+    current_user = os.environ.get("USERNAME") or os.environ.get("USER") or ""
 
     existing_target = program_data_target_user()
     if existing_target:
@@ -965,9 +980,11 @@ def run_install_flow():
     python_path = find_system_python()
     if not python_path:
         if is_self:
-            python_path = sys.executable.replace('python.exe', 'pythonw.exe')
-            print(f"\n🐍 No system-wide Python found; using the current interpreter "
-                  f"(self-install): {python_path}")
+            python_path = sys.executable.replace("python.exe", "pythonw.exe")
+            print(
+                f"\n🐍 No system-wide Python found; using the current interpreter "
+                f"(self-install): {python_path}"
+            )
         else:
             print("\n❌ No system-wide Python (pythonw.exe) was found.")
             print("   The scheduled task will run in the child's session, which cannot")
@@ -988,7 +1005,9 @@ def run_install_flow():
     script_path = install_to_programdata(target_user, source_package)
     print(f"   Granted {target_user} read+execute on the install directory.")
 
-    profile_daily_path = agent_state_dir_for_user(target_user, same_user=is_self) / INSTALL_CONFIG_FILE
+    profile_daily_path = (
+        agent_state_dir_for_user(target_user, same_user=is_self) / INSTALL_CONFIG_FILE
+    )
     existing_daily = find_complete_daily_settings(
         profile_path=profile_daily_path,
         program_data_path=program_data_daily_path(),
@@ -1000,9 +1019,7 @@ def run_install_flow():
         allowance = daily.allowance
         limit_label = f"{allowance} min/day"
         print(f"\n📋 Reusing daily schedule from {source_path}")
-        print(
-            f"   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}"
-        )
+        print(f"   Wake-up: {wake_time} · Bedtime: {bed_time} · Allowance: {limit_label}")
     else:
         bed_time = prompt_bed_time()
         wake_time = prompt_wake_up_time()
@@ -1022,15 +1039,22 @@ def run_install_flow():
         )
 
     prompt_and_store_shared_secret()
+    enable_legacy_direct = prompt_enable_legacy_direct_control()
 
     if create_task_with_power_settings(target_user, script_path, python_path, is_self=is_self):
-        configure_agent_firewall(python_path)
+        if enable_legacy_direct:
+            configure_agent_firewall(python_path)
+        else:
+            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse polling is the default).")
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
     if create_task_simple_schtasks(target_user, script_path, python_path):
-        configure_agent_firewall(python_path)
+        if enable_legacy_direct:
+            configure_agent_firewall(python_path)
+        else:
+            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse polling is the default).")
         print("\n✅ Setup complete using XML method!")
         return True
 

@@ -333,6 +333,42 @@ def get_settings(
     return resp.settings if resp.ok else None
 
 
+def action_request_fields(
+    action_name: str,
+    payload: dict[str, Any] | None = None,
+) -> tuple[str, str | None, Any, int | None]:
+    """Map a panel action name to protocol request fields."""
+    p = payload or {}
+    if action_name == "lock":
+        return "lock", None, None, None
+    if action_name == "shutdown":
+        return "shutdown", None, None, None
+    if action_name == "message":
+        return "message", None, p.get("message", ""), None
+    if action_name == "extend_time":
+        return "extend", None, int(p["minutes"]), None
+    if action_name == "clear_manual_lock":
+        return "clear", "manual_lock", None, None
+    if action_name == "clear_extensions":
+        return "clear", "cumulative_extension", None, None
+    if action_name == "set_daily_limit":
+        minutes = p.get("minutes")
+        if minutes is None or minutes == "":
+            return "clear", "daily_limit", None, None
+        return "set", "daily_limit", int(minutes), None
+    if action_name == "set_bed_time":
+        return "set", "bed_time", p.get("time"), None
+    if action_name in ("clear_bed_time", "clear_lock_times"):
+        return "clear", "bed_time", None, None
+    if action_name == "set_wake_time":
+        return "set", "wake_time", p.get("time"), None
+    if action_name == "clear_usage_limit":
+        return "clear", "daily_limit", None, None
+    if action_name == "get_logs":
+        return "get_logs", None, None, int(p.get("tail") or proto.DEFAULT_LOG_TAIL_LINES)
+    raise KeyError(action_name)
+
+
 def perform_action(
     host: str,
     action_name: str,
@@ -342,62 +378,17 @@ def perform_action(
     verbose: bool = False,
     out: Any = sys.stdout,
 ) -> tuple[bool, str]:
-    """Run a web-panel action over the structured (version 1) protocol."""
-    p = payload or {}
+    """Run a web-panel action over the structured protocol."""
     try:
-        if action_name == "lock":
-            return request_text(host, "lock", port=port, verbose=verbose, out=out)
-        if action_name == "shutdown":
-            return request_text(host, "shutdown", port=port, verbose=verbose, out=out)
-        if action_name == "message":
-            return request_text(
-                host, "message", val=p.get("message", ""), port=port, verbose=verbose, out=out
+        action, var, val, tail = action_request_fields(action_name, payload)
+        if tail is not None:
+            resp = send_request(
+                host, action, var=var, val=val, tail=tail, port=port, verbose=verbose, out=out
             )
-        if action_name == "extend_time":
-            return request_text(
-                host, "extend", val=int(p["minutes"]), port=port, verbose=verbose, out=out
-            )
-        if action_name == "clear_manual_lock":
-            return request_text(
-                host, "clear", var="manual_lock", port=port, verbose=verbose, out=out
-            )
-        if action_name == "clear_extensions":
-            return request_text(
-                host, "clear", var="cumulative_extension", port=port, verbose=verbose, out=out
-            )
-        if action_name == "set_daily_limit":
-            minutes = p.get("minutes")
-            if minutes is None or minutes == "":
-                return request_text(
-                    host, "clear", var="daily_limit", port=port, verbose=verbose, out=out
-                )
-            return request_text(
-                host,
-                "set",
-                var="daily_limit",
-                val=int(minutes),
-                port=port,
-                verbose=verbose,
-                out=out,
-            )
-        if action_name == "set_bed_time":
-            return request_text(
-                host, "set", var="bed_time", val=p.get("time"), port=port, verbose=verbose, out=out
-            )
-        if action_name in ("clear_bed_time", "clear_lock_times"):
-            return request_text(host, "clear", var="bed_time", port=port, verbose=verbose, out=out)
-        if action_name == "set_wake_time":
-            return request_text(
-                host, "set", var="wake_time", val=p.get("time"), port=port, verbose=verbose, out=out
-            )
-        if action_name == "clear_usage_limit":
-            return request_text(
-                host, "clear", var="daily_limit", port=port, verbose=verbose, out=out
-            )
+            return resp.ok, resp.text
+        return request_text(host, action, var=var, val=val, port=port, verbose=verbose, out=out)
     except (ValueError, KeyError, TypeError) as exc:
         return False, f"Invalid value for {action_name}: {exc}"
-
-    return False, f"Unknown action: {action_name}"
 
 
 def is_pc_reachable(host: str, port: int = DEFAULT_PORT, timeout: float = QUERY_TIMEOUT) -> bool:
@@ -541,6 +532,17 @@ def inspect_pc(
     if settings is None:
         raise ConnectionError(f"Cannot reach agent at {host}:{port}")
 
+    return settings_to_pc_info(settings, host=host, port=port)
+
+
+def settings_to_pc_info(
+    settings: dict[str, Any],
+    *,
+    host: str,
+    port: int = DEFAULT_PORT,
+    hostname_fallback: str | None = None,
+) -> dict[str, Any]:
+    """Convert an agent settings payload into the panel/CLI PC-info shape."""
     status = settings.get("status") or "UNKNOWN"
     daily_limit = settings.get("daily_limit")
     bed_time = settings.get("bed_time")
@@ -561,7 +563,7 @@ def inspect_pc(
     else:
         effective_limit = (daily_limit or 0) + extension_seconds / 60
 
-    hostname = settings.get("name") or _resolve_hostname(host, port, verbose=verbose, out=out)
+    hostname = settings.get("name") or hostname_fallback or f"PC at {host}"
 
     manual_lock_active = bool(settings.get("manual_lock"))
     enforcement_active = settings.get("enforcement_active")

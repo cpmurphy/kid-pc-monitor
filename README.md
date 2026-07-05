@@ -169,25 +169,26 @@ machine to run the web interface.
 
 ## Network Considerations
 
-The kids' PCs must accept inbound TCP **9999** from the machine running
-the web panel (usually the same LAN; cross-subnet works if routed and
-allowed by firewalls).
+Current agents make outbound HTTP connections to the parent web panel on TCP
+**5000**. The kid PCs no longer need inbound TCP **9999** for normal web-panel
+control, which avoids the common Windows Firewall problem where the agent is
+running but blocked from the parent side.
 
 The parent computer and kid computers usually need to be:
 
 * on the same home Wi-Fi network
-* able to reach each other directly
+* able to reach the parent web panel at `http://<parent-pc-ip>:5000`
+
+The web panel host must allow inbound TCP **5000** from browsers and from kid
+PC agents. On Linux, for example, use `sudo ufw allow 5000/tcp`.
 
 <details>
-<summary>Scanning for PCs (Technical Details)</summary>
-By default the `/24` subnet containing the parent machine's
-primary IPv4 address is scanned. (See `scan_for_servers` in
-`src/kid_pc_monitor/remote_client.py`).  Scans are capped at a `/24`
-(256 addresses): a network larger than that (for example a `/16`)
-is refused outright. If discovery misses a PC, you can still use it
-once the agent is reachable at its IP.  If you need to scan an
-entirely different network (rare), you can enter a different `/24`
-to scan.
+<summary>Discovery and legacy scanning (Technical Details)</summary>
+Agents first try `KID_PC_MONITOR_PANEL_URL` if set, then their cached panel URL,
+then scan their local `/24` for the web panel discovery endpoint on TCP 5000.
+The old parent-side scan still exists for legacy direct mode and `kid-pc-cli`
+IP workflows; it scans the parent machine's local `/24` for agents listening on
+TCP 9999 and is capped at `/24` (256 addresses).
 </details>
 
 ## Installation
@@ -227,19 +228,15 @@ accepted (the task runs in your own session and can reach it).
 
 #### Windows agent firewall
 
-When you run `scripts/install.py` as administrator, it creates a
-Windows Firewall inbound rule for TCP **9999** scoped to the scheduled
-`pythonw.exe`. By default the rule applies only on **Private** and
-**Domain** networks—not **Public**—so strangers on open Wi-Fi
-cannot reach the agent.
+The default agent path is outbound polling to the web panel, so the installer
+no longer needs to add an inbound Windows Firewall rule for normal use. During
+install it asks whether to enable **legacy direct control** on TCP **9999**.
+Choose **yes** only if you still use `kid-pc-cli` direct IP commands, an older
+web panel, or troubleshooting tools that connect directly to the agent.
 
-After the scheduled task is created, the installer asks whether to
-allow **Public** networks too. Say **yes** if you use a laptop and a
-child might disconnect and reconnect Wi-Fi; Windows can then treat
-your home network as Public and block remote control until you fix the
-network profile or re-run the installer. Desktop PCs on a trusted home
-LAN usually keep the default (**no**). Only enable Public if you accept
-the extra exposure on genuinely untrusted networks.
+If you enable legacy direct control, the installer creates the same scoped
+Windows Firewall inbound rule for TCP **9999**. It still defaults to
+**Private** and **Domain** profiles, with a separate prompt for **Public**.
 
 ### Parent's PC
 
@@ -377,7 +374,7 @@ python3 -m venv venv
 ./venv/bin/kid-pc-cli lock 192.168.1.105
 ```
 
-Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, `raw`, etc.). Add `--json` for scripting. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
+Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, etc.). Add `--json` for scripting. These commands use the legacy direct TCP path and require the agent's inbound TCP **9999** compatibility option. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
 
 
 ## 🔧 Troubleshooting
@@ -389,17 +386,20 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 - Check Windows Firewall settings
 - Ensure PCs are on same network
 
-### Scan finds no PCs (agent may still be running)
-- On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` — startup logs network profile and firewall rule.
-- **Public network profile** is a common cause: the installer allows inbound TCP 9999 on **Private/Domain** only unless you opted into **Public**. Minecraft works; parent scan does not.
-- Set home Wi-Fi to **Private**, or re-run `scripts/install.py` and allow Public for port 9999.
-- Ensure parent and kid are on the same subnet (or scan the kid's subnet explicitly).
+### Agent does not appear in the web panel
+- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
+- Ensure the parent/web-panel host firewall allows inbound **5000/tcp** from kid PCs.
+- On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` for reverse polling and discovery messages.
+- If auto-discovery fails, set `KID_PC_MONITOR_PANEL_URL=http://<parent-pc-ip>:5000` for the scheduled agent task.
+
+### Legacy scan finds no PCs
+- Parent-side scan and `kid-pc-cli` direct IP commands require the optional legacy inbound TCP **9999** agent firewall rule.
+- If you enabled that compatibility option, check the kid PC network profile and firewall rule as before.
 
 ### "Can't connect from phone"
-- Check firewall allows port 5000 (web panel host) and port 9999 (each kid PC running the agent)
-- On Linux parents, ensure the host firewall allows inbound **5000/tcp** (e.g. `ufw allow 5000/tcp`)
-- Use the web panel machine's IP address, not localhost
-- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`)
+- Check the web panel host firewall allows inbound **5000/tcp**.
+- Use the web panel machine's IP address, not localhost.
+- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
 
 ### "Lock status not updating"
 - Restart `pc_control.py`
@@ -429,11 +429,12 @@ Parents and developers welcome! Please:
 - ✅ **Smarter time tracking** — Only active use counts toward the daily allowance; locked sessions stop the clock
 - ✅ **Lock hardening** — Re-locks automatically if the kid unlocks while a limit is active; persistent manual locks
 - ✅ **Grace period warnings** — 30, 15, 5, and 1-minute warnings before lock; warnings reset after a time extension
+- ✅ **Reverse agent polling** — Agents call home to the web panel, avoiding inbound kid-PC firewall issues
 - ✅ **Live PC status** — Background polling with SQLite snapshot history; last-known state when a PC goes offline
 - ✅ **IP address changes** — Control pages keyed by hostname so DHCP changes do not break bookmarks
 - ✅ **Agent log viewer** — View agent logs remotely from the web panel or `kid-pc-cli logs`
 - ✅ **CLI tool** — `kid-pc-cli` for scan, inspect, lock, extend, and other remote commands
-- ✅ **Easier reinstall** — Installer reuses previous settings; skips firewall setup when the rule already exists
+- ✅ **Easier reinstall** — Installer reuses previous settings; legacy inbound firewall setup is optional
 
 ### Ideas for Future Contributions
 - Linux/macOS **agent** (kid-side monitoring; the web panel already runs on Linux/macOS/Windows)

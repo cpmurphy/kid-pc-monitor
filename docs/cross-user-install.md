@@ -62,7 +62,7 @@ Sign out of `parent`, sign in as `kid`:
 
 9. Open Task Manager → Details (or `tasklist /v`). Confirm a `pythonw.exe` is running under the `kid` user.
 10. Confirm `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` exists and the first line includes `Monitoring user: kid`.
-11. From the parent web panel (on the parent's PC, run `python src\web_panel.py` and browse to `http://<kid-pc-ip>:5000`), confirm the kid's PC shows up and reports username `kid`. Trigger a remote lock and confirm the kid's session locks via `LogonUI.exe`.
+11. From the parent web panel (on the parent's PC, run `kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel` and browse to `http://<parent-pc-ip>:5000`), confirm the kid's PC appears after the agent polls and reports username `kid`. Trigger a remote lock and confirm the kid's session locks via `LogonUI.exe`.
 12. Try to delete `C:\ProgramData\KidPCMonitor\pc_control.py` while signed in as `kid`. It should fail (`Access is denied`). Try `schtasks /delete /tn KidPCMonitor /f` — also expected to fail without elevation.
 
 ### 2. Self-install (warned, weaker path)

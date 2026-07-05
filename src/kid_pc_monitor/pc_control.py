@@ -11,6 +11,7 @@ import time
 from logging.handlers import RotatingFileHandler
 
 from kid_pc_monitor.agent_diagnostics import AGENT_LISTEN_PORT, log_connectivity_diagnostics
+from kid_pc_monitor.agent_sync_client import start_agent_sync_poller
 from kid_pc_monitor.host_platform import get_default_platform
 from kid_pc_monitor.pc_time_control import PCTimeControl, data_dir
 from kid_pc_monitor.remote_control_server import RemoteControlServer
@@ -75,55 +76,57 @@ def main() -> int:
     platform = get_default_platform()
     log_connectivity_diagnostics(platform)
 
-    if not check_port_availability(AGENT_PORT):
-        logger.error(
-            "Port %s already in use — another KidPCMonitor instance is probably "
-            "already running. Exiting duplicate startup.",
+    tcp_available = check_port_availability(AGENT_PORT)
+    if not tcp_available:
+        logger.warning(
+            "Port %s already in use; legacy direct TCP control will not start, "
+            "but enforcement and reverse polling will continue.",
             AGENT_PORT,
         )
-        return 1
 
     # Create control instance
     control = PCTimeControl(platform=platform)
 
-    # Enforce usage allowance, bedtime, and warnings (separate from the TCP server)
+    # Enforce usage allowance, bedtime, and warnings (separate from networking)
     enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
     enforcement_thread.start()
 
-    # Start remote control server
-    remote = RemoteControlServer()
-    server_thread = threading.Thread(target=remote.start_server, args=(control,))
-    server_thread.daemon = True
-    server_thread.start()
+    sync_client = start_agent_sync_poller(control)
 
-    if not remote.listener_ready.wait(timeout=10):
-        logger.error(
-            "TCP listener did not start on port %s within 10s — check %s",
-            AGENT_PORT,
-            log_file,
-        )
-        control.show_message(
-            "Failed to start network server!\nCheck firewall settings and try again.",
-            "Server Error",
-        )
-        return 1
+    remote = None
+    server_thread = None
+    if tcp_available:
+        remote = RemoteControlServer()
+        server_thread = threading.Thread(target=remote.start_server, args=(control,))
+        server_thread.daemon = True
+        server_thread.start()
+
+        if not remote.listener_ready.wait(timeout=10):
+            logger.warning(
+                "Legacy TCP listener did not start on port %s within 10s; "
+                "reverse polling remains active. Check %s for details.",
+                AGENT_PORT,
+                log_file,
+            )
 
     logger.info(
-        "Agent running (enforcement + TCP %s on 0.0.0.0). "
+        "Agent running (enforcement + reverse polling%s). "
         "Verbose command logging: set KID_PC_MONITOR_LOG_LEVEL=DEBUG",
-        remote.port,
+        f" + legacy TCP {AGENT_PORT}" if remote is not None else "",
     )
-    print("Server is running. Press Ctrl+C to stop.")
+    print("Agent is running. Press Ctrl+C to stop.")
 
     try:
-        # Keep main thread alive while server runs
-        while remote.running:
+        while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nShutting down server...")
-        remote.stop_server()
-        server_thread.join(2)  # Wait up to 2 seconds for thread to finish
-        print("Server stopped.")
+        print("\nShutting down agent...")
+        sync_client.stop()
+        if remote is not None:
+            remote.stop_server()
+        if server_thread is not None:
+            server_thread.join(2)
+        print("Agent stopped.")
     except Exception as e:
         print(f"Error: {e}")
         return 1
