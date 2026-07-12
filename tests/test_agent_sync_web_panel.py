@@ -110,6 +110,7 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
             host="127.0.0.1",
             port=self.reverse_port,
             on_status=wp._record_reverse_pc_info,
+            on_disconnect=wp._record_reverse_disconnect,
         )
         time.sleep(0.15)
 
@@ -155,6 +156,41 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         agent = agent_sync_store.recent_agent_for_ip("127.0.0.1")
         assert agent is not None
         self.assertEqual(agent["hostname"], HOSTNAME)
+
+    def test_disconnect_marks_agent_offline(self) -> None:
+        from kid_pc_monitor import scan_store, snapshot_store
+
+        self._connect_agent()
+        self.assertIsNotNone(agent_sync_store.recent_agent_for_ip("127.0.0.1"))
+        dashboard, _ = snapshot_store.get_dashboard_pcs()
+        self.assertTrue(dashboard["127.0.0.1"]["reachable"])
+
+        session = self.server.session_for_hostname(HOSTNAME)
+        assert session is not None
+        session.close()
+
+        deadline = time.time() + 3
+        while time.time() < deadline:
+            if (
+                self.server.session_for_hostname(HOSTNAME) is None
+                and agent_sync_store.recent_agent_for_ip("127.0.0.1") is None
+            ):
+                break
+            time.sleep(0.05)
+        else:
+            self.fail("Reverse session did not unregister after close")
+
+        tracked = scan_store.get_tracked_ips()
+        self.assertFalse(tracked["127.0.0.1"].get("reachable", True))
+        dashboard, _ = snapshot_store.get_dashboard_pcs()
+        self.assertFalse(dashboard["127.0.0.1"]["reachable"])
+
+        with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
+            response = self.client.get("/control/127.0.0.1")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("recorded snapshot", html.lower())
+        self.assertNotIn("Quick Actions", html)
 
     def test_action_uses_live_reverse_session(self) -> None:
         self._connect_agent()

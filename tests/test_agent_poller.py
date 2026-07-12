@@ -112,6 +112,40 @@ class AgentPollerTests(unittest.TestCase):
         tracked = scan_store.get_tracked_ips()
         self.assertTrue(tracked["192.168.1.10"]["locked"])
 
+    def test_poll_once_skips_live_reverse_session_only(self) -> None:
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        reverse = mock.Mock()
+        reverse.has_session_for_ip.return_value = True
+        with (
+            mock.patch.object(agent_poller, "get_reverse_server", return_value=reverse),
+            mock.patch.object(agent_poller, "inspect_pc") as inspect_mock,
+        ):
+            agent_poller.poll_once()
+        inspect_mock.assert_not_called()
+
+    def test_poll_once_does_not_skip_on_stale_heartbeat_alone(self) -> None:
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        reverse = mock.Mock()
+        reverse.has_session_for_ip.return_value = False
+        with (
+            mock.patch.object(agent_poller, "get_reverse_server", return_value=reverse),
+            mock.patch.object(
+                agent_poller, "inspect_pc", return_value=_sample_pc_info()
+            ) as inspect_mock,
+        ):
+            agent_poller.poll_once()
+        inspect_mock.assert_called_once_with("192.168.1.10")
+
 
 if __name__ == "__main__":
     unittest.main()

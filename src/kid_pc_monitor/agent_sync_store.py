@@ -46,6 +46,20 @@ def record_agent_poll(hostname: str, ip: str, pc_info: dict[str, Any]) -> None:
         conn.commit()
 
 
+def clear_agent_for_ip(ip: str) -> None:
+    """Drop reverse-agent heartbeat rows so the IP is no longer treated as recent."""
+    with connect() as conn:
+        conn.execute("DELETE FROM reverse_agents WHERE ip = ?", (ip,))
+        conn.commit()
+
+
+def clear_agent_for_hostname(hostname: str) -> None:
+    """Drop reverse-agent heartbeat rows for a hostname."""
+    with connect() as conn:
+        conn.execute("DELETE FROM reverse_agents WHERE hostname = ?", (hostname,))
+        conn.commit()
+
+
 def recent_agent_for_ip(
     ip: str,
     *,

@@ -49,6 +49,29 @@ class AgentSyncStoreTests(unittest.TestCase):
         self.assertEqual(agent["ip"], "192.168.1.10")
         self.assertEqual(agent["status"], "LOCKED")
 
+    def test_clear_agent_for_hostname(self) -> None:
+        store.record_agent_poll(
+            "KidPC",
+            "192.168.1.10",
+            {"hostname": "KidPC", "status": "UNLOCKED", "reachable": True},
+        )
+
+        store.clear_agent_for_hostname("KidPC")
+
+        self.assertIsNone(store.recent_agent_for_ip("192.168.1.10"))
+        self.assertIsNone(store.recent_agent_for_hostname("KidPC"))
+
+    def test_clear_agent_for_ip(self) -> None:
+        store.record_agent_poll(
+            "KidPC",
+            "192.168.1.10",
+            {"hostname": "KidPC", "status": "UNLOCKED", "reachable": True},
+        )
+
+        store.clear_agent_for_ip("192.168.1.10")
+
+        self.assertIsNone(store.recent_agent_for_ip("192.168.1.10"))
+
 
 if __name__ == "__main__":
     unittest.main()

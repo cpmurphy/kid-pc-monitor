@@ -7,7 +7,6 @@ import random
 import threading
 import time
 
-from kid_pc_monitor.agent_sync_store import recent_agent_for_ip
 from kid_pc_monitor.panel_reverse_server import get_reverse_server
 from kid_pc_monitor.remote_client import connection_failure_fields, inspect_pc
 from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips, record_poll_inspect
@@ -31,9 +30,7 @@ def _cycle_sleep_sec(interval: float) -> float:
 
 def _has_reverse_coverage(ip: str) -> bool:
     reverse = get_reverse_server()
-    if reverse is not None and reverse.has_session_for_ip(ip):
-        return True
-    return recent_agent_for_ip(ip) is not None
+    return reverse is not None and reverse.has_session_for_ip(ip)
 
 
 def poll_once() -> None:

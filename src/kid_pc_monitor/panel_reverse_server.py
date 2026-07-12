@@ -28,6 +28,7 @@ EXCHANGE_TIMEOUT_SEC = 30.0
 ACCEPT_TIMEOUT_SEC = 1.0
 
 StatusCallback = Callable[[str, str, dict[str, Any]], object]
+DisconnectCallback = Callable[[str, str], object]
 
 
 def reverse_listen_port() -> int:
@@ -93,12 +94,14 @@ class PanelReverseServer:
         port: int | None = None,
         tls_cert_paths: tuple[str, str] | None = None,
         on_status: StatusCallback | None = None,
+        on_disconnect: DisconnectCallback | None = None,
         status_refresh_sec: float = STATUS_REFRESH_SEC,
     ) -> None:
         self.host = host
         self.port = reverse_listen_port() if port is None else port
         self.tls_cert_paths = tls_cert_paths
         self.on_status = on_status
+        self.on_disconnect = on_disconnect
         self.status_refresh_sec = status_refresh_sec
         self.running = False
         self._server_socket: socket.socket | None = None
@@ -300,6 +303,7 @@ class PanelReverseServer:
             if session is not None:
                 self._unregister(session)
                 session.close()
+                self._emit_disconnect_if_gone(session)
             else:
                 try:
                     client.close()
@@ -363,6 +367,18 @@ class PanelReverseServer:
         except Exception:
             logger.exception("Failed to record reverse status for %s", session.hostname)
 
+    def _emit_disconnect_if_gone(self, session: ReverseSession) -> None:
+        """Notify listeners only when no replacement session for this agent remains."""
+        if self.on_disconnect is None:
+            return
+        with self._registry_lock:
+            if self._sessions_by_hostname.get(session.hostname) is not None:
+                return
+        try:
+            self.on_disconnect(session.hostname, session.peer_ip)
+        except Exception:
+            logger.exception("Failed to record reverse disconnect for %s", session.hostname)
+
 
 _server: PanelReverseServer | None = None
 _server_lock = threading.Lock()
@@ -378,6 +394,7 @@ def start_panel_reverse_server(
     port: int | None = None,
     tls_cert_paths: tuple[str, str] | None = None,
     on_status: StatusCallback | None = None,
+    on_disconnect: DisconnectCallback | None = None,
 ) -> PanelReverseServer:
     global _server
     with _server_lock:
@@ -388,6 +405,7 @@ def start_panel_reverse_server(
             port=port,
             tls_cert_paths=tls_cert_paths,
             on_status=on_status,
+            on_disconnect=on_disconnect,
         )
         _server.start()
         return _server

@@ -28,7 +28,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.agent_poller import POLL_INTERVAL_SEC, start_agent_poller
-from kid_pc_monitor.agent_sync_store import recent_agent_for_ip, record_agent_poll
+from kid_pc_monitor.agent_sync_store import clear_agent_for_hostname, record_agent_poll
 from kid_pc_monitor.panel_format import (
     format_minutes_duration,
     format_seconds_duration,
@@ -241,6 +241,20 @@ def _record_reverse_pc_info(hostname: str, ip: str, settings: dict[str, Any]) ->
     return pc_info
 
 
+def _record_reverse_disconnect(hostname: str, ip: str) -> None:
+    """Mark a reverse agent offline as soon as its TCP session ends."""
+    clear_agent_for_hostname(hostname)
+    failure = {
+        "hostname": hostname,
+        "ip": ip,
+        "reachable": False,
+    }
+    try:
+        record_poll_inspect(ip, failure)
+    except Exception:
+        logger.warning("Failed to persist reverse disconnect for %s", hostname, exc_info=True)
+
+
 def _perform_control_action(
     ip: str, action_name: str, payload: dict[str, Any] | None = None
 ) -> tuple[bool, str]:
@@ -278,10 +292,6 @@ def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[No
             pc_info["ip"] = ip
             pc_info["reachable"] = True
             return ip, pc_info
-
-    reverse_agent = recent_agent_for_ip(ip)
-    if reverse_agent is not None:
-        return ip, {**reverse_agent, "ip": ip, "reachable": True}
 
     try:
         pc_info = inspect_pc(ip)
@@ -606,6 +616,7 @@ def main() -> None:
         port=reverse_port,
         tls_cert_paths=tls,
         on_status=_record_reverse_pc_info,
+        on_disconnect=_record_reverse_disconnect,
     )
     scheme = "https" if tls else "http"
     print(f"Kid PC Monitor web panel on {scheme}://{host}:{port}")
