@@ -149,6 +149,43 @@ class AgentLogsUnavailable(ConnectionError):
     """The agent does not support log retrieval (unknown action)."""
 
 
+def exchange_on_socket(
+    sock: socket.socket,
+    action: str,
+    *,
+    secret: str,
+    var: str | None = None,
+    val: Any = None,
+    name: str | None = None,
+    version: int = proto.CLIENT_DEFAULT_VERSION,
+    tail: int | None = None,
+    verbose: bool = False,
+    out: Any = sys.stdout,
+) -> proto.Response:
+    """Send one signed request on an existing socket and return the response."""
+    if name is None and action in proto.WRITE_ACTIONS:
+        name = _discover_name(sock, secret, verbose=verbose, out=out)
+    body = proto.build_request(
+        action,
+        secret=secret,
+        var=var,
+        val=val,
+        req_id=secrets.token_hex(3),
+        name=name,
+        version=version,
+        tail=tail,
+    )
+    if verbose:
+        _print_frame(">", body, out=out)
+    sock.sendall(proto.encode_frame(body))
+    response_body = proto.read_frame(sock)
+    if verbose:
+        _print_frame("<", response_body, out=out)
+    return proto.parse_response(
+        response_body, secret=secret, expected_name=name, expected_version=version
+    )
+
+
 def send_request(
     host: str,
     action: str,
@@ -181,27 +218,18 @@ def send_request(
         if verbose:
             with _verbose_lock:
                 print(f"* Connected to {host}:{port}", file=out)
-        if name is None and action in proto.WRITE_ACTIONS:
-            name = _discover_name(client, secret, verbose=verbose, out=out)
-        body = proto.build_request(
+        return exchange_on_socket(
+            client,
             action,
             secret=secret,
             var=var,
             val=val,
-            req_id=secrets.token_hex(3),
             name=name,
             version=version,
             tail=tail,
+            verbose=verbose,
+            out=out,
         )
-        if verbose:
-            _print_frame(">", body, out=out)
-        client.sendall(proto.encode_frame(body))
-        response_body = proto.read_frame(client)
-    if verbose:
-        _print_frame("<", response_body, out=out)
-    return proto.parse_response(
-        response_body, secret=secret, expected_name=name, expected_version=version
-    )
 
 
 def get_agent_logs(

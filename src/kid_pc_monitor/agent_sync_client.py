@@ -1,4 +1,4 @@
-"""Agent-side reverse polling client for the parent web panel."""
+"""Agent-side reverse TCP client for the parent web panel."""
 
 from __future__ import annotations
 
@@ -7,28 +7,30 @@ import json
 import logging
 import os
 import random
+import socket
+import ssl
 import threading
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from urllib.request import Request as UrlRequest
 from urllib.request import urlopen
 
-from kid_pc_monitor import agent_protocol, request_dispatcher, shared_secret
+from kid_pc_monitor import agent_protocol, shared_secret
 from kid_pc_monitor.network import get_local_ip
 from kid_pc_monitor.pc_time_control import data_dir
 from kid_pc_monitor.remote_control_server import handle_request
 
-if False:  # pragma: no cover - typing-only without importing Windows pieces at runtime.
-    pass
-
-logger = logging.getLogger("AgentSyncClient")
+logger = logging.getLogger("AgentReverseClient")
 
 DEFAULT_PANEL_PORT = 5000
+DEFAULT_REVERSE_PORT = 9998
 DISCOVERY_TIMEOUT_SEC = 0.5
-POLL_TIMEOUT_SEC = 35
-DEFAULT_POLL_AFTER_SEC = 5
+CONNECT_TIMEOUT_SEC = 10
+FRAME_TIMEOUT_SEC = 120
+RECONNECT_MIN_SEC = 2
+RECONNECT_MAX_SEC = 60
 MAX_DISCOVERY_HOSTS = 254
 PANEL_URL_ENV = "KID_PC_MONITOR_PANEL_URL"
 CACHE_FILE = "panel_url.txt"
@@ -48,30 +50,28 @@ def _normalize_panel_url(raw: str) -> str:
     return url
 
 
-def _http_json(url: str, payload: dict[str, Any] | None, *, timeout: float) -> dict[str, Any]:
-    data = None
-    headers = {"Accept": "application/json"}
-    method = "GET"
-    if payload is not None:
-        data = json.dumps(payload).encode("utf-8")
-        headers["Content-Type"] = "application/json"
-        method = "POST"
-    req = UrlRequest(url, data=data, headers=headers, method=method)
+def _http_json(url: str, *, timeout: float) -> dict[str, Any]:
+    req = UrlRequest(url, headers={"Accept": "application/json"}, method="GET")
     with urlopen(req, timeout=timeout) as response:  # noqa: S310 - LAN URL controlled by config/discovery.
         body = response.read().decode("utf-8")
     return json.loads(body)
 
 
-def _is_panel_url(base_url: str) -> bool:
+def _discover_payload(base_url: str) -> dict[str, Any] | None:
     try:
         payload = _http_json(
             urljoin(base_url.rstrip("/") + "/", "agent/v1/discover"),
-            None,
             timeout=DISCOVERY_TIMEOUT_SEC,
         )
     except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError):
-        return False
-    return payload.get("service") == DISCOVERY_MARKER
+        return None
+    if payload.get("service") != DISCOVERY_MARKER:
+        return None
+    return payload
+
+
+def _is_panel_url(base_url: str) -> bool:
+    return _discover_payload(base_url) is not None
 
 
 def _read_cached_panel_url() -> str:
@@ -114,94 +114,144 @@ def discover_panel_url() -> str | None:
     return None
 
 
-def build_status_frame(control: Any, secret: str) -> str:
-    hostname = control.platform.get_hostname()
-    req = agent_protocol.Request(
-        version=agent_protocol.CLIENT_DEFAULT_VERSION,
-        id=None,
-        action="get",
-        var="settings",
-        name=hostname,
-    )
-    content = request_dispatcher.dispatch(control, req)
-    return agent_protocol.sign_response(content, secret=secret, hostname=hostname)
+def _reverse_endpoint(panel_url: str) -> tuple[str, int, bool]:
+    """Return (host, reverse_port, use_tls) for the reverse TCP connection."""
+    parsed = urlparse(panel_url)
+    host = parsed.hostname or ""
+    if not host:
+        raise ValueError(f"Invalid panel URL: {panel_url}")
+    payload = _discover_payload(panel_url) or {}
+    reverse_port = payload.get("reverse_port", DEFAULT_REVERSE_PORT)
+    try:
+        port = int(reverse_port)
+    except (TypeError, ValueError):
+        port = DEFAULT_REVERSE_PORT
+    use_tls = parsed.scheme == "https"
+    return host, port, use_tls
 
 
-class AgentSyncClient:
+def _open_reverse_socket(host: str, port: int, *, use_tls: bool) -> socket.socket:
+    raw = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT_SEC)
+    raw.settimeout(FRAME_TIMEOUT_SEC)
+    if not use_tls:
+        return raw
+    context = ssl.create_default_context()
+    try:
+        return context.wrap_socket(raw, server_hostname=host)
+    except ssl.SSLError:
+        raw.close()
+        # LAN panels often use a locally generated cert; fall back unverified.
+        raw = socket.create_connection((host, port), timeout=CONNECT_TIMEOUT_SEC)
+        raw.settimeout(FRAME_TIMEOUT_SEC)
+        insecure = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        insecure.check_hostname = False
+        insecure.verify_mode = ssl.CERT_NONE
+        return insecure.wrap_socket(raw, server_hostname=host)
+
+
+class AgentReverseClient:
+    """Maintain an outbound native-protocol session to the parent panel."""
+
     def __init__(self, control: Any):
         self.control = control
         self.panel_url: str | None = None
-        self.pending_results: list[dict[str, Any]] = []
         self.running = False
+        self._sock: socket.socket | None = None
 
     def _secret(self) -> str | None:
         return shared_secret.load_shared_secret()
 
-    def _poll_url(self) -> str:
-        assert self.panel_url is not None
-        return urljoin(self.panel_url.rstrip("/") + "/", "agent/v1/poll")
+    def _close_socket(self) -> None:
+        if self._sock is not None:
+            try:
+                self._sock.close()
+            except OSError:
+                pass
+            self._sock = None
 
-    def _execute_commands(self, commands: list[dict[str, Any]], secret: str) -> None:
-        for command in commands:
-            command_id = command.get("id")
-            frame = command.get("request")
-            if not isinstance(command_id, int) or not isinstance(frame, str):
-                continue
-            response = handle_request(self.control, frame, secret=secret)
-            self.pending_results.append({"command_id": command_id, "response": response})
+    def _serve_connection(self, sock: socket.socket, secret: str) -> None:
+        self._sock = sock
+        while self.running:
+            try:
+                body = agent_protocol.read_frame(sock)
+            except agent_protocol.ConnectionClosedBeforeFrame:
+                logger.info("Panel closed reverse connection")
+                return
+            except agent_protocol.ProtocolError as exc:
+                logger.warning("Reverse framing error: %s", exc)
+                return
+            except (TimeoutError, OSError) as exc:
+                logger.info("Reverse connection idle/error: %s", exc)
+                return
+            response = handle_request(self.control, body, secret=secret)
+            try:
+                sock.sendall(agent_protocol.encode_frame(response))
+            except OSError as exc:
+                logger.warning("Reverse send failed: %s", exc)
+                return
 
-    def poll_once(self) -> None:
+    def connect_once(self) -> float:
+        """Discover/connect and serve until disconnect. Returns reconnect delay."""
         secret = self._secret()
         if not secret:
-            logger.error("No shared secret configured; reverse polling disabled")
-            time.sleep(30)
-            return
+            logger.error("No shared secret configured; reverse TCP disabled")
+            return 30.0
+
         if self.panel_url is None:
             self.panel_url = discover_panel_url()
             if self.panel_url is None:
                 logger.debug("No Kid PC Monitor panel discovered on this LAN")
-                time.sleep(30)
-                return
+                return 30.0
 
-        payload = {
-            "status": build_status_frame(self.control, secret),
-            "results": self.pending_results,
-        }
         try:
-            response = _http_json(self._poll_url(), payload, timeout=POLL_TIMEOUT_SEC)
-        except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError):
-            logger.warning("Reverse poll to panel failed; rediscovering", exc_info=True)
+            host, port, use_tls = _reverse_endpoint(self.panel_url)
+            sock = _open_reverse_socket(host, port, use_tls=use_tls)
+        except (OSError, ValueError, HTTPError, URLError, json.JSONDecodeError) as exc:
+            logger.warning("Reverse connect failed (%s); rediscovering", exc)
             self.panel_url = None
-            time.sleep(10)
-            return
+            return min(RECONNECT_MAX_SEC, RECONNECT_MIN_SEC + random.uniform(0, 3))
 
-        self.pending_results = []
-        commands = response.get("commands")
-        if isinstance(commands, list):
-            self._execute_commands(commands, secret)
-        poll_after = response.get("poll_after_sec", DEFAULT_POLL_AFTER_SEC)
+        logger.info(
+            "Connected reverse session to panel %s:%s%s",
+            host,
+            port,
+            " (TLS)" if use_tls else "",
+        )
         try:
-            delay = max(1.0, min(float(poll_after), 30.0))
-        except (TypeError, ValueError):
-            delay = DEFAULT_POLL_AFTER_SEC
-        time.sleep(delay + random.uniform(0, 1.5))
+            self._serve_connection(sock, secret)
+        finally:
+            self._close_socket()
+        return min(RECONNECT_MAX_SEC, RECONNECT_MIN_SEC + random.uniform(0, 3))
 
     def run(self) -> None:
         self.running = True
+        delay = RECONNECT_MIN_SEC
         while self.running:
             try:
-                self.poll_once()
+                delay = self.connect_once()
             except Exception:
-                logger.exception("Reverse polling cycle failed")
-                time.sleep(15)
+                logger.exception("Reverse TCP cycle failed")
+                delay = 15.0
+            if self.running:
+                time.sleep(delay)
 
     def stop(self) -> None:
         self.running = False
+        self._close_socket()
 
 
-def start_agent_sync_poller(control: Any) -> AgentSyncClient:
-    client = AgentSyncClient(control)
-    thread = threading.Thread(target=client.run, name="agent-sync-poller", daemon=True)
+# Backwards-compatible aliases for older imports/tests.
+AgentSyncClient = AgentReverseClient
+
+
+def start_agent_reverse_client(control: Any) -> AgentReverseClient:
+    client = AgentReverseClient(control)
+    thread = threading.Thread(target=client.run, name="agent-reverse-client", daemon=True)
     thread.start()
-    logger.info("Agent reverse poller started")
+    logger.info("Agent reverse TCP client started")
     return client
+
+
+def start_agent_sync_poller(control: Any) -> AgentReverseClient:
+    """Deprecated alias for :func:`start_agent_reverse_client`."""
+    return start_agent_reverse_client(control)

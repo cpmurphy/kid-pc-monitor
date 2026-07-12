@@ -75,39 +75,12 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
             payload_json TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_reverse_agents_ip ON reverse_agents(ip);
-
-        CREATE TABLE IF NOT EXISTS agent_commands (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            hostname TEXT NOT NULL,
-            action_name TEXT NOT NULL,
-            status TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            delivered_at TEXT,
-            completed_at TEXT,
-            request_frame TEXT NOT NULL,
-            request_json TEXT,
-            response_frame TEXT,
-            result_text TEXT,
-            error_text TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_agent_commands_hostname_status
-            ON agent_commands(hostname, status);
         """
     )
     _ensure_scan_pcs_hostname(conn)
-    _ensure_agent_commands_request_json(conn)
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_scan_pcs_hostname ON scan_pcs(hostname COLLATE NOCASE)"
     )
-
-
-def _ensure_agent_commands_request_json(conn: sqlite3.Connection) -> None:
-    columns = {
-        row["name"] if isinstance(row, sqlite3.Row) else row[1]
-        for row in conn.execute("PRAGMA table_info(agent_commands)").fetchall()
-    }
-    if columns and "request_json" not in columns:
-        conn.execute("ALTER TABLE agent_commands ADD COLUMN request_json TEXT")
 
 
 def _ensure_scan_pcs_hostname(conn: sqlite3.Connection) -> None:

@@ -313,12 +313,14 @@ if __name__ == "__main__":
             print("\nSetup complete! Task will run even on laptops using battery.")
             print("\nAccess the web panel from any device on your network at:")
             print("   http://<this-pc-ip>:5000")
+            print("Allow inbound TCP 5000 (UI/discovery) and 9998 (agent reverse control).")
         else:
             print("\nTrying alternative method...")
             if create_task_simple_schtasks():
                 print("\nSetup complete using XML method!")
                 print("\nAccess the web panel from any device on your network at:")
                 print("   http://<this-pc-ip>:5000")
+                print("Allow inbound TCP 5000 (UI/discovery) and 9998 (agent reverse control).")
             else:
                 print("\nCould not create task. Please check the error messages above.")
 

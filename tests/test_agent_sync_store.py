@@ -1,4 +1,4 @@
-"""Tests for reverse agent polling persistence."""
+"""Tests for reverse agent heartbeat persistence."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor import agent_sync_store as store
 from kid_pc_monitor import panel_db
 
@@ -37,53 +36,18 @@ class AgentSyncStoreTests(unittest.TestCase):
         self.assertEqual(agent["ip"], "192.168.1.10")
         self.assertEqual(agent["status"], "UNLOCKED")
 
-    def test_command_lifecycle(self) -> None:
-        command_id = store.enqueue_command(
-            hostname="KidPC",
-            action_name="lock",
-            request_fields={"action": "lock", "var": None, "val": None, "tail": None},
+    def test_recent_agent_for_hostname(self) -> None:
+        store.record_agent_poll(
+            "KidPC",
+            "192.168.1.10",
+            {"hostname": "KidPC", "status": "LOCKED", "reachable": True},
         )
 
-        queued = store.command_status(command_id)
-        assert queued is not None
-        self.assertTrue(queued["pending"])
-        self.assertEqual(queued["response"], "Command is waiting for the agent to poll.")
+        agent = store.recent_agent_for_hostname("KidPC")
 
-        commands = store.take_pending_commands("KidPC", secret="secret")
-        self.assertEqual(commands[0]["id"], command_id)
-        req = proto.parse_request(commands[0]["request"], secret="secret", hostname="KidPC")
-        self.assertEqual(req.action, "lock")
-        self.assertEqual(store.take_pending_commands("KidPC", secret="secret"), [])
-
-        delivered = store.command_status(command_id)
-        assert delivered is not None
-        self.assertTrue(delivered["pending"])
-        self.assertEqual(delivered["response"], "Command delivered; waiting for result.")
-
-        recorded = store.record_command_result(
-            command_id, "response", hostname="KidPC", error_text="boom"
-        )
-        self.assertTrue(recorded)
-        failed = store.command_status(command_id)
-        assert failed is not None
-        self.assertFalse(failed["success"])
-        self.assertEqual(failed["response"], "boom")
-
-    def test_command_result_requires_matching_hostname(self) -> None:
-        command_id = store.enqueue_command(
-            hostname="KidPC",
-            action_name="lock",
-            request_fields={"action": "lock", "var": None, "val": None, "tail": None},
-        )
-
-        recorded = store.record_command_result(
-            command_id, "response", hostname="OtherPC", error_text="boom"
-        )
-
-        self.assertFalse(recorded)
-        status = store.command_status(command_id)
-        assert status is not None
-        self.assertTrue(status["pending"])
+        assert agent is not None
+        self.assertEqual(agent["ip"], "192.168.1.10")
+        self.assertEqual(agent["status"], "LOCKED")
 
 
 if __name__ == "__main__":

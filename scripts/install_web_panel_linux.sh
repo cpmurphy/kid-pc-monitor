@@ -131,7 +131,7 @@ cmd_install() {
     echo "Open: http://$(hostname -I 2>/dev/null | awk '{print $1}' || echo '<this-host-ip>'):5000"
     echo ""
     echo "iPhone password autofill: see docs/FAQ.md for instructions to run with trusted HTTPS."
-    echo "Firewall (example): sudo ufw allow 5000/tcp"
+    echo "Firewall (example): sudo ufw allow 5000/tcp && sudo ufw allow 9998/tcp"
     echo "Boot without login (optional): sudo loginctl enable-linger \"$USER\""
 }
 

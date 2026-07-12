@@ -116,51 +116,6 @@ export function startControlPagePoll() {
 }
 
 
-function waitForCommand(commandId, opts) {
-    opts = opts || {};
-    let attempts = 0;
-    const maxAttempts = 30;
-
-    function check() {
-        attempts += 1;
-        return fetch("/command/" + commandId, { headers: { Accept: "application/json" } })
-            .then(function (response) {
-                if (!response.ok) {
-                    showStatus("Command status failed (" + response.status + ")", false);
-                    return null;
-                }
-                return response.json();
-            })
-            .then(function (data) {
-                if (!data) {
-                    return;
-                }
-                if (data.pending && attempts < maxAttempts) {
-                    setTimeout(check, 1000);
-                    return;
-                }
-                showStatus(data.response, data.success);
-                if (data.success) {
-                    if (typeof opts.onSuccess === "function") {
-                        opts.onSuccess();
-                    }
-                    if (opts.refreshStats) {
-                        refreshPageStats({ source: "poll" });
-                    } else if (opts.reloadDelay) {
-                        setTimeout(function () {
-                            location.reload();
-                        }, opts.reloadDelay);
-                    }
-                }
-            })
-            .catch(function () {
-                showStatus("Command status unavailable", false);
-            });
-    }
-
-    return check();
-}
-
 // Central POST helper for /action. `body` is merged with the page IP. opts:
 //   button       - element to disable while the request is in flight
 //   refreshStats - if true and #today-stats exists, reload that section after success
@@ -191,9 +146,6 @@ export function postAction(body, opts) {
                 return;
             }
             showStatus(data.response, data.success);
-            if (data.success && data.command_id) {
-                return waitForCommand(data.command_id, opts);
-            }
             if (data.success) {
                 if (typeof opts.onSuccess === "function") {
                     opts.onSuccess();

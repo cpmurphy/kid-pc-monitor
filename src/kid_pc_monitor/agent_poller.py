@@ -8,6 +8,7 @@ import threading
 import time
 
 from kid_pc_monitor.agent_sync_store import recent_agent_for_ip
+from kid_pc_monitor.panel_reverse_server import get_reverse_server
 from kid_pc_monitor.remote_client import connection_failure_fields, inspect_pc
 from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips, record_poll_inspect
 from kid_pc_monitor.snapshot_store import save_poll_snapshot, save_snapshot
@@ -28,6 +29,13 @@ def _cycle_sleep_sec(interval: float) -> float:
     return random.uniform(interval - jitter, interval + jitter)
 
 
+def _has_reverse_coverage(ip: str) -> bool:
+    reverse = get_reverse_server()
+    if reverse is not None and reverse.has_session_for_ip(ip):
+        return True
+    return recent_agent_for_ip(ip) is not None
+
+
 def poll_once() -> None:
     """Inspect all tracked PCs and update snapshots."""
     targets = get_tracked_ips()
@@ -37,8 +45,8 @@ def poll_once() -> None:
 
     logger.debug("Agent poll cycle starting for %d PC(s)", len(targets))
     for ip, entry in targets.items():
-        if recent_agent_for_ip(ip) is not None:
-            logger.debug("Skipping direct poll for %s; reverse heartbeat is current", ip)
+        if _has_reverse_coverage(ip):
+            logger.debug("Skipping direct poll for %s; reverse session/heartbeat is current", ip)
             continue
         try:
             info = inspect_pc(ip)

@@ -1,15 +1,19 @@
-"""Tests for web-panel reverse agent polling endpoints."""
+"""Tests for reverse TCP agent sessions via the web panel."""
 
 from __future__ import annotations
 
 import re
+import socket
 import tempfile
+import threading
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor import agent_sync_store, panel_db
+from kid_pc_monitor import panel_reverse_server as reverse
 from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.agent_protocol import Node
 
@@ -17,8 +21,8 @@ SECRET = "test-shared-secret"
 HOSTNAME = "KidPC"
 
 
-def _settings_frame() -> str:
-    content = [
+def _settings_nodes() -> list[Node]:
+    return [
         Node("status", ["ok"]),
         Node(
             "settings",
@@ -39,30 +43,97 @@ def _settings_frame() -> str:
             ],
         ),
     ]
-    return proto.sign_response(content, secret=SECRET, hostname=HOSTNAME)
 
 
-class AgentSyncWebPanelTests(unittest.TestCase):
+def _agent_loop(sock: socket.socket, stop: threading.Event) -> None:
+    try:
+        while not stop.is_set():
+            sock.settimeout(0.5)
+            try:
+                body = proto.read_frame(sock)
+            except TimeoutError:
+                continue
+            except (OSError, proto.ProtocolError, proto.ConnectionClosedBeforeFrame):
+                return
+            req = proto.parse_request(body, secret=SECRET, hostname=HOSTNAME)
+            if req.action == "get" and req.var == "settings":
+                content = _settings_nodes()
+            elif req.action == "lock":
+                content = proto.ok_content("locked")
+            elif req.action == "get_logs":
+                content = [
+                    Node("status", ["ok"]),
+                    Node(
+                        "logs",
+                        children=[Node("truncated", [False]), Node("line", ["hello"])],
+                    ),
+                ]
+            else:
+                content = proto.ok_content("ok")
+            response = proto.sign_response(
+                content,
+                secret=SECRET,
+                hostname=HOSTNAME,
+                req_id=req.id,
+            )
+            sock.sendall(proto.encode_frame(response))
+    finally:
+        try:
+            sock.close()
+        except OSError:
+            pass
+
+
+class ReverseTcpWebPanelTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmpdir = tempfile.TemporaryDirectory()
         self.auth_path = Path(self._tmpdir.name) / wp.AUTH_FILE
         self.db_path = Path(self._tmpdir.name) / panel_db.DB_FILENAME
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        self.reverse_port = sock.getsockname()[1]
+        sock.close()
         self._patches = [
             mock.patch.object(wp, "_auth_path", return_value=self.auth_path),
             mock.patch.object(wp, "_auth_save_path", return_value=self.auth_path),
             mock.patch.object(panel_db, "_db_path_override", self.db_path),
-            mock.patch.object(wp.shared_secret, "require_shared_secret", return_value=SECRET),
+            mock.patch.object(reverse.shared_secret, "require_shared_secret", return_value=SECRET),
         ]
         for patch in self._patches:
             patch.start()
         self.app = wp.create_app()
         self.app.config["TESTING"] = True
         self.client = self.app.test_client()
+        self._stop = threading.Event()
+        self._agent_thread: threading.Thread | None = None
+        self.server = reverse.start_panel_reverse_server(
+            host="127.0.0.1",
+            port=self.reverse_port,
+            on_status=wp._record_reverse_pc_info,
+        )
+        time.sleep(0.15)
 
     def tearDown(self) -> None:
+        self._stop.set()
+        if self._agent_thread is not None:
+            self._agent_thread.join(timeout=2)
+        reverse.stop_panel_reverse_server()
         for patch in self._patches:
             patch.stop()
         self._tmpdir.cleanup()
+
+    def _connect_agent(self) -> None:
+        sock = socket.create_connection(("127.0.0.1", self.reverse_port), timeout=2)
+        self._agent_thread = threading.Thread(
+            target=_agent_loop, args=(sock, self._stop), daemon=True
+        )
+        self._agent_thread.start()
+        deadline = time.time() + 3
+        while time.time() < deadline:
+            if self.server.session_for_hostname(HOSTNAME) is not None:
+                return
+            time.sleep(0.05)
+        self.fail("Reverse session was not registered")
 
     def _csrf_from_index(self) -> str:
         response = self.client.get("/")
@@ -71,78 +142,35 @@ class AgentSyncWebPanelTests(unittest.TestCase):
         assert match is not None
         return match.group(1)
 
-    def test_discover_marker(self) -> None:
-        response = self.client.get("/agent/v1/discover")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["service"], "kid-pc-monitor-panel")
-
-    def test_poll_records_status_and_returns_queued_command(self) -> None:
-        command_id = agent_sync_store.enqueue_command(
-            hostname=HOSTNAME,
-            action_name="lock",
-            request_fields={"action": "lock", "var": None, "val": None, "tail": None},
-        )
-
-        response = self.client.post(
-            "/agent/v1/poll",
-            json={"status": _settings_frame(), "results": []},
-            environ_base={"REMOTE_ADDR": "192.168.1.10"},
-        )
-
+    def test_discover_includes_reverse_port(self) -> None:
+        with mock.patch.object(wp, "reverse_listen_port", return_value=9998):
+            response = self.client.get("/agent/v1/discover")
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertEqual(payload["commands"][0]["id"], command_id)
-        req = proto.parse_request(
-            payload["commands"][0]["request"], secret=SECRET, hostname=HOSTNAME
-        )
-        self.assertEqual(req.action, "lock")
-        agent = agent_sync_store.recent_agent_for_ip("192.168.1.10")
+        self.assertEqual(payload["service"], "kid-pc-monitor-panel")
+        self.assertEqual(payload["reverse_port"], 9998)
+
+    def test_reverse_identify_records_status(self) -> None:
+        self._connect_agent()
+        agent = agent_sync_store.recent_agent_for_ip("127.0.0.1")
         assert agent is not None
         self.assertEqual(agent["hostname"], HOSTNAME)
 
-    def test_poll_result_for_wrong_hostname_does_not_complete_command(self) -> None:
-        command_id = agent_sync_store.enqueue_command(
-            hostname="OtherPC",
-            action_name="lock",
-            request_fields={"action": "lock", "var": None, "val": None, "tail": None},
-        )
-        response_frame = proto.sign_response(
-            proto.ok_content("locked"), secret=SECRET, hostname=HOSTNAME
-        )
-
-        response = self.client.post(
-            "/agent/v1/poll",
-            json={
-                "status": _settings_frame(),
-                "results": [{"command_id": command_id, "response": response_frame}],
-            },
-            environ_base={"REMOTE_ADDR": "192.168.1.10"},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        status = agent_sync_store.command_status(command_id)
-        assert status is not None
-        self.assertTrue(status["pending"])
-
-    def test_action_queues_for_recent_reverse_agent(self) -> None:
-        agent_sync_store.record_agent_poll(
-            HOSTNAME,
-            "192.168.1.10",
-            {"hostname": HOSTNAME, "status": "UNLOCKED", "reachable": True},
-        )
+    def test_action_uses_live_reverse_session(self) -> None:
+        self._connect_agent()
         csrf = self._csrf_from_index()
 
         with mock.patch.object(wp, "perform_action") as perform_mock:
             response = self.client.post(
                 "/action",
-                json={"ip": "192.168.1.10", "action": "lock"},
+                json={"ip": "127.0.0.1", "action": "lock"},
                 headers={"X-CSRF-Token": csrf},
             )
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
-        self.assertTrue(payload["pending"])
-        self.assertIsInstance(payload["command_id"], int)
+        self.assertTrue(payload["success"], payload)
+        self.assertNotIn("command_id", payload)
         perform_mock.assert_not_called()
 
 

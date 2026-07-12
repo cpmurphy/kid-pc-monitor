@@ -27,21 +27,17 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from kid_pc_monitor import agent_protocol as proto
-from kid_pc_monitor import shared_secret
 from kid_pc_monitor.agent_poller import POLL_INTERVAL_SEC, start_agent_poller
-from kid_pc_monitor.agent_sync_store import (
-    command_status,
-    enqueue_command,
-    latest_completed_command,
-    recent_agent_for_ip,
-    record_agent_poll,
-    record_command_result,
-    take_pending_commands,
-)
+from kid_pc_monitor.agent_sync_store import recent_agent_for_ip, record_agent_poll
 from kid_pc_monitor.panel_format import (
     format_minutes_duration,
     format_seconds_duration,
     format_snapshot_recorded_at,
+)
+from kid_pc_monitor.panel_reverse_server import (
+    get_reverse_server,
+    reverse_listen_port,
+    start_panel_reverse_server,
 )
 from kid_pc_monitor.paths import (
     config_dir,
@@ -52,7 +48,6 @@ from kid_pc_monitor.paths import (
 )
 from kid_pc_monitor.remote_client import (
     AgentLogsUnavailable,
-    action_request_fields,
     connection_failure_fields,
     format_agent_connection_error,
     get_agent_logs,
@@ -232,33 +227,6 @@ def _is_ip_address(value: str) -> bool:
     return True
 
 
-def _reverse_command_request_fields(
-    action_name: str, payload: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    action, var, val, tail = action_request_fields(action_name, payload)
-    return {"action": action, "var": var, "val": val, "tail": tail}
-
-
-def _enqueue_reverse_action(
-    ip: str, action_name: str, payload: dict[str, Any] | None = None
-) -> tuple[int | None, str | None]:
-    agent = recent_agent_for_ip(ip)
-    if agent is None:
-        return None, None
-    hostname = str(agent["hostname"])
-    try:
-        fields = _reverse_command_request_fields(action_name, payload)
-    except (KeyError, TypeError, ValueError) as exc:
-        return None, f"Invalid value for {action_name}: {exc}"
-    command_id = enqueue_command(hostname=hostname, action_name=action_name, request_fields=fields)
-    return command_id, None
-
-
-def _remote_addr() -> str:
-    forwarded = request.headers.get("X-Forwarded-For", "").split(",", 1)[0].strip()
-    return forwarded or request.remote_addr or ""
-
-
 def _record_reverse_pc_info(hostname: str, ip: str, settings: dict[str, Any]) -> dict[str, Any]:
     pc_info = settings_to_pc_info(settings, host=ip, hostname_fallback=hostname)
     pc_info["ip"] = ip
@@ -269,8 +237,20 @@ def _record_reverse_pc_info(hostname: str, ip: str, settings: dict[str, Any]) ->
         if pc_info.get("current_user"):
             save_snapshot(pc_info)
     except Exception:
-        logger.warning("Failed to persist reverse poll status", exc_info=True)
+        logger.warning("Failed to persist reverse status", exc_info=True)
     return pc_info
+
+
+def _perform_control_action(
+    ip: str, action_name: str, payload: dict[str, Any] | None = None
+) -> tuple[bool, str]:
+    """Prefer a live reverse session; fall back to legacy inbound TCP 9999."""
+    reverse = get_reverse_server()
+    if reverse is not None:
+        result = reverse.perform_action(ip, action_name, payload)
+        if result is not None:
+            return result
+    return perform_action(ip, action_name, payload)
 
 
 def _resolve_control_target(target: str) -> tuple[str, str | None]:
@@ -287,6 +267,17 @@ def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[No
         ip, requested_hostname = _resolve_control_target(target)
     except LookupError:
         return None, f"No recent scan result found for {target}. Scan again and try again."
+
+    reverse = get_reverse_server()
+    if reverse is not None:
+        session = reverse.session_for_ip(ip)
+        if session is not None and session.pc_info:
+            pc_info = settings_to_pc_info(
+                session.pc_info, host=ip, hostname_fallback=session.hostname
+            )
+            pc_info["ip"] = ip
+            pc_info["reachable"] = True
+            return ip, pc_info
 
     reverse_agent = recent_agent_for_ip(ip)
     if reverse_agent is not None:
@@ -424,48 +415,11 @@ def create_app() -> Flask:
 
     @app.route("/agent/v1/discover")
     def agent_discover():
-        return {"service": "kid-pc-monitor-panel", "version": 1}
-
-    @app.route("/agent/v1/poll", methods=["POST"])
-    def agent_poll():
-        payload = request.get_json(silent=True) or {}
-        status_frame = payload.get("status")
-        if not isinstance(status_frame, str):
-            return {"error": "missing status frame"}, 400
-        try:
-            secret = shared_secret.require_shared_secret()
-            status = proto.parse_response(status_frame, secret=secret)
-        except (shared_secret.SharedSecretMissing, proto.ProtocolError) as exc:
-            return {"error": str(exc)}, 401
-        if not status.ok or status.settings is None or not status.name:
-            return {"error": "status frame must contain signed settings"}, 400
-
-        hostname = str(status.name)
-        ip = _remote_addr()
-        _record_reverse_pc_info(hostname, ip, status.settings)
-
-        results = payload.get("results")
-        if isinstance(results, list):
-            for item in results:
-                if not isinstance(item, dict):
-                    continue
-                command_id = item.get("command_id")
-                response_frame = item.get("response")
-                if not isinstance(command_id, int) or not isinstance(response_frame, str):
-                    continue
-                try:
-                    response = proto.parse_response(
-                        response_frame, secret=secret, expected_name=hostname
-                    )
-                    record_command_result(
-                        command_id, response_frame, hostname=hostname, response=response
-                    )
-                except proto.ProtocolError as exc:
-                    record_command_result(
-                        command_id, response_frame, hostname=hostname, error_text=str(exc)
-                    )
-
-        return {"commands": take_pending_commands(hostname, secret=secret), "poll_after_sec": 5}
+        return {
+            "service": "kid-pc-monitor-panel",
+            "version": 1,
+            "reverse_port": reverse_listen_port(),
+        }
 
     @app.route("/")
     @login_required
@@ -569,28 +523,19 @@ def create_app() -> Flask:
         truncated = False
         error_message = None
 
-        reverse_agent = recent_agent_for_ip(ip)
-        if reverse_agent is not None:
-            hostname = str(reverse_agent.get("hostname") or hostname)
-            latest = latest_completed_command(hostname=hostname, action_name="get_logs")
-            if latest and latest.get("response_frame"):
-                try:
-                    secret = shared_secret.require_shared_secret()
-                    response = proto.parse_response(
-                        str(latest["response_frame"]), secret=secret, expected_name=hostname
-                    )
-                    if response.logs is not None:
-                        truncated = response.logs.truncated
-                        log_text = "\n".join(response.logs.lines) or "(log file is empty)"
-                    else:
-                        error_message = response.text or "Queued log request did not return logs."
-                except (shared_secret.SharedSecretMissing, proto.ProtocolError) as exc:
-                    error_message = str(exc)
-            else:
-                error_message = "Log request queued. Refresh this page after the next agent poll."
-            _command_id, queue_error = _enqueue_reverse_action(ip, "get_logs", {})
-            if queue_error and not error_message:
-                error_message = queue_error
+        reverse = get_reverse_server()
+        reverse_session = reverse.session_for_ip(ip) if reverse is not None else None
+        if reverse_session is not None:
+            hostname = reverse_session.hostname or hostname
+            try:
+                assert reverse is not None
+                result = reverse.get_logs(ip)
+                truncated = result.truncated
+                log_text = "\n".join(result.lines) or "(log file is empty)"
+            except AgentLogsUnavailable as exc:
+                error_message = str(exc)
+            except (ConnectionError, proto.ProtocolError, TimeoutError, OSError) as exc:
+                error_message = str(exc)
         else:
             try:
                 result = get_agent_logs(ip)
@@ -614,11 +559,13 @@ def create_app() -> Flask:
     @app.route("/daily_settings/<ip>")
     @login_required
     def daily_settings(ip: str):
-        try:
-            pc_info = inspect_pc(ip)
-            _record_inspect(pc_info)
-        except ConnectionError as exc:
-            flash(format_agent_connection_error(exc), "error")
+        fetched = _fetch_control_pc_info(ip)
+        if fetched[0] is None:
+            flash(fetched[1], "error")
+            return redirect(url_for("index"))
+        _ip, pc_info = fetched
+        if pc_info.get("connection_error"):
+            flash(pc_info.get("connection_error") or "PC unreachable", "error")
             return redirect(url_for("index"))
         return render_template("daily_settings.html", ip=ip, pc_info=pc_info)
 
@@ -641,27 +588,8 @@ def create_app() -> Flask:
         if not ip or not action_name:
             return {"success": False, "response": "Missing ip or action"}
 
-        command_id, queue_error = _enqueue_reverse_action(str(ip), str(action_name), payload)
-        if command_id is not None:
-            return {
-                "success": True,
-                "pending": True,
-                "command_id": command_id,
-                "response": "Command queued for the next agent poll.",
-            }
-        if queue_error:
-            return {"success": False, "response": queue_error}
-
-        ok, response = perform_action(ip, action_name, payload)
+        ok, response = _perform_control_action(str(ip), str(action_name), payload)
         return {"success": ok, "response": response}
-
-    @app.route("/command/<int:command_id>")
-    @login_required
-    def command(command_id: int):
-        status = command_status(command_id)
-        if status is None:
-            abort(404)
-        return status
 
     return app
 
@@ -672,8 +600,19 @@ def main() -> None:
     app = create_app()
     start_agent_poller()
     tls = resolve_tls_cert_paths()
+    reverse_port = reverse_listen_port()
+    start_panel_reverse_server(
+        host=host,
+        port=reverse_port,
+        tls_cert_paths=tls,
+        on_status=_record_reverse_pc_info,
+    )
     scheme = "https" if tls else "http"
     print(f"Kid PC Monitor web panel on {scheme}://{host}:{port}")
+    print(
+        f"Agent reverse TCP on {scheme}://{host}:{reverse_port} "
+        f"(native v3{' with TLS' if tls else ''})"
+    )
     if tls:
         print(
             "TLS enabled. iOS Safari password autofill requires the certificate "

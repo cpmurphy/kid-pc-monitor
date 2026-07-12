@@ -169,26 +169,34 @@ machine to run the web interface.
 
 ## Network Considerations
 
-Current agents make outbound HTTP connections to the parent web panel on TCP
-**5000**. The kid PCs no longer need inbound TCP **9999** for normal web-panel
-control, which avoids the common Windows Firewall problem where the agent is
-running but blocked from the parent side.
+Current agents make outbound connections to the parent web panel: HTTP discovery
+on TCP **5000**, then a native protocol TCP session on **9998** (configurable).
+The kid PCs no longer need inbound TCP **9999** for normal web-panel control,
+which avoids the common Windows Firewall problem where the agent is running but
+blocked from the parent side.
 
 The parent computer and kid computers usually need to be:
 
 * on the same home Wi-Fi network
 * able to reach the parent web panel at `http://<parent-pc-ip>:5000`
+* able to reach the reverse control port at `tcp://<parent-pc-ip>:9998`
 
-The web panel host must allow inbound TCP **5000** from browsers and from kid
-PC agents. On Linux, for example, use `sudo ufw allow 5000/tcp`.
+The web panel host must allow inbound TCP **5000** (browsers + discovery) and
+**9998** (agent reverse control) from the LAN. On Linux, for example:
+
+```bash
+sudo ufw allow 5000/tcp
+sudo ufw allow 9998/tcp
+```
 
 <details>
 <summary>Discovery and legacy scanning (Technical Details)</summary>
 Agents first try `KID_PC_MONITOR_PANEL_URL` if set, then their cached panel URL,
 then scan their local `/24` for the web panel discovery endpoint on TCP 5000.
-The old parent-side scan still exists for legacy direct mode and `kid-pc-cli`
-IP workflows; it scans the parent machine's local `/24` for agents listening on
-TCP 9999 and is capped at `/24` (256 addresses).
+They open reverse control on the `reverse_port` advertised by discovery
+(default 9998). The old parent-side scan still exists for legacy direct mode and
+`kid-pc-cli` IP workflows; it scans the parent machine's local `/24` for agents
+listening on TCP 9999 and is capped at `/24` (256 addresses).
 </details>
 
 ## Installation
@@ -228,7 +236,7 @@ accepted (the task runs in your own session and can reach it).
 
 #### Windows agent firewall
 
-The default agent path is outbound polling to the web panel, so the installer
+The default agent path is outbound reverse TCP to the web panel, so the installer
 no longer needs to add an inbound Windows Firewall rule for normal use. During
 install it asks whether to enable **legacy direct control** on TCP **9999**.
 Choose **yes** only if you still use `kid-pc-cli` direct IP commands, an older
@@ -388,8 +396,8 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 
 ### Agent does not appear in the web panel
 - Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
-- Ensure the parent/web-panel host firewall allows inbound **5000/tcp** from kid PCs.
-- On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` for reverse polling and discovery messages.
+- Ensure the parent/web-panel host firewall allows inbound **5000/tcp** (UI + discovery) and **9998/tcp** (agent reverse control) from kid PCs.
+- On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` for reverse TCP and discovery messages.
 - If auto-discovery fails, set `KID_PC_MONITOR_PANEL_URL=http://<parent-pc-ip>:5000` for the scheduled agent task.
 
 ### Legacy scan finds no PCs
@@ -397,7 +405,7 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 - If you enabled that compatibility option, check the kid PC network profile and firewall rule as before.
 
 ### "Can't connect from phone"
-- Check the web panel host firewall allows inbound **5000/tcp**.
+- Check the web panel host firewall allows inbound **5000/tcp** and **9998/tcp**.
 - Use the web panel machine's IP address, not localhost.
 - Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
 
@@ -429,8 +437,8 @@ Parents and developers welcome! Please:
 - ✅ **Smarter time tracking** — Only active use counts toward the daily allowance; locked sessions stop the clock
 - ✅ **Lock hardening** — Re-locks automatically if the kid unlocks while a limit is active; persistent manual locks
 - ✅ **Grace period warnings** — 30, 15, 5, and 1-minute warnings before lock; warnings reset after a time extension
-- ✅ **Reverse agent polling** — Agents call home to the web panel, avoiding inbound kid-PC firewall issues
-- ✅ **Live PC status** — Background polling with SQLite snapshot history; last-known state when a PC goes offline
+- ✅ **Reverse agent TCP** — Agents call home with the native protocol, avoiding inbound kid-PC firewall issues
+- ✅ **Live PC status** — Background status refresh with SQLite snapshot history; last-known state when a PC goes offline
 - ✅ **IP address changes** — Control pages keyed by hostname so DHCP changes do not break bookmarks
 - ✅ **Agent log viewer** — View agent logs remotely from the web panel or `kid-pc-cli logs`
 - ✅ **CLI tool** — `kid-pc-cli` for scan, inspect, lock, extend, and other remote commands

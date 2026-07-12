@@ -9,8 +9,8 @@
 
 ## Three Components
 
-1. **Agent** (`pc_control.py`) — Kid-side Windows service. Monitors session, enforces locks, listens on **TCP 9999**.
-2. **Web Panel** (`web_panel.py`) — Parent admin UI (Flask on **TCP 5000**). Runs on Windows, Linux, or macOS. Optional TLS via `config_dir()/tls/cert.pem` + `key.pem` or `KID_PC_MONITOR_SSL_CERT` / `KID_PC_MONITOR_SSL_KEY`; iOS Safari password autofill requires trusted HTTPS (see `scripts/setup_web_panel_https.sh`).
+1. **Agent** (`pc_control.py`) — Kid-side Windows service. Monitors session, enforces locks, connects outbound to the panel reverse port (**TCP 9998**). Optional legacy listen on **TCP 9999**.
+2. **Web Panel** (`web_panel.py`) — Parent admin UI (Flask on **TCP 5000**) plus native reverse listener (**TCP 9998**). Runs on Windows, Linux, or macOS. Optional TLS via `config_dir()/tls/cert.pem` + `key.pem` or `KID_PC_MONITOR_SSL_CERT` / `KID_PC_MONITOR_SSL_KEY`; iOS Safari password autofill requires trusted HTTPS (see `scripts/setup_web_panel_https.sh`).
 3. **CLI** (`pc_cli.py`) — Command-line remote client (`scan`, `inspect`, `set-limit`, `lock`, …).
 
 Entry points (after `pip install -e .`):
@@ -80,14 +80,15 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 - **v3** is the only wire version. New capabilities (e.g. `get_logs`) are optional actions at v3; unsupported agents return `unknown_action`.
 - Write actions (`set`, `lock`, `unlock`, `extend`, `shutdown`, `message`) require `name` matching the agent's hostname.
 - Timestamp window: ±60 s.
+- Default path: agents dial out to the panel reverse port (**9998**) and speak native v3; HTTP `/agent/v1/discover` on **5000** is bootstrap only.
 - Web panel **Agent log** page (`/logs/<ip>`) uses `get_logs`; agents without that action show an upgrade message.
 
 ## Windows Install Quirks
 
-- `scripts/install.py` creates a scheduled task and a **Windows Firewall** inbound rule scoped to the exact `pythonw.exe` path, TCP 9999, Private+Domain by default.
+- `scripts/install.py` optionally creates a **Windows Firewall** inbound rule scoped to the exact `pythonw.exe` path, TCP 9999, Private+Domain by default (legacy direct control only).
 - **Cross-user install**: admin runs installer, child runs agent. Requires **system-wide Python** (installer refuses per-user installs). Files go to `C:\ProgramData\KidPCMonitor`; child gets read+execute via `icacls`.
 - Same-user install: task runs as current user, elevated (`Highest`).
-- `scripts/install_web_panel.py` is the Windows web-panel installer (also creates a scheduled task).
+- `scripts/install_web_panel.py` is the Windows web-panel installer (also creates a scheduled task). Parent host needs inbound **5000** and **9998**.
 - `scripts/install_web_panel_linux.sh` writes a systemd `--user` unit on Linux.
 
 ## State & Logging Paths
@@ -106,7 +107,8 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 
 ## Common Gotchas
 
-- **Public network profile blocks remote control**: Windows Firewall rule defaults to Private+Domain only. If the kid PC reconnects Wi-Fi and Windows marks it Public, scans time out. Fix: set network to Private, or re-run `install.py` and allow Public.
+- **Parent firewall must allow 9998**: reverse control is inbound on the panel host, not the kid PC. Allow TCP 5000 (UI/discovery) and 9998 (native reverse).
+- **Public network profile blocks legacy direct control**: Windows Firewall rule for TCP 9999 defaults to Private+Domain only. If you enabled legacy inbound and the kid PC is on Public Wi-Fi, CLI scans time out. Fix: set network to Private, or re-run `install.py` and allow Public.
 - **Firewall rule is tied to a specific `pythonw.exe` path**. If Python is upgraded or moved, the rule may still reference the old path and block traffic. Re-run the installer.
 - Agent re-locks whenever it detects an unlock while any limit (bedtime, allowance, manual lock) is active.
 - Custom PC names: edit `CUSTOM_PC_NAMES` in `src/kid_pc_monitor/remote_client.py`.

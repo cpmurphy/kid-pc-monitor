@@ -11,7 +11,7 @@ import time
 from logging.handlers import RotatingFileHandler
 
 from kid_pc_monitor.agent_diagnostics import AGENT_LISTEN_PORT, log_connectivity_diagnostics
-from kid_pc_monitor.agent_sync_client import start_agent_sync_poller
+from kid_pc_monitor.agent_sync_client import start_agent_reverse_client
 from kid_pc_monitor.host_platform import get_default_platform
 from kid_pc_monitor.pc_time_control import PCTimeControl, data_dir
 from kid_pc_monitor.remote_control_server import RemoteControlServer
@@ -80,7 +80,7 @@ def main() -> int:
     if not tcp_available:
         logger.warning(
             "Port %s already in use; legacy direct TCP control will not start, "
-            "but enforcement and reverse polling will continue.",
+            "but enforcement and reverse TCP will continue.",
             AGENT_PORT,
         )
 
@@ -91,7 +91,7 @@ def main() -> int:
     enforcement_thread = threading.Thread(target=control.run_monitor, daemon=True)
     enforcement_thread.start()
 
-    sync_client = start_agent_sync_poller(control)
+    reverse_client = start_agent_reverse_client(control)
 
     remote = None
     server_thread = None
@@ -104,13 +104,13 @@ def main() -> int:
         if not remote.listener_ready.wait(timeout=10):
             logger.warning(
                 "Legacy TCP listener did not start on port %s within 10s; "
-                "reverse polling remains active. Check %s for details.",
+                "reverse TCP remains active. Check %s for details.",
                 AGENT_PORT,
                 log_file,
             )
 
     logger.info(
-        "Agent running (enforcement + reverse polling%s). "
+        "Agent running (enforcement + reverse TCP%s). "
         "Verbose command logging: set KID_PC_MONITOR_LOG_LEVEL=DEBUG",
         f" + legacy TCP {AGENT_PORT}" if remote is not None else "",
     )
@@ -121,7 +121,7 @@ def main() -> int:
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nShutting down agent...")
-        sync_client.stop()
+        reverse_client.stop()
         if remote is not None:
             remote.stop_server()
         if server_thread is not None:

@@ -806,8 +806,9 @@ def find_existing_agent_firewall_rule(python_path: str) -> dict | None:
 def prompt_enable_legacy_direct_control() -> bool:
     """Ask whether to keep the legacy inbound TCP control path enabled."""
     print("\n🔁 Legacy direct control")
-    print("\n   Current agents use outbound polling to the web panel on TCP 5000, so")
-    print("   Windows Firewall does not need to expose inbound TCP 9999 by default.")
+    print("\n   Current agents use outbound reverse TCP to the web panel (discovery on")
+    print("   TCP 5000, native protocol on TCP 9998), so Windows Firewall does not need")
+    print("   to expose inbound TCP 9999 by default.")
     print("\n   Enable the legacy inbound port only if you still use kid-pc-cli direct")
     print("   IP commands or need compatibility with an older parent web panel.")
     choice = input("\nEnable legacy inbound TCP 9999 control? (y/N): ").strip().lower()
@@ -1045,7 +1046,7 @@ def run_install_flow():
         if enable_legacy_direct:
             configure_agent_firewall(python_path)
         else:
-            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse polling is the default).")
+            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse TCP is the default).")
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
@@ -1054,7 +1055,7 @@ def run_install_flow():
         if enable_legacy_direct:
             configure_agent_firewall(python_path)
         else:
-            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse polling is the default).")
+            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse TCP is the default).")
         print("\n✅ Setup complete using XML method!")
         return True
 

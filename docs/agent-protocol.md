@@ -178,14 +178,15 @@ read; the agent rotates oversized logs to `pc_control.log.1`, `.2`, etc. on disk
 (those backups are not included in `get_logs`). Payloads are not encrypted; logs
 may contain usernames and paths — same LAN + shared-secret threat model as v2.
 
-## Agent Sync Protocol (reverse polling)
+## Reverse Control (agent-initiated TCP)
 
-The web panel now supports a small HTTP/JSON sync protocol for agents that
-cannot accept inbound connections. This is the default operational path for
+Agents that cannot accept inbound connections open an outbound native v3 TCP
+session to the parent web panel. This is the default operational path for
 current installs. The original length-prefixed TCP protocol remains available
-as the legacy direct-control transport on TCP 9999.
+as the legacy direct-control transport on TCP 9999 (agent listens; panel/CLI
+dial in).
 
-Discovery:
+Discovery (HTTP only):
 
 ```
 GET /agent/v1/discover
@@ -194,48 +195,26 @@ GET /agent/v1/discover
 returns:
 
 ```json
-{"service":"kid-pc-monitor-panel","version":1}
+{"service":"kid-pc-monitor-panel","version":1,"reverse_port":9998}
 ```
 
 Agents try `KID_PC_MONITOR_PANEL_URL`, then a cached URL, then scan their local
-`/24` for that discovery endpoint on TCP 5000.
+`/24` for that discovery endpoint on TCP 5000. They then open a TCP connection
+to the panel host on `reverse_port` (default **9998**, overridable with
+`KID_PC_MONITOR_REVERSE_PORT` on the panel). If the panel URL scheme is
+`https`, the reverse socket uses TLS with the same certificate material as the
+web UI.
 
-Polling:
+After connect, roles match the rest of the protocol: the **panel sends
+requests** and the **agent sends responses**, using the same length-prefixed
+frames, HMAC, and dispatcher as legacy TCP 9999. The panel identifies the agent
+with an initial `get settings`, refreshes status periodically on the live
+socket, and runs UI actions synchronously on that connection.
 
-```
-POST /agent/v1/poll
-Content-Type: application/json
-
-{
-  "status": "<signed v3 response frame containing settings>",
-  "results": [
-    {"command_id": 12, "response": "<signed v3 response frame>"}
-  ]
-}
-```
-
-The panel verifies the signed `status` response with the shared secret, records
-the agent heartbeat/status, records any command results, and returns pending
-commands for that hostname:
-
-```json
-{
-  "commands": [
-    {"id": 13, "request": "<signed v3 request frame>"}
-  ],
-  "poll_after_sec": 5
-}
-```
-
-Command frames are still normal v3 requests signed by the panel and addressed
-to the agent hostname. Agents execute them through the same dispatcher used by
-the legacy TCP server, then include the signed response in the next poll. This
-keeps action validation, hostname binding, timestamp checks, and response
-verification identical across both transports.
-
-Reverse polling is asynchronous: web-panel actions may remain pending until the
-agent's next poll/result cycle. Payloads are not encrypted unless the panel is
-served over HTTPS; the shared-secret LAN threat model is otherwise unchanged.
+When no reverse session is connected, the panel falls back to dialing the
+agent's legacy inbound port if that path is enabled. Payloads are not encrypted
+unless TLS is configured; the shared-secret LAN threat model is otherwise
+unchanged.
 
 ## On the Wire
 
