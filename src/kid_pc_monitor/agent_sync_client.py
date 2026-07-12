@@ -157,6 +157,7 @@ class AgentReverseClient:
         self.panel_url: str | None = None
         self.running = False
         self._sock: socket.socket | None = None
+        self._logged_connect_failure = False
 
     def _secret(self) -> str | None:
         return shared_secret.load_shared_secret()
@@ -168,6 +169,14 @@ class AgentReverseClient:
             except OSError:
                 pass
             self._sock = None
+
+    def _log_connect_failure(self, exc: BaseException) -> None:
+        message = "Reverse connect failed (%s); rediscovering"
+        if self._logged_connect_failure:
+            logger.debug(message, exc)
+            return
+        logger.warning(message, exc)
+        self._logged_connect_failure = True
 
     def _serve_connection(self, sock: socket.socket, secret: str) -> None:
         self._sock = sock
@@ -207,10 +216,11 @@ class AgentReverseClient:
             host, port, use_tls = _reverse_endpoint(self.panel_url)
             sock = _open_reverse_socket(host, port, use_tls=use_tls)
         except (OSError, ValueError, HTTPError, URLError, json.JSONDecodeError) as exc:
-            logger.warning("Reverse connect failed (%s); rediscovering", exc)
+            self._log_connect_failure(exc)
             self.panel_url = None
             return min(RECONNECT_MAX_SEC, RECONNECT_MIN_SEC + random.uniform(0, 3))
 
+        self._logged_connect_failure = False
         logger.info(
             "Connected reverse session to panel %s:%s%s",
             host,
