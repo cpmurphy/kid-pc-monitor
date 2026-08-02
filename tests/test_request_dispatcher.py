@@ -81,11 +81,15 @@ class DispatchTests(unittest.TestCase):
         return _logs(self._dispatch(control, _req(**req_kwargs)))
 
     def test_get_settings_returns_all_variables(self) -> None:
+        # Pin wall clock before bedtime so this is stable in UTC CI overnight.
+        fixed = datetime(2026, 5, 17, 15, 0)
         with tempfile.TemporaryDirectory() as tmp:
             control = self._control(tmp, hostname="kid-pc")
             control.set_daily_allowance(90)
             control.set_bed_time(21, 0)
-            settings = self._dispatch_settings(control, action="get", var="settings")
+            with mock.patch("kid_pc_monitor.pc_time_control.datetime", wraps=datetime) as mock_dt:
+                mock_dt.now.return_value = fixed
+                settings = self._dispatch_settings(control, action="get", var="settings")
             self.assertEqual(settings["name"], "kid-pc")
             self.assertEqual(settings["daily_limit"], 90)
             self.assertEqual(settings["bed_time"], "21:00")
