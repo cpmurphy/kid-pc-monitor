@@ -325,10 +325,31 @@ def is_offline_connection_error(exc: BaseException) -> bool:
     return "no route to host" in lower or "[errno 113]" in lower
 
 
+def is_agent_not_running_error(exc: BaseException) -> bool:
+    """True when the host answered but nothing is listening on the agent port.
+
+    The agent starts at the kid's logon, so a refused connection nearly always
+    means the PC is on with nobody signed in.
+    """
+    refused_errnos: set[int] = {111, 10061}  # Linux ECONNREFUSED, Windows WSAECONNREFUSED
+    val = getattr(errno, "ECONNREFUSED", None)
+    if isinstance(val, int):
+        refused_errnos.add(val)
+
+    for err in (exc, exc.__cause__):
+        if isinstance(err, OSError) and err.errno in refused_errnos:
+            return True
+
+    lower = str(exc).lower()
+    return "connection refused" in lower or "[errno 111]" in lower or "[winerror 10061]" in lower
+
+
 def connection_failure_fields(exc: BaseException) -> dict[str, Any]:
     """Session/template fields when inspect or control actions cannot reach an agent."""
     if is_offline_connection_error(exc):
         return {"reachable": False}
+    if is_agent_not_running_error(exc):
+        return {"reachable": False, "agent_not_running": True}
     return {
         "reachable": False,
         "connection_error": format_agent_connection_error(exc),

@@ -8,7 +8,11 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from kid_pc_monitor.panel_db import connect, get_meta, set_meta
-from kid_pc_monitor.scan_store import get_tracked_ips
+from kid_pc_monitor.scan_store import (
+    dashboard_status_key,
+    get_tracked_ip_contact_times,
+    get_tracked_ips,
+)
 
 META_LAST_TRIM_AT = "last_trim_at"
 RETENTION_DAYS = 7
@@ -88,6 +92,52 @@ def save_poll_snapshot(pc_info: dict[str, Any]) -> None:
         conn.commit()
 
 
+_STATUS_RANK = {"online": 3, "locked": 3, "not_signed_in": 2, "cant_control": 1, "offline": 0}
+
+
+def _dedupe_hostname(info: dict[str, Any], ip: str) -> str | None:
+    """Hostname to group duplicate cards by, or None when only a placeholder is known."""
+    hostname = info.get("hostname")
+    if not isinstance(hostname, str) or not hostname or hostname == f"PC at {ip}":
+        return None
+    return hostname.casefold()
+
+
+def _dedupe_by_hostname(
+    dashboard: dict[str, dict[str, Any]],
+    contact_times: dict[str, datetime],
+) -> dict[str, dict[str, Any]]:
+    """Collapse one PC seen at several IPs (e.g. after a DHCP lease change).
+
+    Keeps the IP with the most recent successful contact, breaking ties on how
+    controllable the PC currently looks.
+    """
+    epoch = datetime.fromtimestamp(0).astimezone()
+    best_ip_for_host: dict[str, str] = {}
+
+    def sort_key(ip: str) -> tuple[datetime, int, str]:
+        return (
+            contact_times.get(ip) or epoch,
+            _STATUS_RANK.get(dashboard_status_key(dashboard[ip]), 0),
+            ip,
+        )
+
+    for ip, info in dashboard.items():
+        host = _dedupe_hostname(info, ip)
+        if host is None:
+            continue
+        current = best_ip_for_host.get(host)
+        if current is None or sort_key(ip) > sort_key(current):
+            best_ip_for_host[host] = ip
+
+    keep = set(best_ip_for_host.values())
+    return {
+        ip: info
+        for ip, info in dashboard.items()
+        if _dedupe_hostname(info, ip) is None or ip in keep
+    }
+
+
 def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
     """Return tracked PCs with latest snapshot overlay for dashboard display."""
     tracked = get_tracked_ips()
@@ -112,7 +162,7 @@ def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
             info = {**entry, "ip": ip}
         dashboard[ip] = info
 
-    return dashboard, last_poll_at
+    return _dedupe_by_hostname(dashboard, get_tracked_ip_contact_times()), last_poll_at
 
 
 def snapshot_has_panel_data(payload: dict[str, Any]) -> bool:

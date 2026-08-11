@@ -273,6 +273,39 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(pruned, ["10.0.0.1"])
         self.assertEqual(store.get_tracked_ips(), {})
 
+    def test_failed_polls_do_not_keep_stale_ip_alive(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        store.record_poll_inspect(
+            "10.0.0.1",
+            {"hostname": "KidPC", "ip": "10.0.0.1", "reachable": False},
+        )
+        store.record_poll_inspect(
+            "10.0.0.1",
+            {"hostname": "KidPC", "ip": "10.0.0.1", "reachable": False},
+        )
+
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, ["10.0.0.1"])
+        self.assertEqual(store.get_tracked_ips(), {})
+
+    def test_reachable_poll_refreshes_tracked_ip(self) -> None:
+        store.save_scan(
+            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
+            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
+            network_label="old-net",
+            subnet="10.0.0.0/24",
+        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1"))
+
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+        self.assertEqual(pruned, [])
+        self.assertIn("10.0.0.1", store.get_tracked_ips())
+
     def test_dashboard_status_key(self) -> None:
         self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": False}), "online")
         self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": True}), "locked")
@@ -280,6 +313,10 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(
             store.dashboard_status_key({"reachable": False, "connection_error": "bad clock"}),
             "cant_control",
+        )
+        self.assertEqual(
+            store.dashboard_status_key({"reachable": False, "agent_not_running": True}),
+            "not_signed_in",
         )
 
     def test_record_poll_inspect_coalesces_same_status(self) -> None:

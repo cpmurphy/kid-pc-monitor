@@ -483,6 +483,42 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(dashboard["192.168.1.10"]["hostname"], "KidPC")
         self.assertIsNone(last_poll_at)
 
+    def test_get_dashboard_pcs_collapses_duplicate_hostname(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        now = datetime.now().astimezone()
+        scan_store.save_scan(
+            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
+            scanned_at=now - timedelta(hours=6),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        scan_store.save_scan(
+            pcs={"192.168.1.44": {"hostname": "KidPC", "reachable": True, "locked": False}},
+            scanned_at=now,
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+
+        dashboard, _last_poll_at = store.get_dashboard_pcs()
+        self.assertEqual(list(dashboard), ["192.168.1.44"])
+
+    def test_get_dashboard_pcs_keeps_distinct_hostnames(self) -> None:
+        from kid_pc_monitor import scan_store
+
+        scan_store.save_scan(
+            pcs={
+                "192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False},
+                "192.168.1.44": {"hostname": "OtherPC", "reachable": True, "locked": False},
+            },
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+
+        dashboard, _last_poll_at = store.get_dashboard_pcs()
+        self.assertEqual(sorted(dashboard), ["192.168.1.10", "192.168.1.44"])
+
 
 if __name__ == "__main__":
     unittest.main()

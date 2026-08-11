@@ -15,6 +15,7 @@ from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.remote_client import (
     connection_failure_fields,
     format_agent_connection_error,
+    is_agent_not_running_error,
     is_offline_connection_error,
     request_text,
 )
@@ -64,6 +65,32 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
         fields = connection_failure_fields(exc)
         self.assertFalse(fields["reachable"])
         self.assertNotIn("connection_error", fields)
+
+    def test_connection_refused_is_agent_not_running(self) -> None:
+        os_exc = ConnectionRefusedError(111, "Connection refused")
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: [Errno 111] Connection refused"
+        )
+        exc.__cause__ = os_exc
+        self.assertTrue(is_agent_not_running_error(exc))
+        fields = connection_failure_fields(exc)
+        self.assertFalse(fields["reachable"])
+        self.assertTrue(fields["agent_not_running"])
+        self.assertNotIn("connection_error", fields)
+
+    def test_windows_connection_refused_is_agent_not_running(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: "
+            "[WinError 10061] No connection could be made because the target machine "
+            "actively refused it"
+        )
+        self.assertTrue(is_agent_not_running_error(exc))
+
+    def test_stale_clock_is_not_agent_not_running(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
+        )
+        self.assertFalse(is_agent_not_running_error(exc))
 
     def test_request_text_formats_stale_timestamp(self) -> None:
         with mock.patch(
@@ -149,6 +176,25 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         home = self.client.get("/")
         html = home.get_data(as_text=True)
         self.assertIn("OFFLINE", html)
+        self.assertNotIn("CAN'T CONTROL", html)
+
+    def test_poll_shows_not_signed_in_for_refused_connection(self) -> None:
+        os_exc = ConnectionRefusedError(111, "Connection refused")
+        refused = ConnectionError(
+            "Cannot reach agent at 192.168.1.20:9999: [Errno 111] Connection refused"
+        )
+        refused.__cause__ = os_exc
+        scan_store.save_scan(
+            pcs={"192.168.1.20": {"hostname": "KidPC", "reachable": True}},
+            scanned_at=datetime.now().astimezone(),
+            network_label="lan",
+            subnet="192.168.1.0/24",
+        )
+        with mock.patch.object(agent_poller, "inspect_pc", side_effect=refused):
+            agent_poller.poll_once()
+
+        html = self.client.get("/").get_data(as_text=True)
+        self.assertIn("NOT SIGNED IN", html)
         self.assertNotIn("CAN'T CONTROL", html)
 
     def test_control_page_shows_connection_error(self) -> None:
