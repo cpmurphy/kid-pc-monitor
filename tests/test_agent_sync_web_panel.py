@@ -124,14 +124,22 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         self._tmpdir.cleanup()
 
     def _connect_agent(self) -> None:
+        from kid_pc_monitor import scan_store
+
         sock = socket.create_connection(("127.0.0.1", self.reverse_port), timeout=2)
         self._agent_thread = threading.Thread(
             target=_agent_loop, args=(sock, self._stop), daemon=True
         )
         self._agent_thread.start()
+        # The session is registered before the status callback persists it, so wait for
+        # the recorded state too -- otherwise the dashboard row may not exist yet.
         deadline = time.time() + 3
         while time.time() < deadline:
-            if self.server.session_for_hostname(HOSTNAME) is not None:
+            if (
+                self.server.session_for_hostname(HOSTNAME) is not None
+                and agent_sync_store.recent_agent_for_ip("127.0.0.1") is not None
+                and "127.0.0.1" in scan_store.get_tracked_ips()
+            ):
                 return
             time.sleep(0.05)
         self.fail("Reverse session was not registered")
