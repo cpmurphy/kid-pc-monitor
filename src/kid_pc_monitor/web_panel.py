@@ -216,6 +216,9 @@ def _apply_pc_snapshot(pc_info: dict[str, Any], ip: str) -> dict[str, Any]:
         "ip": ip,
     }
     panel_info.pop("connection_error", None)
+    panel_info.pop("agent_not_running", None)
+    if pc_info.get("agent_not_running"):
+        panel_info["agent_not_running"] = True
     return panel_info
 
 

@@ -68,6 +68,8 @@
                 {% endif %}
                 {% if info.get('connection_error') %}
                 <span class="status warning">⚠ CAN'T CONTROL</span>
+                {% elif info.get('agent_not_running') %}
+                <span class="status idle" title="The PC is on, but the monitor only runs while the kid is signed in.">💤 NOT SIGNED IN</span>
                 {% elif not info.get('reachable', true) %}
                 <span class="status offline">○ OFFLINE</span>
                 {% elif info.locked %}

@@ -31,6 +31,12 @@
         <p class="subtitle">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
         {% endif %}
 
+        {% if pc_info.get('agent_not_running') %}
+        <div class="status-message banner info">
+            💤 This computer is on, but nobody is signed in — the monitor only runs while the kid is signed in.
+        </div>
+        {% endif %}
+
         {% if pc_info.get('is_snapshot') %}
         <div class="status-message banner snapshot">
             📋 Showing recorded snapshot from {{ format_snapshot_recorded_at(pc_info.snapshot_recorded_at) }} — not live data.
@@ -39,7 +45,7 @@
         <div class="status-message banner warning">
             ⚠ {{ pc_info.connection_error }}
         </div>
-        {% elif not pc_info.get('reachable', true) %}
+        {% elif not pc_info.get('reachable', true) and not pc_info.get('agent_not_running') %}
         <div class="status-message banner info">
             ○ This computer is offline or unreachable. Scan again after it is powered on.
         </div>

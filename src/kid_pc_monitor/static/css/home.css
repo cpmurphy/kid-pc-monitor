@@ -135,6 +135,7 @@
 .status.locked  { background-color: #ff9800; color: white; }
 .status.offline { background-color: #9e9e9e; color: white; }
 .status.warning { background-color: #ff9800; color: white; }
+.status.idle    { background-color: #607d8b; color: white; }
 
 .last-scan {
     text-align: center;

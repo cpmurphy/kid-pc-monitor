@@ -17,6 +17,8 @@ def dashboard_status_key(pc_info: dict[str, Any]) -> str:
     """Badge-level status for coalescing poll updates (not full payload equality)."""
     if pc_info.get("connection_error"):
         return "cant_control"
+    if pc_info.get("agent_not_running"):
+        return "not_signed_in"
     if not pc_info.get("reachable", True):
         return "offline"
     if pc_info.get("locked"):
@@ -309,16 +311,58 @@ def _latest_scan_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
     return _parse_db_datetime(row["scanned_at"])
 
 
+def _latest_reachable_scan_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
+    """Latest scan/poll row where the IP actually answered.
+
+    Failed polls still refresh a row's ``scanned_at`` (the control page uses it
+    to notice new data), so staleness has to be judged on reachability instead;
+    otherwise an IP a PC has moved off of would be tracked forever.
+    """
+    rows = conn.execute(
+        """
+        SELECT s.scanned_at AS scanned_at, sp.payload_json AS payload_json
+        FROM scan_pcs sp
+        INNER JOIN scans s ON sp.scan_id = s.id
+        WHERE sp.ip = ? AND s.error IS NULL
+        ORDER BY s.id DESC
+        """,
+        (ip,),
+    ).fetchall()
+    for row in rows:
+        payload = json.loads(row["payload_json"])
+        if payload.get("reachable", True):
+            return _parse_db_datetime(row["scanned_at"])
+    return None
+
+
 def tracked_ip_last_updated(conn: sqlite3.Connection, ip: str) -> datetime | None:
-    """Return when a tracked IP was last scanned or last known reachable."""
+    """Return when a tracked IP was last seen reachable by a scan or poll."""
     candidates = [
         ts
-        for ts in (_latest_scan_time(conn, ip), _latest_reachable_snapshot_time(conn, ip))
+        for ts in (_latest_reachable_scan_time(conn, ip), _latest_reachable_snapshot_time(conn, ip))
         if ts is not None
     ]
     if not candidates:
         return None
     return max(candidates)
+
+
+def get_tracked_ip_contact_times() -> dict[str, datetime]:
+    """Return the last time each tracked IP actually answered (scan or reachable poll)."""
+    with connect() as conn:
+        ips = [
+            row["ip"]
+            for row in conn.execute(
+                """
+                SELECT DISTINCT sp.ip
+                FROM scan_pcs sp
+                INNER JOIN scans s ON sp.scan_id = s.id
+                WHERE s.error IS NULL
+                """
+            ).fetchall()
+        ]
+        times = {ip: tracked_ip_last_updated(conn, ip) for ip in ips}
+    return {ip: seen for ip, seen in times.items() if seen is not None}
 
 
 def _stale_tracked_hours() -> float:
