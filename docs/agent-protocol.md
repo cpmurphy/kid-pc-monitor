@@ -180,11 +180,8 @@ may contain usernames and paths — same LAN + shared-secret threat model as v2.
 
 ## Reverse Control (agent-initiated TCP)
 
-Agents that cannot accept inbound connections open an outbound native v3 TCP
-session to the parent web panel. This is the default operational path for
-current installs. The original length-prefixed TCP protocol remains available
-as the legacy direct-control transport on TCP 9999 (agent listens; panel/CLI
-dial in).
+Agents open an outbound native v3 TCP session to the parent web panel. This is
+the only control path: the panel does not dial kid PCs.
 
 Discovery (HTTP only):
 
@@ -207,14 +204,12 @@ web UI.
 
 After connect, roles match the rest of the protocol: the **panel sends
 requests** and the **agent sends responses**, using the same length-prefixed
-frames, HMAC, and dispatcher as legacy TCP 9999. The panel identifies the agent
-with an initial `get settings`, refreshes status periodically on the live
-socket, and runs UI actions synchronously on that connection.
+frames, HMAC, and dispatcher. The panel identifies the agent with an initial
+`get settings`, refreshes status periodically on the live socket, and runs UI
+actions synchronously on that connection.
 
-When no reverse session is connected, the panel falls back to dialing the
-agent's legacy inbound port if that path is enabled. Payloads are not encrypted
-unless TLS is configured; the shared-secret LAN threat model is otherwise
-unchanged.
+Payloads are not encrypted unless TLS is configured; the shared-secret LAN
+threat model is otherwise unchanged.
 
 ## On the Wire
 

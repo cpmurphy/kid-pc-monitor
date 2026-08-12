@@ -9,20 +9,13 @@ import sys
 from kid_pc_monitor.host_platform import HostPlatform
 from kid_pc_monitor.pc_time_control import data_dir
 
-AGENT_LISTEN_PORT = 9999
 
-
-def log_connectivity_diagnostics(
-    platform: HostPlatform,
-    *,
-    agent_port: int = AGENT_LISTEN_PORT,
-) -> None:
+def log_connectivity_diagnostics(platform: HostPlatform) -> None:
     """Delegate OS-specific network/firewall diagnostics to the platform layer."""
     raw = os.environ.get("KID_PC_MONITOR_LOG_LEVEL", "INFO").strip().upper()
     log_level_name = logging.getLevelName(getattr(logging, raw, logging.INFO))
     platform.log_connectivity_diagnostics(
         logging.getLogger("kid_pc_monitor"),
-        agent_port=agent_port,
         log_file=str(data_dir / "pc_control.log"),
         log_level_name=log_level_name,
         python_executable=sys.executable,

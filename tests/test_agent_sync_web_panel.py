@@ -193,8 +193,7 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         dashboard, _ = snapshot_store.get_dashboard_pcs()
         self.assertFalse(dashboard["127.0.0.1"]["reachable"])
 
-        with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
-            response = self.client.get("/control/127.0.0.1")
+        response = self.client.get("/control/127.0.0.1")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
@@ -204,18 +203,16 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         self._connect_agent()
         csrf = self._csrf_from_index()
 
-        with mock.patch.object(wp, "perform_action") as perform_mock:
-            response = self.client.post(
-                "/action",
-                json={"ip": "127.0.0.1", "action": "lock"},
-                headers={"X-CSRF-Token": csrf},
-            )
+        response = self.client.post(
+            "/action",
+            json={"ip": "127.0.0.1", "action": "lock"},
+            headers={"X-CSRF-Token": csrf},
+        )
 
         self.assertEqual(response.status_code, 200)
         payload = response.get_json()
         self.assertTrue(payload["success"], payload)
         self.assertNotIn("command_id", payload)
-        perform_mock.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -419,11 +419,9 @@ class SnapshotStoreTests(unittest.TestCase):
     def test_get_dashboard_pcs_overlays_snapshot(self) -> None:
         from kid_pc_monitor import scan_store
 
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {"hostname": "KidPC", "reachable": True, "locked": False, "ip": "192.168.1.10"},
         )
         store.save_poll_snapshot(_sample_pc_info(locked=True, accumulated_seconds=999))
         dashboard, last_poll_at = store.get_dashboard_pcs()
@@ -432,21 +430,17 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(dashboard["192.168.1.10"]["accumulated_seconds"], 999)
         self.assertIsNotNone(last_poll_at)
 
-    def test_get_dashboard_pcs_uses_scan_entry_when_unreachable(self) -> None:
+    def test_get_dashboard_pcs_uses_registry_entry_when_unreachable(self) -> None:
         from kid_pc_monitor import scan_store
 
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.10": {
-                    "hostname": "KidPC",
-                    "reachable": True,
-                    "locked": False,
-                    "ip": "192.168.1.10",
-                }
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {
+                "hostname": "KidPC",
+                "reachable": True,
+                "locked": False,
+                "ip": "192.168.1.10",
             },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
         )
         store.save_snapshot(_sample_pc_info(locked=True, accumulated_seconds=999))
         scan_store.record_poll_inspect(
@@ -462,21 +456,17 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertFalse(dashboard["192.168.1.10"]["reachable"])
         self.assertFalse(dashboard["192.168.1.10"]["locked"])
 
-    def test_get_dashboard_pcs_falls_back_to_scan_payload(self) -> None:
+    def test_get_dashboard_pcs_falls_back_to_registry_payload(self) -> None:
         from kid_pc_monitor import scan_store
 
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.10": {
-                    "hostname": "KidPC",
-                    "reachable": True,
-                    "locked": False,
-                    "ip": "192.168.1.10",
-                }
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {
+                "hostname": "KidPC",
+                "reachable": True,
+                "locked": False,
+                "ip": "192.168.1.10",
             },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
         )
         dashboard, last_poll_at = store.get_dashboard_pcs()
         self.assertIn("192.168.1.10", dashboard)
@@ -487,17 +477,15 @@ class SnapshotStoreTests(unittest.TestCase):
         from kid_pc_monitor import scan_store
 
         now = datetime.now().astimezone()
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
-            scanned_at=now - timedelta(hours=6),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {"hostname": "KidPC", "reachable": True, "locked": False, "ip": "192.168.1.10"},
+            when=now - timedelta(hours=6),
         )
-        scan_store.save_scan(
-            pcs={"192.168.1.44": {"hostname": "KidPC", "reachable": True, "locked": False}},
-            scanned_at=now,
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.44",
+            {"hostname": "KidPC", "reachable": True, "locked": False, "ip": "192.168.1.44"},
+            when=now,
         )
 
         dashboard, _last_poll_at = store.get_dashboard_pcs()
@@ -506,14 +494,13 @@ class SnapshotStoreTests(unittest.TestCase):
     def test_get_dashboard_pcs_keeps_distinct_hostnames(self) -> None:
         from kid_pc_monitor import scan_store
 
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False},
-                "192.168.1.44": {"hostname": "OtherPC", "reachable": True, "locked": False},
-            },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {"hostname": "KidPC", "reachable": True, "locked": False, "ip": "192.168.1.10"},
+        )
+        scan_store.record_poll_inspect(
+            "192.168.1.44",
+            {"hostname": "OtherPC", "reachable": True, "locked": False, "ip": "192.168.1.44"},
         )
 
         dashboard, _last_poll_at = store.get_dashboard_pcs()

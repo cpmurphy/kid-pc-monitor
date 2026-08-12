@@ -22,9 +22,8 @@ from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret
 TASK_NAME = "KidPCMonitor"
 INSTALL_DIR_DEFAULT = r"C:\ProgramData\KidPCMonitor"
 INSTALL_CONFIG_FILE = "daily_settings.json"
-AGENT_PORT = 9999
+# Legacy inbound TCP 9999 rule name (removed on uninstall if present).
 FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
-FIREWALL_RULE_GROUP = "Kid PC Monitor"
 
 
 def find_repo_package_dir():
@@ -711,214 +710,8 @@ def _escape_ps_single_quoted(value):
     return value.replace("'", "''")
 
 
-def _normalize_program_path(path: str) -> str:
-    return os.path.normcase(os.path.normpath(os.path.abspath(path)))
-
-
-def _parse_firewall_rule_query_output(stdout: str) -> dict | None:
-    """Parse PowerShell output from find_existing_agent_firewall_rule."""
-    text = (stdout or "").strip()
-    if not text or text in ("MISSING", "MISMATCH", "INCOMPLETE"):
-        return None
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError:
-        return None
-    program = payload.get("program")
-    profiles = payload.get("profiles")
-    if not isinstance(program, str) or not isinstance(profiles, str):
-        return None
-    return {
-        "program": program,
-        "profiles": profiles,
-        "enabled": bool(payload.get("enabled", True)),
-    }
-
-
-def find_existing_agent_firewall_rule(python_path: str) -> dict | None:
-    """Return firewall rule details when a matching inbound rule already exists."""
-    if sys.platform != "win32":
-        return None
-
-    python_path = os.path.normpath(os.path.abspath(python_path))
-    if not os.path.isfile(python_path):
-        return None
-
-    ps_python = _escape_ps_single_quoted(python_path)
-    ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
-    ps_script = f"""
-    $ErrorActionPreference = 'Stop'
-    $ruleName = '{ps_name}'
-    $expectedPython = '{ps_python}'
-    $rule = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $rule) {{
-        Write-Output 'MISSING'
-        exit 0
-    }}
-    $app = Get-NetFirewallApplicationFilter -AssociatedNetFirewallRule $rule -ErrorAction SilentlyContinue | Select-Object -First 1
-    $port = Get-NetFirewallPortFilter -AssociatedNetFirewallRule $rule -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $app -or -not $port) {{
-        Write-Output 'INCOMPLETE'
-        exit 0
-    }}
-    $actualPython = [System.IO.Path]::GetFullPath($app.Program)
-    $expectedNorm = [System.IO.Path]::GetFullPath($expectedPython)
-    if ($actualPython -ne $expectedNorm) {{
-        Write-Output 'MISMATCH'
-        exit 0
-    }}
-    if ($port.Protocol -ne 'TCP') {{
-        Write-Output 'MISMATCH'
-        exit 0
-    }}
-    if ("$($port.LocalPort)" -ne '{AGENT_PORT}') {{
-        Write-Output 'MISMATCH'
-        exit 0
-    }}
-    @{{
-        program = $actualPython
-        profiles = @($rule.Profile) -join ', '
-        enabled = [bool]$rule.Enabled
-    }} | ConvertTo-Json -Compress
-    """
-
-    try:
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except (subprocess.SubprocessError, OSError):
-        return None
-
-    if result.returncode != 0:
-        return None
-
-    parsed = _parse_firewall_rule_query_output(result.stdout)
-    if parsed is None:
-        return None
-    if _normalize_program_path(parsed["program"]) != _normalize_program_path(python_path):
-        return None
-    return parsed
-
-
-def prompt_enable_legacy_direct_control() -> bool:
-    """Ask whether to keep the legacy inbound TCP control path enabled."""
-    print("\n🔁 Legacy direct control")
-    print("\n   Current agents use outbound reverse TCP to the web panel (discovery on")
-    print("   TCP 5000, native protocol on TCP 9998), so Windows Firewall does not need")
-    print("   to expose inbound TCP 9999 by default.")
-    print("\n   Enable the legacy inbound port only if you still use kid-pc-cli direct")
-    print("   IP commands or need compatibility with an older parent web panel.")
-    choice = input("\nEnable legacy inbound TCP 9999 control? (y/N): ").strip().lower()
-    return choice in ("y", "yes")
-
-
-def configure_agent_firewall(python_path: str) -> None:
-    """Add the agent firewall rule, or reuse an existing matching rule."""
-    existing = find_existing_agent_firewall_rule(python_path)
-    if existing is not None:
-        print("\n🔒 Reusing existing Windows Firewall rule")
-        print(f"   Rule: {FIREWALL_RULE_DISPLAY_NAME}")
-        print(f"   Program: {existing['program']}")
-        print(f"   Profiles: {existing['profiles']}")
-        return
-
-    allow_public = prompt_allow_public_firewall()
-    add_agent_firewall_rule(python_path, allow_public=allow_public)
-
-
-def prompt_allow_public_firewall():
-    """
-    Ask whether inbound agent traffic should be allowed on Public (untrusted) networks.
-
-    Default is no: only Private and Domain profiles (safer on coffee-shop Wi-Fi).
-    """
-    print("\n🔒 Windows Firewall — remote control port")
-    print(f"\n   The agent listens on TCP {AGENT_PORT}. By default, the installer")
-    print("   allows inbound connections only on Private and Domain networks")
-    print("   (typical home Wi-Fi when Windows trusts the network).")
-    print("\n   Public/untrusted networks are blocked so strangers on open Wi-Fi")
-    print("   cannot reach the agent.")
-    print("\n   Problem: A child can disconnect Wi-Fi and reconnect; Windows may")
-    print("   then treat your home network as Public, and you lose remote control")
-    print("   until you fix the network profile or re-run this installer.")
-    print("\n   Desktop PCs rarely join random networks; laptops are the main case.")
-    print("   You can allow Public networks below if you accept that trade-off.")
-    choice = (
-        input(f"\nAllow inbound TCP {AGENT_PORT} on Public networks too? (y/N): ").strip().lower()
-    )
-    return choice in ("y", "yes")
-
-
-def add_agent_firewall_rule(python_path, *, allow_public=False):
-    """
-    Allow inbound TCP only on AGENT_PORT for the specific pythonw.exe used by the task.
-
-    Restrictions: one program path, one local port, TCP only. Profile is Private+Domain
-    by default; include Public when allow_public is True. Does not grant outbound or
-    other ports for this executable.
-    """
-    python_path = os.path.normpath(os.path.abspath(python_path))
-    if not os.path.isfile(python_path):
-        print(f"\n⚠️  Firewall rule skipped: Python not found at {python_path}")
-        return False
-
-    ps_python = _escape_ps_single_quoted(python_path)
-    ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
-    ps_group = _escape_ps_single_quoted(FIREWALL_RULE_GROUP)
-    if allow_public:
-        firewall_profiles = "@('Private', 'Domain', 'Public')"
-        profile_label = "Private, Domain, and Public profiles"
-    else:
-        firewall_profiles = "@('Private', 'Domain')"
-        profile_label = "Private and Domain profiles"
-
-    ps_script = f"""
-    $ErrorActionPreference = 'Stop'
-    $ruleName = '{ps_name}'
-    $python = '{ps_python}'
-    $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
-    if ($existing) {{
-        $existing | Remove-NetFirewallRule -ErrorAction SilentlyContinue
-    }}
-    New-NetFirewallRule `
-        -DisplayName $ruleName `
-        -Group '{ps_group}' `
-        -Description 'Kid PC Monitor agent: allow remote control only on TCP {AGENT_PORT} for the scheduled pythonw.exe' `
-        -Direction Inbound `
-        -Action Allow `
-        -Enabled True `
-        -Profile {firewall_profiles} `
-        -Program $python `
-        -Protocol TCP `
-        -LocalPort {AGENT_PORT}
-    Write-Host "SUCCESS: Firewall rule added for $python on TCP {AGENT_PORT} ({profile_label})"
-    exit 0
-    """
-
-    try:
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
-            capture_output=True,
-            text=True,
-        )
-        print("\n=== Firewall ===")
-        print(result.stdout.strip() or "(no output)")
-        if result.stderr.strip():
-            print(result.stderr.strip())
-        if result.returncode == 0:
-            return True
-        print("\n⚠️  Could not add Windows Firewall rule (agent may prompt on first run).")
-        return False
-    except Exception as exc:
-        print(f"\n⚠️  Firewall setup error: {exc}")
-        return False
-
-
 def remove_agent_firewall_rule():
-    """Remove the inbound agent rule created by add_agent_firewall_rule."""
+    """Remove a legacy inbound agent firewall rule if one was left from an older install."""
     ps_name = _escape_ps_single_quoted(FIREWALL_RULE_DISPLAY_NAME)
     ps_script = f"""
     $rules = Get-NetFirewallRule -DisplayName '{ps_name}' -ErrorAction SilentlyContinue
@@ -1040,22 +833,13 @@ def run_install_flow():
         )
 
     prompt_and_store_shared_secret()
-    enable_legacy_direct = prompt_enable_legacy_direct_control()
 
     if create_task_with_power_settings(target_user, script_path, python_path, is_self=is_self):
-        if enable_legacy_direct:
-            configure_agent_firewall(python_path)
-        else:
-            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse TCP is the default).")
         print("\n✅ Setup complete! Task will run even on laptops using battery.")
         return True
 
     print("\nTrying alternative method...")
     if create_task_simple_schtasks(target_user, script_path, python_path):
-        if enable_legacy_direct:
-            configure_agent_firewall(python_path)
-        else:
-            print("\n🔒 Skipped inbound TCP 9999 firewall rule (reverse TCP is the default).")
         print("\n✅ Setup complete using XML method!")
         return True
 

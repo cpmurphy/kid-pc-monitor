@@ -14,7 +14,7 @@ DIY parental control system for tech-savvy parents. If you know what 'pip instal
 - **⏰ Scheduled bedtime locks** - Automatically lock at set times
 - **⏱️ Daily usage limits** - Set maximum screen time
 - **💬 Send messages** - Display warnings or reminders
-- **🏠 Auto-discovery** - Finds all PCs on your network
+- **🏠 Auto-discovery** - Kid agents find the parent web panel on your LAN
 - **⏰ Grace period warnings** - 30, 15, 5, and 1-minute warnings before locks
 - **💾 Persistent settings** - Limits survive PC restarts
 - **👤 User-specific restrictions** - Monitor only specific Windows accounts
@@ -94,8 +94,6 @@ For this setup, you want to:
  1. You would like the first option, `Create/Update scheduled task`
  2. Enter the kid's username when asked.
  3. Enter the regular bed time, wake-up time and daily time allowance.
- 4. When prompted about public networks, you should allow it unless you
-    really are concerned about your home network being insecure.
  
 
 ### On the parent PC
@@ -190,9 +188,9 @@ machine to run the web interface.
 
 Current agents make outbound connections to the parent web panel: HTTP discovery
 on TCP **5000**, then a native protocol TCP session on **9998** (configurable).
-The kid PCs no longer need inbound TCP **9999** for normal web-panel control,
-which avoids the common Windows Firewall problem where the agent is running but
-blocked from the parent side.
+Kid PCs do not need an inbound listen port for web-panel control, which avoids
+the common Windows Firewall problem where the agent is running but blocked from
+the parent side.
 
 The parent computer and kid computers usually need to be:
 
@@ -209,13 +207,12 @@ sudo ufw allow 9998/tcp
 ```
 
 <details>
-<summary>Discovery and legacy scanning (Technical Details)</summary>
+<summary>Agent discovery (Technical Details)</summary>
 Agents first try `KID_PC_MONITOR_PANEL_URL` if set, then their cached panel URL,
 then scan their local `/24` for the web panel discovery endpoint on TCP 5000.
 They open reverse control on the `reverse_port` advertised by discovery
-(default 9998). The old parent-side scan still exists for legacy direct mode and
-`kid-pc-cli` IP workflows; it scans the parent machine's local `/24` for agents
-listening on TCP 9999 and is capped at `/24` (256 addresses).
+(default 9998). The panel never dials kid PCs; connected agents appear in the
+UI as they call home.
 </details>
 
 ## Installation
@@ -253,17 +250,9 @@ that account can stop the task and undo locks — so the installer warns
 and asks you to confirm. In this self-install case a per-user Python is
 accepted (the task runs in your own session and can reach it).
 
-#### Windows agent firewall
-
-The default agent path is outbound reverse TCP to the web panel, so the installer
-no longer needs to add an inbound Windows Firewall rule for normal use. During
-install it asks whether to enable **legacy direct control** on TCP **9999**.
-Choose **yes** only if you still use `kid-pc-cli` direct IP commands, an older
-web panel, or troubleshooting tools that connect directly to the agent.
-
-If you enable legacy direct control, the installer creates the same scoped
-Windows Firewall inbound rule for TCP **9999**. It still defaults to
-**Private** and **Domain** profiles, with a separate prompt for **Public**.
+The agent connects outbound to the parent web panel (discovery on TCP **5000**,
+reverse control on TCP **9998**). No inbound Windows Firewall rule is required
+on the kid PC.
 
 ### Parent's PC
 
@@ -298,7 +287,7 @@ pip install -e .
 kid-pc-web-panel
 ```
 
-After that, use `./venv/bin/kid-pc-web-panel`, `./venv/bin/kid-pc-cli`,
+After that, use `./venv/bin/kid-pc-web-panel`,
 or (the launch scripts switch to `venv/` automatically when it exists).
 
 #### Install as a Service (Linux Only)
@@ -376,32 +365,13 @@ you clear all limits.
 ## ⚙️ Configuration
 
 ### Custom PC Names
-Edit `CUSTOM_PC_NAMES` in `src/kid_pc_monitor/remote_client.py` (used by the web panel and `kid-pc-cli`):
+Edit `CUSTOM_PC_NAMES` in `src/kid_pc_monitor/remote_client.py` (used by the web panel):
 ```python
 CUSTOM_PC_NAMES = {
     '192.168.1.105': 'Tommy\'s Laptop',
     '192.168.1.112': 'Sarah\'s Desktop',
 }
 ```
-
-## 🖥️ Command-line client (Advanced, Experimental)
-
-From the repo root, run the CLI on your parent machine (Linux, macOS,
-or Windows). On Linux, create a venv first if you have not already (see
-[Python virtual environment (Linux)](#python-virtual-environment-linux)):
-
-```bash
-cd kid-pc-monitor
-python3 -m venv venv
-./venv/bin/python3 -m pip install -e .
-./venv/bin/kid-pc-cli scan
-./venv/bin/kid-pc-cli inspect 192.168.1.105
-./venv/bin/kid-pc-cli set-limit 192.168.1.105 60
-./venv/bin/kid-pc-cli add-lock-time 192.168.1.105 21:00
-./venv/bin/kid-pc-cli lock 192.168.1.105
-```
-
-Use `./venv/bin/kid-pc-cli --help` for all commands (`message`, `shutdown`, `extend-time`, `clear-all`, etc.). Add `--json` for scripting. These commands use the legacy direct TCP path and require the agent's inbound TCP **9999** compatibility option. Scan a specific subnet with `./venv/bin/kid-pc-cli scan --subnet 192.168.1.0/24`.
 
 
 ## 🔧 Troubleshooting
@@ -418,10 +388,6 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 - Ensure the parent/web-panel host firewall allows inbound **5000/tcp** (UI + discovery) and **9998/tcp** (agent reverse control) from kid PCs.
 - On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` for reverse TCP and discovery messages.
 - If auto-discovery fails, set `KID_PC_MONITOR_PANEL_URL=http://<parent-pc-ip>:5000` for the scheduled agent task.
-
-### Legacy scan finds no PCs
-- Parent-side scan and `kid-pc-cli` direct IP commands require the optional legacy inbound TCP **9999** agent firewall rule.
-- If you enabled that compatibility option, check the kid PC network profile and firewall rule as before.
 
 ### "Can't connect from phone"
 - Check the web panel host firewall allows inbound **5000/tcp** and **9998/tcp**.
@@ -459,9 +425,8 @@ Parents and developers welcome! Please:
 - ✅ **Reverse agent TCP** — Agents call home with the native protocol, avoiding inbound kid-PC firewall issues
 - ✅ **Live PC status** — Background status refresh with SQLite snapshot history; last-known state when a PC goes offline
 - ✅ **IP address changes** — Control pages keyed by hostname so DHCP changes do not break bookmarks
-- ✅ **Agent log viewer** — View agent logs remotely from the web panel or `kid-pc-cli logs`
-- ✅ **CLI tool** — `kid-pc-cli` for scan, inspect, lock, extend, and other remote commands
-- ✅ **Easier reinstall** — Installer reuses previous settings; legacy inbound firewall setup is optional
+- ✅ **Agent log viewer** — View agent logs remotely from the web panel
+- ✅ **Easier reinstall** — Installer reuses previous settings
 
 ### Ideas for Future Contributions
 - Linux/macOS **agent** (kid-side monitoring; the web panel already runs on Linux/macOS/Windows)

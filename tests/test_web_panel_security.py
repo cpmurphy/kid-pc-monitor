@@ -114,7 +114,7 @@ class WebPanelSecurityTests(unittest.TestCase):
         self._write_auth()
         self._login()
         csrf = self._get_csrf("/")
-        with mock.patch.object(wp, "perform_action", return_value=(True, "ok")):
+        with mock.patch.object(wp, "_perform_control_action", return_value=(True, "ok")):
             bad = self.client.post(
                 "/action",
                 json={"ip": "192.168.1.1", "action": "lock"},
@@ -164,29 +164,13 @@ class WebPanelSecurityTests(unittest.TestCase):
         saved = json.loads(self.auth_path.read_text(encoding="utf-8"))
         self.assertTrue(wp._verify_password(saved, "newpassword1"))
 
-    def test_scan_get_not_allowed(self) -> None:
+    def test_scan_route_removed(self) -> None:
         self._write_auth()
         self._login()
         response = self.client.get("/scan")
-        self.assertEqual(response.status_code, 405)
-
-    def test_scan_post_without_csrf_rejected(self) -> None:
-        self._write_auth()
-        self._login()
-        response = self.client.post("/scan")
-        self.assertEqual(response.status_code, 400)
-
-    def test_scan_post_with_csrf_succeeds(self) -> None:
-        self._write_auth()
-        self._login()
-        csrf = self._get_csrf("/")
-        with mock.patch.object(wp, "scan_for_servers", return_value={}):
-            response = self.client.post(
-                "/scan",
-                data={"csrf_token": csrf, "subnet": ""},
-            )
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.location, "/")
+        self.assertEqual(response.status_code, 404)
+        response = self.client.post("/scan", data={"csrf_token": self._get_csrf("/")})
+        self.assertEqual(response.status_code, 404)
 
 
 if __name__ == "__main__":

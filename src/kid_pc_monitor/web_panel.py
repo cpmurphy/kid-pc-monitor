@@ -7,7 +7,6 @@ import logging
 import os
 import secrets
 from collections.abc import Callable
-from datetime import datetime
 from functools import wraps
 from ipaddress import ip_address
 from pathlib import Path
@@ -48,24 +47,14 @@ from kid_pc_monitor.paths import (
 )
 from kid_pc_monitor.remote_client import (
     AgentLogsUnavailable,
-    connection_failure_fields,
     format_agent_connection_error,
-    get_agent_logs,
-    get_default_scan_network,
-    inspect_pc,
-    parse_scan_subnet,
-    perform_action,
-    scan_for_servers,
     settings_to_pc_info,
 )
 from kid_pc_monitor.scan_store import (
     get_pc_poll_updated_at,
     get_scan_pc,
     get_scan_pc_by_hostname,
-    load_scan_metadata,
     record_poll_inspect,
-    save_scan,
-    save_scan_error,
 )
 from kid_pc_monitor.snapshot_store import (
     get_dashboard_pcs,
@@ -181,13 +170,6 @@ def save_password(password: str) -> None:
     )
 
 
-def _record_inspect(pc_info: dict[str, Any]) -> None:
-    try:
-        save_snapshot(pc_info)
-    except Exception:
-        logger.warning("Failed to save inspect snapshot", exc_info=True)
-
-
 def _snapshot_lookup_hostname(pc_info: dict[str, Any], ip: str) -> str | None:
     """Prefer a stable agent hostname so snapshots survive DHCP IP changes."""
     hostname = pc_info.get("hostname")
@@ -258,16 +240,21 @@ def _record_reverse_disconnect(hostname: str, ip: str) -> None:
         logger.warning("Failed to persist reverse disconnect for %s", hostname, exc_info=True)
 
 
+_UNKNOWN_PC_MSG = (
+    "No connected PC found for {target}. PCs appear here after the agent connects to this panel."
+)
+
+
 def _perform_control_action(
     ip: str, action_name: str, payload: dict[str, Any] | None = None
 ) -> tuple[bool, str]:
-    """Prefer a live reverse session; fall back to legacy inbound TCP 9999."""
+    """Run a control action on a live reverse session."""
     reverse = get_reverse_server()
     if reverse is not None:
         result = reverse.perform_action(ip, action_name, payload)
         if result is not None:
             return result
-    return perform_action(ip, action_name, payload)
+    return False, "PC is not connected. Wait for the agent to reconnect, then try again."
 
 
 def _resolve_control_target(target: str) -> tuple[str, str | None]:
@@ -283,7 +270,7 @@ def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[No
     try:
         ip, requested_hostname = _resolve_control_target(target)
     except LookupError:
-        return None, f"No recent scan result found for {target}. Scan again and try again."
+        return None, _UNKNOWN_PC_MSG.format(target=target)
 
     reverse = get_reverse_server()
     if reverse is not None:
@@ -296,19 +283,20 @@ def _fetch_control_pc_info(target: str) -> tuple[str, dict[str, Any]] | tuple[No
             pc_info["reachable"] = True
             return ip, pc_info
 
-    try:
-        pc_info = inspect_pc(ip)
-        pc_info["ip"] = ip
-        _record_inspect(pc_info)
-    except ConnectionError as exc:
-        pc_info = {
-            "hostname": _snapshot_lookup_hostname(
-                {"hostname": requested_hostname or f"PC at {ip}"}, ip
-            )
-            or f"PC at {ip}",
-            "ip": ip,
-            **connection_failure_fields(exc),
-        }
+    entry = get_scan_pc(ip)
+    if entry is None:
+        return None, _UNKNOWN_PC_MSG.format(target=target)
+
+    pc_info = {
+        "hostname": _snapshot_lookup_hostname(
+            {"hostname": requested_hostname or entry.get("hostname") or f"PC at {ip}"}, ip
+        )
+        or entry.get("hostname")
+        or f"PC at {ip}",
+        **entry,
+        "ip": ip,
+        "reachable": False,
+    }
     pc_info = _apply_pc_snapshot(pc_info, ip)
     return ip, pc_info
 
@@ -317,11 +305,11 @@ def _fetch_control_pc_info_cached(target: str) -> tuple[str, dict[str, Any]] | t
     try:
         ip, requested_hostname = _resolve_control_target(target)
     except LookupError:
-        return None, f"No recent scan result found for {target}. Scan again and try again."
+        return None, _UNKNOWN_PC_MSG.format(target=target)
 
     entry = get_scan_pc(ip)
     if entry is None:
-        return None, f"No recent scan result found for {target}. Scan again and try again."
+        return None, _UNKNOWN_PC_MSG.format(target=target)
 
     pc_info = {**entry, "ip": ip}
     if not pc_info.get("reachable", True) or pc_info.get("connection_error"):
@@ -437,45 +425,12 @@ def create_app() -> Flask:
     @app.route("/")
     @login_required
     def index():
-        scan_meta = load_scan_metadata()
         pcs, last_poll_at = get_dashboard_pcs()
         return render_template(
             "index.html",
             pcs=pcs,
-            last_scan=scan_meta["last_scan"],
-            last_scan_network=scan_meta["last_scan_network"],
-            scan_subnet=scan_meta["scan_subnet"],
-            scan_error=scan_meta["scan_error"],
             last_poll_at=last_poll_at,
-            default_subnet=str(get_default_scan_network()),
         )
-
-    @app.route("/scan", methods=["POST"])
-    @login_required
-    def scan():
-        subnet_arg = request.form.get("subnet", "").strip()
-        try:
-            _network, label = parse_scan_subnet(subnet_arg or None)
-            discovered = scan_for_servers(subnet=subnet_arg or None)
-            scan_entries: dict[str, dict[str, Any]] = {}
-            for ip, entry in discovered.items():
-                entry["ip"] = ip
-                try:
-                    info = inspect_pc(ip)
-                    entry.update(info)
-                    _record_inspect(info)
-                except ConnectionError as exc:
-                    entry.update(connection_failure_fields(exc))
-                scan_entries[ip] = entry
-            save_scan(
-                pcs=scan_entries,
-                scanned_at=datetime.now().astimezone(),
-                network_label=label,
-                subnet=subnet_arg,
-            )
-        except ValueError as exc:
-            save_scan_error(str(exc), subnet=subnet_arg)
-        return redirect(url_for("index"))
 
     @app.route("/control/<target>")
     @login_required
@@ -548,18 +503,11 @@ def create_app() -> Flask:
             except AgentLogsUnavailable as exc:
                 error_message = str(exc)
             except (ConnectionError, proto.ProtocolError, TimeoutError, OSError) as exc:
-                error_message = str(exc)
-        else:
-            try:
-                result = get_agent_logs(ip)
-                truncated = result.truncated
-                log_text = "\n".join(result.lines)
-                if not log_text:
-                    log_text = "(log file is empty)"
-            except AgentLogsUnavailable as exc:
-                error_message = str(exc)
-            except ConnectionError as exc:
                 error_message = format_agent_connection_error(exc)
+        else:
+            error_message = (
+                "PC is not connected. Wait for the agent to reconnect, then open logs again."
+            )
         return render_template(
             "logs.html",
             ip=ip,

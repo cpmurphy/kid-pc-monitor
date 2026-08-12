@@ -15,8 +15,6 @@ from ctypes import wintypes
 from kid_pc_monitor.host_platform import HostPlatform
 from kid_pc_monitor.network import get_primary_ipv4
 
-# Must match scripts/install.py FIREWALL_RULE_DISPLAY_NAME
-_FIREWALL_RULE_DISPLAY_NAME = "Kid PC Monitor Agent (TCP 9999)"
 _INVALID_HANDLE_VALUE = ctypes.c_size_t(-1).value
 _TH32CS_SNAPPROCESS = 0x00000002
 _MAX_PATH = 260
@@ -290,7 +288,6 @@ class WindowsHostPlatform(HostPlatform):
         self,
         logger: logging.Logger,
         *,
-        agent_port: int,
         log_file: str,
         log_level_name: str,
         python_executable: str,
@@ -306,8 +303,11 @@ class WindowsHostPlatform(HostPlatform):
             log_file,
             log_level_name,
         )
+        logger.info(
+            "Agent connects outbound to the parent web panel (discovery on TCP 5000, "
+            "reverse control on TCP 9998); no inbound agent listen port is required."
+        )
 
-        on_public = False
         profiles = _run_powershell_json(
             "@(Get-NetConnectionProfile -ErrorAction SilentlyContinue | "
             "Select-Object InterfaceAlias, IPv4Connectivity, NetworkCategory) | "
@@ -324,75 +324,4 @@ class WindowsHostPlatform(HostPlatform):
                     entry.get("InterfaceAlias", "?"),
                     entry.get("IPv4Connectivity", "?"),
                     entry.get("NetworkCategory", "?"),
-                )
-
-            def _is_public(category) -> bool:
-                if category in (0, "0"):
-                    return True
-                return str(category).lower() == "public"
-
-            on_public = any(_is_public(p.get("NetworkCategory")) for p in profiles)
-            if on_public:
-                logger.warning(
-                    "At least one interface is Public. The installer "
-                    "firewall rule allows inbound TCP %s only on Private/Domain "
-                    "unless you chose to include Public. Remote scans and pc_cli "
-                    "will fail until the network is Private or the rule includes Public.",
-                    agent_port,
-                )
-
-        rule_result = _run_powershell_json(
-            f"$r = Get-NetFirewallRule -DisplayName '{_FIREWALL_RULE_DISPLAY_NAME}' "
-            "-ErrorAction SilentlyContinue | Select-Object -First 1; "
-            "if (-not $r) { @{{found=$false}} | ConvertTo-Json -Compress } "
-            "else { "
-            "@{{found=$true; enabled=$r.Enabled; profile=$r.Profile; "
-            "program=($r | Get-NetFirewallApplicationFilter).Program; "
-            "localPort=($r | Get-NetFirewallPortFilter).LocalPort}} | "
-            "ConvertTo-Json -Compress "
-            "}"
-        )
-        if rule_result is None:
-            logger.warning("Could not query Windows Firewall rule for the agent")
-        elif not isinstance(rule_result, dict):
-            logger.warning("Unexpected firewall rule query response")
-        elif not rule_result.get("found"):
-            logger.warning(
-                "No firewall rule named %r — inbound TCP 9999 may be blocked. "
-                "Re-run scripts/install.py as administrator.",
-                _FIREWALL_RULE_DISPLAY_NAME,
-            )
-        else:
-            rule = rule_result
-            profile_mask = int(rule.get("profile") or 0)
-            profile_names = []
-            if profile_mask & 1:
-                profile_names.append("Domain")
-            if profile_mask & 2:
-                profile_names.append("Private")
-            if profile_mask & 4:
-                profile_names.append("Public")
-            logger.info(
-                "Firewall rule: enabled=%s profiles=%s (%s) program=%s localPort=%s",
-                rule.get("enabled"),
-                profile_mask,
-                ",".join(profile_names) or "none",
-                rule.get("program"),
-                rule.get("localPort"),
-            )
-            if on_public and not (profile_mask & 4):
-                logger.warning(
-                    "Network is Public but the firewall rule does not include the "
-                    "Public profile — LAN clients cannot reach TCP %s. Set the home "
-                    "network to Private in Windows Settings, or re-run scripts/install.py "
-                    "and allow Public networks.",
-                    agent_port,
-                )
-            program = rule.get("program") or ""
-            if program and os.path.normcase(python_executable) != os.path.normcase(program):
-                logger.warning(
-                    "Firewall rule program %r does not match this process %r — "
-                    "inbound connections may be blocked.",
-                    program,
-                    python_executable,
                 )

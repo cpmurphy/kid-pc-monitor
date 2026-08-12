@@ -15,7 +15,7 @@ If they have administrator access, yes. This tool is based on trust and communic
 
 ### Does it work on Mac/Linux?
 - **Kid PC (monitoring agent):** Windows only today (`pc_control.py` uses Windows-specific lock and session APIs).
-- **Parent web panel:** Runs on **Windows, Linux, or macOS**. Install Python, `pip install -r requirements.txt` (on non-Windows, `pywin32` is skipped automatically), then run `web_panel.py` from `src/`. Current agents poll the panel over TCP **5000**; TCP **9999** is only for legacy direct control.
+- **Parent web panel:** Runs on **Windows, Linux, or macOS**. Install Python, `pip install -r requirements.txt` (on non-Windows, `pywin32` is skipped automatically), then run `web_panel.py` from `src/`. Agents discover the panel over TCP **5000** and connect reverse control on TCP **9998**.
 
 ## Setup Issues
 
@@ -26,7 +26,7 @@ If they have administrator access, yes. This tool is based on trust and communic
 
 ### "Can't connect from my phone"
 1. Check both devices are on same WiFi (or that routing exists between subnets if you use VLANs)
-2. **Firewall:** Allow inbound **5000/tcp** on the machine running the web panel. Agent TCP **9999** is only needed if you enabled legacy direct control.
+2. **Firewall:** Allow inbound **5000/tcp** and **9998/tcp** on the machine running the web panel.
 3. Use the IP address shown when starting `web_panel.py`, not `localhost`, from the other device
 
 ### Safari on iPhone won't autofill my saved password
@@ -90,16 +90,14 @@ This is normal. You can:
 
 ### Agent does not appear in the panel, but the kid PC is online
 
-Current agents discover and poll the web panel over TCP **5000**. The most common cause is that the parent/web-panel host firewall allows your phone browser but blocks other LAN devices, or the agent cannot discover the panel.
+Current agents discover the web panel over TCP **5000**, then open reverse control on TCP **9998**. The most common cause is that the parent/web-panel host firewall allows your phone browser but blocks other LAN devices, or the agent cannot discover the panel.
 
 **Fix (pick one):**
-1. On the parent/web-panel host, allow inbound **5000/tcp** from the home LAN.
+1. On the parent/web-panel host, allow inbound **5000/tcp** and **9998/tcp** from the home LAN.
 2. Confirm the kid PC can open `http://<parent-pc-ip>:5000/agent/v1/discover` and receives a small JSON response.
 3. Set `KID_PC_MONITOR_PANEL_URL=http://<parent-pc-ip>:5000` for the scheduled agent task if automatic LAN discovery fails.
 
-**Legacy direct mode:** `kid-pc-cli scan` and direct IP commands still use agent TCP **9999**. They require enabling the installer’s legacy direct-control option and the matching Windows Firewall rule.
-
-**Check the agent log** on the kid PC: `%LOCALAPPDATA%\KidPCMonitor\pc_control.log`. It logs reverse polling discovery failures and legacy TCP listener status. Set `KID_PC_MONITOR_LOG_LEVEL=DEBUG` on the kid PC for more detail.
+**Check the agent log** on the kid PC: `%LOCALAPPDATA%\KidPCMonitor\pc_control.log`. It logs reverse discovery and connection failures. Set `KID_PC_MONITOR_LOG_LEVEL=DEBUG` on the kid PC for more detail.
 
 ## Usage Questions
 

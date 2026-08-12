@@ -1,9 +1,8 @@
-"""Tests for install.py firewall rule reuse detection."""
+"""Tests for install.py legacy firewall rule cleanup on uninstall."""
 
 from __future__ import annotations
 
 import importlib.util
-import json
 import sys
 import unittest
 from pathlib import Path
@@ -27,93 +26,18 @@ install = _load_install_module()
 
 
 class InstallFirewallTests(unittest.TestCase):
-    def test_parse_firewall_rule_query_output_accepts_json(self) -> None:
-        payload = {
-            "program": r"C:\Python312\pythonw.exe",
-            "profiles": "Private, Domain",
-            "enabled": True,
-        }
-        result = install._parse_firewall_rule_query_output(json.dumps(payload))
-        self.assertEqual(result, payload)
-
-    def test_parse_firewall_rule_query_output_rejects_sentinel_values(self) -> None:
-        for value in ("MISSING", "MISMATCH", "INCOMPLETE", ""):
-            self.assertIsNone(install._parse_firewall_rule_query_output(value))
-
-    def test_parse_firewall_rule_query_output_rejects_invalid_json(self) -> None:
-        self.assertIsNone(install._parse_firewall_rule_query_output("not-json"))
-
-    def test_find_existing_agent_firewall_rule_returns_none_on_non_windows(self) -> None:
-        with mock.patch.object(install.sys, "platform", "linux"):
-            self.assertIsNone(
-                install.find_existing_agent_firewall_rule(r"C:\Python312\pythonw.exe")
-            )
-
-    def test_find_existing_agent_firewall_rule_parses_powershell_json(self) -> None:
-        python_path = r"C:\Python312\pythonw.exe"
-        payload = {
-            "program": python_path,
-            "profiles": "Private, Domain",
-            "enabled": True,
-        }
-        completed = mock.Mock(returncode=0, stdout=json.dumps(payload), stderr="")
-
-        with (
-            mock.patch.object(install.sys, "platform", "win32"),
-            mock.patch.object(install.os.path, "isfile", return_value=True),
-            mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p),
-            mock.patch.object(install.os.path, "normpath", side_effect=lambda p: p),
-            mock.patch.object(install.subprocess, "run", return_value=completed) as run_mock,
-        ):
-            result = install.find_existing_agent_firewall_rule(python_path)
-
-        self.assertEqual(result, payload)
+    def test_remove_agent_firewall_rule_runs_powershell(self) -> None:
+        completed = mock.Mock(returncode=0, stdout="SUCCESS: Firewall rule removed", stderr="")
+        with mock.patch.object(install.subprocess, "run", return_value=completed) as run_mock:
+            self.assertTrue(install.remove_agent_firewall_rule())
         run_mock.assert_called_once()
+        command = run_mock.call_args.args[0]
+        self.assertIn("Get-NetFirewallRule", command[-1])
+        self.assertIn(install.FIREWALL_RULE_DISPLAY_NAME.replace("'", "''"), command[-1])
 
-    def test_find_existing_agent_firewall_rule_returns_none_for_missing(self) -> None:
-        python_path = r"C:\Python312\pythonw.exe"
-        completed = mock.Mock(returncode=0, stdout="MISSING", stderr="")
-
-        with (
-            mock.patch.object(install.sys, "platform", "win32"),
-            mock.patch.object(install.os.path, "isfile", return_value=True),
-            mock.patch.object(install.os.path, "abspath", side_effect=lambda p: p),
-            mock.patch.object(install.os.path, "normpath", side_effect=lambda p: p),
-            mock.patch.object(install.subprocess, "run", return_value=completed),
-        ):
-            self.assertIsNone(install.find_existing_agent_firewall_rule(python_path))
-
-    def test_configure_agent_firewall_skips_prompt_when_rule_exists(self) -> None:
-        existing = {
-            "program": r"C:\Python312\pythonw.exe",
-            "profiles": "Private, Domain",
-            "enabled": True,
-        }
-
-        with (
-            mock.patch.object(install, "find_existing_agent_firewall_rule", return_value=existing),
-            mock.patch.object(install, "prompt_allow_public_firewall") as prompt_mock,
-            mock.patch.object(install, "add_agent_firewall_rule") as add_mock,
-        ):
-            install.configure_agent_firewall(existing["program"])
-
-        prompt_mock.assert_not_called()
-        add_mock.assert_not_called()
-
-    def test_configure_agent_firewall_prompts_when_rule_missing(self) -> None:
-        python_path = r"C:\Python312\pythonw.exe"
-
-        with (
-            mock.patch.object(install, "find_existing_agent_firewall_rule", return_value=None),
-            mock.patch.object(
-                install, "prompt_allow_public_firewall", return_value=False
-            ) as prompt_mock,
-            mock.patch.object(install, "add_agent_firewall_rule") as add_mock,
-        ):
-            install.configure_agent_firewall(python_path)
-
-        prompt_mock.assert_called_once_with()
-        add_mock.assert_called_once_with(python_path, allow_public=False)
+    def test_remove_agent_firewall_rule_handles_subprocess_error(self) -> None:
+        with mock.patch.object(install.subprocess, "run", side_effect=OSError("boom")):
+            self.assertFalse(install.remove_agent_firewall_rule())
 
 
 if __name__ == "__main__":

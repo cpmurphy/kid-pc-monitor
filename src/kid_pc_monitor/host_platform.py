@@ -42,7 +42,6 @@ class HostPlatform(ABC):
         self,
         logger: logging.Logger,
         *,
-        agent_port: int,
         log_file: str,
         log_level_name: str,
         python_executable: str,
