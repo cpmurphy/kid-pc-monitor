@@ -17,10 +17,9 @@ def dashboard_status_key(pc_info: dict[str, Any]) -> str:
     """Badge-level status for coalescing poll updates (not full payload equality)."""
     if pc_info.get("connection_error"):
         return "cant_control"
-    if pc_info.get("agent_not_running"):
-        return "not_signed_in"
-    if not pc_info.get("reachable", True):
-        return "offline"
+    if pc_info.get("agent_not_running") or not pc_info.get("reachable", True):
+        # Reverse-only panel cannot distinguish powered-off from signed-out.
+        return "not_connected"
     if pc_info.get("locked"):
         return "locked"
     return "online"

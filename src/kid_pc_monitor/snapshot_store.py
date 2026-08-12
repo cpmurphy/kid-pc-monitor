@@ -92,7 +92,7 @@ def save_poll_snapshot(pc_info: dict[str, Any]) -> None:
         conn.commit()
 
 
-_STATUS_RANK = {"online": 3, "locked": 3, "not_signed_in": 2, "cant_control": 1, "offline": 0}
+_STATUS_RANK = {"online": 3, "locked": 3, "not_connected": 1, "cant_control": 0}
 
 
 def _dedupe_hostname(info: dict[str, Any], ip: str) -> str | None:

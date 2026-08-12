@@ -165,7 +165,7 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         assert agent is not None
         self.assertEqual(agent["hostname"], HOSTNAME)
 
-    def test_disconnect_marks_agent_offline(self) -> None:
+    def test_disconnect_marks_agent_not_connected(self) -> None:
         from kid_pc_monitor import scan_store, snapshot_store
 
         self._connect_agent()
@@ -192,6 +192,11 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         self.assertFalse(tracked["127.0.0.1"].get("reachable", True))
         dashboard, _ = snapshot_store.get_dashboard_pcs()
         self.assertFalse(dashboard["127.0.0.1"]["reachable"])
+
+        home = self.client.get("/")
+        self.assertEqual(home.status_code, 200)
+        self.assertIn("NOT CONNECTED", home.get_data(as_text=True))
+        self.assertNotIn("CAN'T CONTROL", home.get_data(as_text=True))
 
         response = self.client.get("/control/127.0.0.1")
         self.assertEqual(response.status_code, 200)

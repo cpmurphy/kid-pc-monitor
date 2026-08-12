@@ -125,7 +125,7 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         html = home.get_data(as_text=True)
         self.assertIn("CAN'T CONTROL", html)
 
-    def test_registry_shows_offline_for_no_route_to_host(self) -> None:
+    def test_registry_shows_not_connected_for_no_route_to_host(self) -> None:
         os_exc = OSError(113, "No route to host")
         unreachable = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: [Errno 113] No route to host"
@@ -139,10 +139,10 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
-        self.assertIn("OFFLINE", html)
+        self.assertIn("NOT CONNECTED", html)
         self.assertNotIn("CAN'T CONTROL", html)
 
-    def test_registry_shows_not_signed_in_for_refused_connection(self) -> None:
+    def test_registry_shows_not_connected_for_refused_connection(self) -> None:
         os_exc = ConnectionRefusedError(111, "Connection refused")
         refused = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: [Errno 111] Connection refused"
@@ -155,7 +155,7 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         )
 
         html = self.client.get("/").get_data(as_text=True)
-        self.assertIn("NOT SIGNED IN", html)
+        self.assertIn("NOT CONNECTED", html)
         self.assertNotIn("CAN'T CONTROL", html)
 
     def test_control_page_shows_connection_error(self) -> None:

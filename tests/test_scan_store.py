@@ -227,14 +227,14 @@ class ScanStoreTests(unittest.TestCase):
     def test_dashboard_status_key(self) -> None:
         self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": False}), "online")
         self.assertEqual(store.dashboard_status_key({"reachable": True, "locked": True}), "locked")
-        self.assertEqual(store.dashboard_status_key({"reachable": False}), "offline")
+        self.assertEqual(store.dashboard_status_key({"reachable": False}), "not_connected")
         self.assertEqual(
             store.dashboard_status_key({"reachable": False, "connection_error": "bad clock"}),
             "cant_control",
         )
         self.assertEqual(
             store.dashboard_status_key({"reachable": False, "agent_not_running": True}),
-            "not_signed_in",
+            "not_connected",
         )
 
     def test_record_poll_inspect_coalesces_same_status(self) -> None:
