@@ -1,28 +1,21 @@
-"""Tests for remote_client reachability helpers."""
+"""Tests for remote_client helpers (reverse-path formatting and protocol mapping)."""
 
 from __future__ import annotations
 
 import io
-import socket
-import threading
 import unittest
-from unittest import mock
 
 from kid_pc_monitor import agent_protocol as proto
 from kid_pc_monitor.remote_client import (
-    AgentLogsUnavailable,
     _legacy_access_status,
     _print_frame,
-    get_agent_logs,
-    is_pc_reachable,
-    parse_scan_subnet,
-    refresh_discovered_entry,
-    scan_for_servers,
-    send_request,
+    action_request_fields,
+    connection_failure_fields,
+    format_agent_connection_error,
+    is_agent_not_running_error,
+    is_offline_connection_error,
+    settings_to_pc_info,
 )
-
-SECRET = "test-shared-secret"
-HOSTNAME = "kid-pc"
 
 
 class RemoteClientTests(unittest.TestCase):
@@ -30,120 +23,6 @@ class RemoteClientTests(unittest.TestCase):
         self.assertEqual(_legacy_access_status("UNLOCKED", False), "Unlocked")
         self.assertEqual(_legacy_access_status("LOCKED", False), "Screen locked")
         self.assertEqual(_legacy_access_status("UNLOCKED", True), "Locked — manual lock")
-
-    def test_is_pc_reachable_open_port(self) -> None:
-        ready = threading.Event()
-        port_holder: list[int] = []
-
-        def serve() -> None:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                server.bind(("127.0.0.1", 0))
-                server.listen(1)
-                port_holder.append(server.getsockname()[1])
-                ready.set()
-                conn, _addr = server.accept()
-                with conn:
-                    pass
-
-        thread = threading.Thread(target=serve, daemon=True)
-        thread.start()
-        ready.wait(timeout=2)
-        port = port_holder[0]
-
-        self.assertTrue(is_pc_reachable("127.0.0.1", port=port, timeout=1.0))
-        thread.join(timeout=2)
-
-    def test_is_pc_reachable_closed_port(self) -> None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("127.0.0.1", 0))
-            port = s.getsockname()[1]
-        self.assertFalse(is_pc_reachable("127.0.0.1", port=port, timeout=0.5))
-
-    def test_refresh_discovered_entry_marks_offline(self) -> None:
-        entry = {
-            "hostname": "Test",
-            "status": "online",
-            "locked": True,
-            "current_user": "kid",
-            "usage_limit": 60,
-        }
-        refresh_discovered_entry("127.0.0.1", entry, port=1)
-        self.assertFalse(entry["reachable"])
-        self.assertEqual(entry["status"], "offline")
-        self.assertFalse(entry["locked"])
-        self.assertNotIn("current_user", entry)
-        self.assertNotIn("usage_limit", entry)
-
-
-class ScanSubnetTests(unittest.TestCase):
-    def test_rejects_networks_larger_than_24(self) -> None:
-        for oversized in ("10.0.0.0/16", "10.0.0.0/8", "0.0.0.0/0"):
-            with self.subTest(network=oversized):
-                with self.assertRaises(ValueError):
-                    parse_scan_subnet(oversized)
-
-    def test_accepts_24_and_smaller(self) -> None:
-        for ok in ("192.168.1.0/24", "192.168.1.0/30", "192.168.1.50", "192.168.1"):
-            with self.subTest(network=ok):
-                network, _label = parse_scan_subnet(ok)
-                self.assertGreaterEqual(network.prefixlen, 24)
-
-
-class ScanForServersTests(unittest.TestCase):
-    def test_discovers_listening_host_through_bounded_pool(self) -> None:
-        ready = threading.Event()
-        stop = threading.Event()
-        port_holder: list[int] = []
-
-        def serve() -> None:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                server.bind(("127.0.0.1", 0))
-                server.listen(8)
-                server.settimeout(0.2)
-                port_holder.append(server.getsockname()[1])
-                ready.set()
-                while not stop.is_set():
-                    try:
-                        conn, _addr = server.accept()
-                    except TimeoutError:
-                        continue
-                    conn.close()
-
-        thread = threading.Thread(target=serve, daemon=True)
-        thread.start()
-        ready.wait(timeout=2)
-        port = port_holder[0]
-
-        try:
-            # /30 keeps the probe set tiny: 127.0.0.1 (our listener) + 127.0.0.2.
-            discovered = scan_for_servers(port=port, subnet="127.0.0.0/30")
-        finally:
-            stop.set()
-            thread.join(timeout=2)
-
-        self.assertIn("127.0.0.1", discovered)
-        self.assertEqual(discovered["127.0.0.1"]["status"], "online")
-
-
-class VerboseOutputTests(unittest.TestCase):
-    """Tests for the -v / --verbose curl-style frame logging."""
-
-    def _serve_one(
-        self, port_holder: list[int], ready: threading.Event, response_body: str
-    ) -> None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server.bind(("127.0.0.1", 0))
-            server.listen(1)
-            port_holder.append(server.getsockname()[1])
-            ready.set()
-            conn, _addr = server.accept()
-            with conn:
-                # Read and discard the request frame(s)
-                proto.read_frame(conn)
-                conn.sendall(proto.encode_frame(response_body))
 
     def test_print_frame_prefixes_lines(self) -> None:
         out = io.StringIO()
@@ -153,157 +32,151 @@ class VerboseOutputTests(unittest.TestCase):
         self.assertEqual(lines[1], "> v 2")
         self.assertEqual(lines[2], "> action get")
 
-    def test_send_request_verbose_emits_connection_and_frames(self) -> None:
-        ready = threading.Event()
-        port_holder: list[int] = []
-        response = proto.sign_response(
-            proto.ok_content("kid-pc"),
-            secret=SECRET,
-            hostname=HOSTNAME,
+
+class FormatAgentConnectionErrorTests(unittest.TestCase):
+    def test_stale_timestamp_from_protocol_error(self) -> None:
+        exc = proto.ProtocolError(
+            proto.STALE_TIMESTAMP,
+            "timestamp outside allowed window",
+        )
+        message = format_agent_connection_error(exc)
+        self.assertIn("clock is out of sync", message)
+        self.assertIn("VM", message)
+
+    def test_stale_timestamp_from_connection_error(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
+        )
+        message = format_agent_connection_error(exc)
+        self.assertIn("clock is out of sync", message)
+
+    def test_shared_secret_missing(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.1:9999: "
+            "No shared secret is configured. Re-run the installer to set the "
+            "panel/agent shared secret on this machine."
+        )
+        message = format_agent_connection_error(exc)
+        self.assertIn("No shared secret is configured", message)
+
+    def test_connection_failure_fields(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
+        )
+        fields = connection_failure_fields(exc)
+        self.assertFalse(fields["reachable"])
+        self.assertIn("clock is out of sync", fields["connection_error"])
+
+    def test_errno_113_is_offline(self) -> None:
+        os_exc = OSError(113, "No route to host")
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: [Errno 113] No route to host"
+        )
+        exc.__cause__ = os_exc
+        self.assertTrue(is_offline_connection_error(exc))
+        fields = connection_failure_fields(exc)
+        self.assertFalse(fields["reachable"])
+        self.assertNotIn("connection_error", fields)
+
+    def test_connection_refused_is_agent_not_running(self) -> None:
+        os_exc = ConnectionRefusedError(111, "Connection refused")
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: [Errno 111] Connection refused"
+        )
+        exc.__cause__ = os_exc
+        self.assertTrue(is_agent_not_running_error(exc))
+        fields = connection_failure_fields(exc)
+        self.assertFalse(fields["reachable"])
+        self.assertTrue(fields["agent_not_running"])
+        self.assertNotIn("connection_error", fields)
+
+    def test_windows_connection_refused_is_agent_not_running(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.10:9999: "
+            "[WinError 10061] No connection could be made because the target machine "
+            "actively refused it"
+        )
+        self.assertTrue(is_agent_not_running_error(exc))
+
+    def test_stale_clock_is_not_agent_not_running(self) -> None:
+        exc = ConnectionError(
+            "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
+        )
+        self.assertFalse(is_agent_not_running_error(exc))
+
+
+class ActionRequestFieldsTests(unittest.TestCase):
+    def test_lock_and_extend(self) -> None:
+        self.assertEqual(action_request_fields("lock"), ("lock", None, None, None))
+        self.assertEqual(
+            action_request_fields("extend_time", {"minutes": 15}),
+            ("extend", None, 15, None),
         )
 
-        thread = threading.Thread(
-            target=self._serve_one, args=(port_holder, ready, response), daemon=True
+    def test_settings_actions(self) -> None:
+        self.assertEqual(
+            action_request_fields("set_daily_limit", {"minutes": 90}),
+            ("set", "daily_limit", 90, None),
         )
-        thread.start()
-        ready.wait(timeout=2)
-        port = port_holder[0]
-
-        out = io.StringIO()
-        resp = send_request(
-            "127.0.0.1",
-            "get",
-            var="name",
-            port=port,
-            secret=SECRET,
-            verbose=True,
-            out=out,
+        self.assertEqual(
+            action_request_fields("set_daily_limit", {"minutes": ""}),
+            ("clear", "daily_limit", None, None),
         )
-        thread.join(timeout=2)
-
-        self.assertTrue(resp.ok)
-        self.assertEqual(resp.result, "kid-pc")
-
-        text = out.getvalue()
-        self.assertIn("* Connected to 127.0.0.1:", text)
-        self.assertIn(">", text)
-        self.assertIn("<", text)
-        # Verify the response frame was printed
-        self.assertIn("status ok", text)
-        self.assertIn("result kid-pc", text)
-
-    def test_send_request_verbose_with_discovery_handshake(self) -> None:
-        """Write actions trigger a discovery handshake; both frames are logged."""
-        ready = threading.Event()
-        port_holder: list[int] = []
-
-        # Server will receive two frames: discovery (get name) + the real request
-        def serve_two() -> None:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                server.bind(("127.0.0.1", 0))
-                server.listen(1)
-                port_holder.append(server.getsockname()[1])
-                ready.set()
-                conn, _addr = server.accept()
-                with conn:
-                    # Frame 1: discovery get name
-                    _req1 = proto.read_frame(conn)
-                    resp1 = proto.sign_response(
-                        proto.ok_content("kid-pc"),
-                        secret=SECRET,
-                        hostname=HOSTNAME,
-                    )
-                    conn.sendall(proto.encode_frame(resp1))
-                    # Frame 2: the actual lock request
-                    _req2 = proto.read_frame(conn)
-                    resp2 = proto.sign_response(
-                        proto.ok_content("locked"),
-                        secret=SECRET,
-                        hostname=HOSTNAME,
-                    )
-                    conn.sendall(proto.encode_frame(resp2))
-
-        thread = threading.Thread(target=serve_two, daemon=True)
-        thread.start()
-        ready.wait(timeout=2)
-        port = port_holder[0]
-
-        out = io.StringIO()
-        resp = send_request(
-            "127.0.0.1",
-            "lock",
-            port=port,
-            secret=SECRET,
-            verbose=True,
-            out=out,
-        )
-        thread.join(timeout=2)
-
-        self.assertTrue(resp.ok)
-        self.assertEqual(resp.result, "locked")
-
-        text = out.getvalue()
-        # Should see two request frames (discovery + lock) and two responses
-        self.assertEqual(text.count("* Connected to"), 1)
-        self.assertIn("action get", text)
-        self.assertIn("action lock", text)
-        self.assertIn("result kid-pc", text)
-        self.assertIn("result locked", text)
-
-    def test_send_request_silent_when_verbose_false(self) -> None:
-        ready = threading.Event()
-        port_holder: list[int] = []
-        response = proto.sign_response(
-            proto.ok_content("kid-pc"),
-            secret=SECRET,
-            hostname=HOSTNAME,
+        self.assertEqual(
+            action_request_fields("set_bed_time", {"time": "21:00"}),
+            ("set", "bed_time", "21:00", None),
         )
 
-        thread = threading.Thread(
-            target=self._serve_one, args=(port_holder, ready, response), daemon=True
+    def test_get_logs_tail(self) -> None:
+        action, var, val, tail = action_request_fields("get_logs", {"tail": 50})
+        self.assertEqual(action, "get_logs")
+        self.assertIsNone(var)
+        self.assertIsNone(val)
+        self.assertEqual(tail, 50)
+
+    def test_unknown_action_raises(self) -> None:
+        with self.assertRaises(KeyError):
+            action_request_fields("not_a_real_action")
+
+
+class SettingsToPcInfoTests(unittest.TestCase):
+    def test_basic_conversion(self) -> None:
+        info = settings_to_pc_info(
+            {
+                "name": "KidPC",
+                "status": "UNLOCKED",
+                "current_user": "child",
+                "daily_limit": 120,
+                "bed_time": "21:00",
+                "wake_time": "07:00",
+                "manual_lock": False,
+                "cumulative_extension": 0,
+                "accumulated_seconds": 1800,
+                "time_remaining": 90,
+                "access_status": "Unlocked",
+            },
+            host="192.168.1.10",
         )
-        thread.start()
-        ready.wait(timeout=2)
-        port = port_holder[0]
+        self.assertEqual(info["ip"], "192.168.1.10")
+        self.assertEqual(info["hostname"], "KidPC")
+        self.assertFalse(info["locked"])
+        self.assertEqual(info["usage_limit"], 120)
+        self.assertEqual(info["time_remaining"], "90 minutes")
+        self.assertTrue(info["reachable"])
 
-        out = io.StringIO()
-        resp = send_request(
-            "127.0.0.1",
-            "get",
-            var="name",
-            port=port,
-            secret=SECRET,
-            verbose=False,
-            out=out,
+    def test_legacy_access_status_when_missing(self) -> None:
+        info = settings_to_pc_info(
+            {"status": "LOCKED", "manual_lock": True},
+            host="10.0.0.1",
+            hostname_fallback="FallbackPC",
         )
-        thread.join(timeout=2)
+        self.assertEqual(info["hostname"], "FallbackPC")
+        self.assertTrue(info["locked"])
+        self.assertEqual(info["access_status"], "Locked — manual lock")
 
-        self.assertTrue(resp.ok)
-        self.assertEqual(out.getvalue(), "")
-
-
-class GetAgentLogsTests(unittest.TestCase):
-    def test_unknown_action_raises_agent_logs_unavailable(self) -> None:
-        failure = proto.Response(
-            version=3,
-            id="r1",
-            status="failure",
-            error_code=proto.UNKNOWN_ACTION,
-            error_message="unknown action",
-        )
-        with mock.patch("kid_pc_monitor.remote_client.send_request", return_value=failure):
-            with self.assertRaises(AgentLogsUnavailable) as ctx:
-                get_agent_logs("192.168.1.10")
-        self.assertIn("does not support log retrieval", str(ctx.exception))
-
-    def test_protocol_error_unknown_action_raises_agent_logs_unavailable(self) -> None:
-        with mock.patch(
-            "kid_pc_monitor.remote_client.send_request",
-            side_effect=proto.ProtocolError(proto.UNKNOWN_ACTION, "unknown action"),
-        ):
-            with self.assertRaises(AgentLogsUnavailable):
-                get_agent_logs("192.168.1.10")
+    def test_no_port_kwarg(self) -> None:
+        info = settings_to_pc_info({"status": "UNLOCKED"}, host="10.0.0.2")
+        self.assertNotIn("port", info)
 
 
 if __name__ == "__main__":

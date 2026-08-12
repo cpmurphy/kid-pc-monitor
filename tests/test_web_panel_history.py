@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import panel_db, snapshot_store
+from kid_pc_monitor import panel_db, scan_store, snapshot_store
 from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.panel_format import format_snapshot_recorded_at
 
@@ -18,7 +18,6 @@ from kid_pc_monitor.panel_format import format_snapshot_recorded_at
 def _sample_pc_info(**overrides: object) -> dict:
     base: dict = {
         "ip": "192.168.1.10",
-        "port": 9999,
         "hostname": "KidPC",
         "status": "UNLOCKED",
         "locked": False,
@@ -63,9 +62,12 @@ class WebPanelHistoryTests(unittest.TestCase):
         self._tmpdir.cleanup()
 
     def test_control_shows_snapshot_when_offline(self) -> None:
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10", reachable=False),
+        )
         snapshot_store.save_snapshot(_sample_pc_info(ip="192.168.1.10"))
-        with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
-            response = self.client.get("/control/192.168.1.10")
+        response = self.client.get("/control/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
@@ -75,6 +77,10 @@ class WebPanelHistoryTests(unittest.TestCase):
         now = datetime.now().astimezone()
         recorded = now.replace(hour=10, minute=30, second=0, microsecond=0)
         payload = _sample_pc_info(ip="192.168.1.10")
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10", reachable=False),
+        )
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             conn.execute(
@@ -97,27 +103,20 @@ class WebPanelHistoryTests(unittest.TestCase):
             recorded.isoformat(timespec="seconds"),
             now=now,
         )
-        with mock.patch.object(wp, "inspect_pc", side_effect=ConnectionError("offline")):
-            response = self.client.get("/control/192.168.1.10")
+        response = self.client.get("/control/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn(expected, html)
         self.assertNotIn(recorded.isoformat(timespec="seconds"), html)
 
     def test_control_shows_unreachable_snapshot_with_panel_data(self) -> None:
-        from kid_pc_monitor import scan_store
-
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.55": {
-                    "hostname": "KidPC",
-                    "reachable": False,
-                    "ip": "192.168.1.55",
-                }
+        scan_store.record_poll_inspect(
+            "192.168.1.55",
+            {
+                "hostname": "KidPC",
+                "reachable": False,
+                "ip": "192.168.1.55",
             },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
         )
         today = datetime.now().astimezone().date().isoformat()
         payload = _sample_pc_info(
@@ -146,9 +145,7 @@ class WebPanelHistoryTests(unittest.TestCase):
                 ),
             )
             conn.commit()
-        unreachable = ConnectionError("Cannot reach agent at 192.168.1.55:9999: timed out")
-        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
-            response = self.client.get("/control/192.168.1.55")
+        response = self.client.get("/control/192.168.1.55")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
@@ -157,19 +154,13 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertNotIn("offline or unreachable", html.lower())
 
     def test_control_shows_snapshot_when_ip_changed(self) -> None:
-        from kid_pc_monitor import scan_store
-
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.55": {
-                    "hostname": "KidPC",
-                    "reachable": False,
-                    "ip": "192.168.1.55",
-                }
+        scan_store.record_poll_inspect(
+            "192.168.1.55",
+            {
+                "hostname": "KidPC",
+                "reachable": False,
+                "ip": "192.168.1.55",
             },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
         )
         snapshot_store.save_snapshot(
             _sample_pc_info(
@@ -178,91 +169,74 @@ class WebPanelHistoryTests(unittest.TestCase):
                 accumulated_seconds=12396,
             )
         )
-        unreachable = ConnectionError("Cannot reach agent at 192.168.1.55:9999: timed out")
-        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
-            response = self.client.get("/control/192.168.1.55")
+        response = self.client.get("/control/192.168.1.55")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("3:27", html)
         self.assertNotIn("offline or unreachable", html.lower())
 
-    def test_control_hostname_uses_latest_scan_ip(self) -> None:
-        from kid_pc_monitor import scan_store
-
-        scan_store.save_scan(
-            pcs={
-                "192.168.1.50": _sample_pc_info(ip="192.168.1.50", hostname="KidPC"),
-                "192.168.1.55": _sample_pc_info(ip="192.168.1.55", hostname="OtherPC"),
-            },
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+    def test_control_hostname_uses_latest_registry_ip(self) -> None:
+        scan_store.record_poll_inspect(
+            "192.168.1.50", _sample_pc_info(ip="192.168.1.50", hostname="KidPC")
         )
-        scan_store.save_scan(
-            pcs={"192.168.1.60": _sample_pc_info(ip="192.168.1.60", hostname="KidPC")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.55", _sample_pc_info(ip="192.168.1.55", hostname="OtherPC")
+        )
+        scan_store.record_poll_inspect(
+            "192.168.1.60", _sample_pc_info(ip="192.168.1.60", hostname="KidPC")
         )
 
-        with mock.patch.object(
-            wp,
-            "inspect_pc",
-            return_value=_sample_pc_info(ip="192.168.1.60", hostname="KidPC"),
-        ) as inspect:
+        session = mock.Mock()
+        session.hostname = "KidPC"
+        session.pc_info = {
+            "name": "KidPC",
+            "status": "UNLOCKED",
+            "current_user": "child",
+            "daily_limit": 120,
+            "manual_lock": False,
+            "cumulative_extension": 0,
+            "accumulated_seconds": 1800,
+            "time_remaining": 90,
+            "access_status": "Unlocked",
+        }
+        reverse = mock.Mock()
+        reverse.session_for_ip.return_value = session
+
+        with mock.patch.object(wp, "get_reverse_server", return_value=reverse):
             response = self.client.get("/control/KidPC")
 
         self.assertEqual(response.status_code, 200)
-        inspect.assert_called_once_with("192.168.1.60")
+        reverse.session_for_ip.assert_called_with("192.168.1.60")
         html = response.get_data(as_text=True)
         self.assertIn('data-ip="192.168.1.60"', html)
         self.assertIn("KidPC", html)
 
-    def test_control_hostname_without_recent_scan_returns_404(self) -> None:
-        with mock.patch.object(wp, "inspect_pc") as inspect:
-            response = self.client.get("/control/KidPC")
+    def test_control_hostname_without_registry_returns_404(self) -> None:
+        response = self.client.get("/control/KidPC")
 
         self.assertEqual(response.status_code, 404)
-        inspect.assert_not_called()
-        self.assertIn("No recent scan result", response.get_data(as_text=True))
+        html = response.get_data(as_text=True)
+        self.assertIn("No connected PC found for KidPC", html)
+        self.assertIn("PCs appear here after the agent connects", html)
 
-    def test_control_shows_snapshot_after_unreachable_poll(self) -> None:
-        from kid_pc_monitor import agent_poller, scan_store
-
-        scan_store.save_scan(
-            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
-        )
+    def test_control_shows_snapshot_after_unreachable_registry(self) -> None:
+        scan_store.record_poll_inspect("192.168.1.10", _sample_pc_info(ip="192.168.1.10"))
         snapshot_store.save_snapshot(_sample_pc_info(ip="192.168.1.10"))
-        unreachable = ConnectionError(
-            "Cannot reach agent at 192.168.1.10:9999: [Errno 113] No route to host"
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            {
+                "hostname": "KidPC",
+                "ip": "192.168.1.10",
+                "reachable": False,
+            },
         )
-        with mock.patch.object(agent_poller, "inspect_pc", side_effect=unreachable):
-            agent_poller.poll_once()
-        with mock.patch.object(wp, "inspect_pc", side_effect=unreachable):
-            response = self.client.get("/control/192.168.1.10")
+        response = self.client.get("/control/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
         self.assertIn("30 min", html)
         self.assertNotIn("offline or unreachable", html.lower())
-
-    def test_scan_records_snapshot(self) -> None:
-        discovered = {"192.168.1.10": {"hostname": "KidPC", "reachable": True}}
-        with mock.patch.object(wp, "scan_for_servers", return_value=discovered):
-            with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
-                csrf = self.client.get("/").headers.get("Set-Cookie", "")
-                self.assertTrue(csrf)
-                response = self.client.post(
-                    "/scan",
-                    data={"subnet": "", "csrf_token": self._csrf_from_index()},
-                )
-        self.assertEqual(response.status_code, 302)
-        result = snapshot_store.get_latest_snapshot_for_pc(hostname="KidPC")
-        self.assertIsNotNone(result)
 
     def test_usage_page_renders_history(self) -> None:
         snapshot_store.save_snapshot(_sample_pc_info(current_user="child"))
@@ -284,15 +258,6 @@ class WebPanelHistoryTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("PC-A", html)
         self.assertIn("PC-B", html)
-
-    def _csrf_from_index(self) -> str:
-        response = self.client.get("/")
-        import re
-
-        html = response.get_data(as_text=True)
-        match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-        assert match is not None
-        return match.group(1)
 
 
 if __name__ == "__main__":

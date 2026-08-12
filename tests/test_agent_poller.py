@@ -1,28 +1,24 @@
-"""Tests for background agent polling."""
+"""Tests for background agent registry pruning."""
 
 from __future__ import annotations
 
-import sqlite3
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import agent_poller, panel_db, scan_store, snapshot_store
+from kid_pc_monitor import agent_poller, panel_db, scan_store
 
 
 def _sample_pc_info(**overrides: object) -> dict:
     base: dict = {
         "ip": "192.168.1.10",
-        "port": 9999,
         "hostname": "KidPC",
         "status": "UNLOCKED",
         "locked": False,
         "current_user": "child",
         "daily_limit": 120,
-        "usage_limit": 120,
-        "accumulated_seconds": 1800,
         "reachable": True,
     }
     base.update(overrides)
@@ -40,111 +36,43 @@ class AgentPollerTests(unittest.TestCase):
         self._patch.stop()
         self._tmpdir.cleanup()
 
-    def test_poll_once_saves_reachable_snapshot(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
-        )
-        with mock.patch.object(
-            agent_poller, "inspect_pc", return_value=_sample_pc_info()
-        ) as inspect_mock:
-            agent_poller.poll_once()
-        inspect_mock.assert_called_once_with("192.168.1.10")
-        result = snapshot_store.get_latest_snapshot_for_pc(ip="192.168.1.10")
-        self.assertIsNotNone(result)
-        dashboard, _last_poll_at = snapshot_store.get_dashboard_pcs()
-        self.assertTrue(dashboard["192.168.1.10"]["reachable"])
-
-    def test_poll_once_saves_unreachable_snapshot(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
-        )
-        with mock.patch.object(
-            agent_poller,
-            "inspect_pc",
-            side_effect=ConnectionError("Cannot reach agent at 192.168.1.10:9999: timeout"),
-        ):
-            agent_poller.poll_once()
-        dashboard, _last_poll_at = snapshot_store.get_dashboard_pcs()
-        self.assertFalse(dashboard["192.168.1.10"]["reachable"])
-        with sqlite3.connect(self.db_path) as conn:
-            panel_db.ensure_schema(conn)
-            count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
-        self.assertEqual(count, 0)
-
-    def test_poll_once_no_targets(self) -> None:
-        with mock.patch.object(agent_poller, "inspect_pc") as inspect_mock:
-            agent_poller.poll_once()
-        inspect_mock.assert_not_called()
-
     def test_poll_once_prunes_stale_tracked_ips(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
-        with (
-            mock.patch.object(agent_poller, "inspect_pc", return_value=_sample_pc_info()),
-            mock.patch.object(
-                agent_poller, "prune_stale_tracked_ips", return_value=["192.168.1.10"]
-            ) as prune_mock,
-        ):
+        with mock.patch.object(
+            agent_poller, "prune_stale_tracked_ips", wraps=scan_store.prune_stale_tracked_ips
+        ) as prune_mock:
             agent_poller.poll_once()
         prune_mock.assert_called_once_with()
+        self.assertEqual(scan_store.get_tracked_ips(), {})
 
-    def test_poll_once_updates_scan_registry(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True, "locked": False}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+    def test_poll_once_keeps_recent_tracked_ips(self) -> None:
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10"),
+            when=datetime.now().astimezone() - timedelta(hours=1),
         )
+        agent_poller.poll_once()
+        self.assertIn("192.168.1.10", scan_store.get_tracked_ips())
+
+    def test_poll_once_does_not_dial_agents(self) -> None:
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10"),
+        )
+        with mock.patch("socket.create_connection") as connect_mock:
+            agent_poller.poll_once()
+        connect_mock.assert_not_called()
+
+    def test_poll_once_no_targets(self) -> None:
         with mock.patch.object(
-            agent_poller, "inspect_pc", return_value=_sample_pc_info(locked=True)
-        ):
+            agent_poller, "prune_stale_tracked_ips", return_value=[]
+        ) as prune_mock:
             agent_poller.poll_once()
-        tracked = scan_store.get_tracked_ips()
-        self.assertTrue(tracked["192.168.1.10"]["locked"])
-
-    def test_poll_once_skips_live_reverse_session_only(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
-        )
-        reverse = mock.Mock()
-        reverse.has_session_for_ip.return_value = True
-        with (
-            mock.patch.object(agent_poller, "get_reverse_server", return_value=reverse),
-            mock.patch.object(agent_poller, "inspect_pc") as inspect_mock,
-        ):
-            agent_poller.poll_once()
-        inspect_mock.assert_not_called()
-
-    def test_poll_once_does_not_skip_on_stale_heartbeat_alone(self) -> None:
-        scan_store.save_scan(
-            pcs={"192.168.1.10": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
-        )
-        reverse = mock.Mock()
-        reverse.has_session_for_ip.return_value = False
-        with (
-            mock.patch.object(agent_poller, "get_reverse_server", return_value=reverse),
-            mock.patch.object(
-                agent_poller, "inspect_pc", return_value=_sample_pc_info()
-            ) as inspect_mock,
-        ):
-            agent_poller.poll_once()
-        inspect_mock.assert_called_once_with("192.168.1.10")
+        prune_mock.assert_called_once_with()
 
 
 if __name__ == "__main__":

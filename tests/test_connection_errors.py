@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-import re
 import tempfile
 import unittest
-from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import agent_poller, panel_db, scan_store
 from kid_pc_monitor import agent_protocol as proto
+from kid_pc_monitor import panel_db, scan_store
 from kid_pc_monitor import web_panel as wp
 from kid_pc_monitor.remote_client import (
     connection_failure_fields,
     format_agent_connection_error,
     is_agent_not_running_error,
     is_offline_connection_error,
-    request_text,
 )
 
 
@@ -31,7 +28,7 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
         self.assertIn("clock is out of sync", message)
         self.assertIn("VM", message)
 
-    def test_stale_timestamp_from_inspect_connection_error(self) -> None:
+    def test_stale_timestamp_from_connection_error(self) -> None:
         exc = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
@@ -92,18 +89,6 @@ class FormatAgentConnectionErrorTests(unittest.TestCase):
         )
         self.assertFalse(is_agent_not_running_error(exc))
 
-    def test_request_text_formats_stale_timestamp(self) -> None:
-        with mock.patch(
-            "kid_pc_monitor.remote_client.send_request",
-            side_effect=proto.ProtocolError(
-                proto.STALE_TIMESTAMP,
-                "timestamp outside allowed window",
-            ),
-        ):
-            ok, message = request_text("192.168.1.20", "lock")
-        self.assertFalse(ok)
-        self.assertIn("clock is out of sync", message)
-
 
 class WebPanelConnectionErrorTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -126,72 +111,48 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
             patch.stop()
         self._tmpdir.cleanup()
 
-    def _csrf_from_html(self, html: str) -> str:
-        match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-        assert match is not None, "csrf token not found in page"
-        return match.group(1)
-
-    def test_scan_records_connection_error_for_stale_clock(self) -> None:
-        csrf = self._csrf_from_html(self.client.get("/").get_data(as_text=True))
+    def test_registry_shows_cant_control_for_stale_clock(self) -> None:
         stale = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
-        discovered = {
-            "192.168.1.20": {
-                "hostname": "KidPC",
-                "status": "online",
-            }
-        }
-        with (
-            mock.patch.object(wp, "scan_for_servers", return_value=discovered),
-            mock.patch.object(wp, "inspect_pc", side_effect=stale),
-        ):
-            response = self.client.post("/scan", data={"csrf_token": csrf, "subnet": ""})
-        self.assertEqual(response.status_code, 302)
-
-        pcs = scan_store.get_discovered_pcs()
-        entry = pcs["192.168.1.20"]
-        self.assertFalse(entry["reachable"])
-        self.assertIn("clock is out of sync", entry["connection_error"])
+        fields = connection_failure_fields(stale)
+        scan_store.record_poll_inspect(
+            "192.168.1.20",
+            {"hostname": "KidPC", "ip": "192.168.1.20", **fields},
+        )
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
         self.assertIn("CAN'T CONTROL", html)
 
-    def test_poll_shows_offline_for_no_route_to_host(self) -> None:
+    def test_registry_shows_offline_for_no_route_to_host(self) -> None:
         os_exc = OSError(113, "No route to host")
         unreachable = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: [Errno 113] No route to host"
         )
         unreachable.__cause__ = os_exc
-        scan_store.save_scan(
-            pcs={"192.168.1.20": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        fields = connection_failure_fields(unreachable)
+        scan_store.record_poll_inspect(
+            "192.168.1.20",
+            {"hostname": "KidPC", "ip": "192.168.1.20", **fields},
         )
-        with mock.patch.object(agent_poller, "inspect_pc", side_effect=unreachable):
-            agent_poller.poll_once()
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
         self.assertIn("OFFLINE", html)
         self.assertNotIn("CAN'T CONTROL", html)
 
-    def test_poll_shows_not_signed_in_for_refused_connection(self) -> None:
+    def test_registry_shows_not_signed_in_for_refused_connection(self) -> None:
         os_exc = ConnectionRefusedError(111, "Connection refused")
         refused = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: [Errno 111] Connection refused"
         )
         refused.__cause__ = os_exc
-        scan_store.save_scan(
-            pcs={"192.168.1.20": {"hostname": "KidPC", "reachable": True}},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="192.168.1.0/24",
+        fields = connection_failure_fields(refused)
+        scan_store.record_poll_inspect(
+            "192.168.1.20",
+            {"hostname": "KidPC", "ip": "192.168.1.20", **fields},
         )
-        with mock.patch.object(agent_poller, "inspect_pc", side_effect=refused):
-            agent_poller.poll_once()
 
         html = self.client.get("/").get_data(as_text=True)
         self.assertIn("NOT SIGNED IN", html)
@@ -201,8 +162,12 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         stale = ConnectionError(
             "Cannot reach agent at 192.168.1.20:9999: timestamp outside allowed window"
         )
-        with mock.patch.object(wp, "inspect_pc", side_effect=stale):
-            response = self.client.get("/control/192.168.1.20")
+        fields = connection_failure_fields(stale)
+        scan_store.record_poll_inspect(
+            "192.168.1.20",
+            {"hostname": "KidPC", "ip": "192.168.1.20", **fields},
+        )
+        response = self.client.get("/control/192.168.1.20")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("clock is out of sync", html)

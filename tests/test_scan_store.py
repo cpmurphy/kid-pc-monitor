@@ -1,4 +1,4 @@
-"""Tests for web panel scan persistence."""
+"""Tests for web panel PC registry persistence (reverse-connected agents)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,6 @@ from kid_pc_monitor import scan_store as store
 def _sample_pc_info(**overrides: object) -> dict:
     base: dict = {
         "ip": "192.168.1.10",
-        "port": 9999,
         "hostname": "KidPC",
         "status": "UNLOCKED",
         "locked": False,
@@ -40,18 +39,21 @@ class ScanStoreTests(unittest.TestCase):
         self._patch.stop()
         self._tmpdir.cleanup()
 
-    def test_save_scan_stores_unreachable_pc(self) -> None:
-        store.save_scan(
-            pcs={
-                "192.168.1.10": _sample_pc_info(
-                    reachable=False, connection_error="offline", ip="192.168.1.10"
-                )
-            },
-            scanned_at=datetime.now().astimezone(),
-            network_label="192.168.1.0/24",
-            subnet="",
+    def test_record_poll_inspect_tracks_pc(self) -> None:
+        store.record_poll_inspect("192.168.1.10", _sample_pc_info(ip="192.168.1.10"))
+        pcs = store.get_tracked_ips()
+        self.assertIn("192.168.1.10", pcs)
+        self.assertEqual(pcs["192.168.1.10"]["hostname"], "KidPC")
+        tracked = store.get_scan_pc("192.168.1.10")
+        assert tracked is not None
+        self.assertEqual(tracked["hostname"], "KidPC")
+
+    def test_record_poll_inspect_stores_unreachable_pc(self) -> None:
+        store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(reachable=False, connection_error="offline", ip="192.168.1.10"),
         )
-        pcs = store.get_discovered_pcs()
+        pcs = store.get_tracked_ips()
         self.assertIn("192.168.1.10", pcs)
         self.assertFalse(pcs["192.168.1.10"]["reachable"])
         with sqlite3.connect(self.db_path) as conn:
@@ -59,24 +61,8 @@ class ScanStoreTests(unittest.TestCase):
             count = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
         self.assertEqual(count, 0)
 
-    def test_get_discovered_pcs_from_last_scan(self) -> None:
-        store.save_scan(
-            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="192.168.1.0/24",
-            subnet="",
-        )
-        pcs = store.get_discovered_pcs()
-        self.assertIn("192.168.1.10", pcs)
-        self.assertEqual(pcs["192.168.1.10"]["hostname"], "KidPC")
-
-    def test_save_scan_stores_hostname_column(self) -> None:
-        store.save_scan(
-            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="192.168.1.0/24",
-            subnet="",
-        )
+    def test_record_poll_inspect_stores_hostname_column(self) -> None:
+        store.record_poll_inspect("192.168.1.10", _sample_pc_info(ip="192.168.1.10"))
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             hostname = conn.execute("SELECT hostname FROM scan_pcs").fetchone()[0]
@@ -107,7 +93,7 @@ class ScanStoreTests(unittest.TestCase):
                 INSERT INTO scans (scanned_at, network_label, subnet, error)
                 VALUES (?, ?, ?, ?)
                 """,
-                (datetime.now().astimezone().isoformat(timespec="seconds"), "lan", "", None),
+                (datetime.now().astimezone().isoformat(timespec="seconds"), "poll", "", None),
             )
             conn.execute(
                 "INSERT INTO scan_pcs (scan_id, ip, payload_json) VALUES (?, ?, ?)",
@@ -127,104 +113,40 @@ class ScanStoreTests(unittest.TestCase):
         assert migrated_pc is not None
         self.assertEqual(migrated_pc["ip"], "192.168.1.10")
 
-    def test_load_scan_metadata(self) -> None:
-        scanned_at = datetime.now().astimezone()
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=scanned_at,
-            network_label="test-net",
-            subnet="10.0.0.0/24",
-        )
-        meta = store.load_scan_metadata()
-        self.assertEqual(meta["last_scan_network"], "test-net")
-        self.assertEqual(meta["scan_subnet"], "10.0.0.0/24")
-        self.assertIsNone(meta["scan_error"])
-
-    def test_save_scan_error_keeps_discovered_pcs(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="test-net",
-            subnet="",
-        )
-        store.save_scan_error("bad subnet", subnet="bad")
-        meta = store.load_scan_metadata()
-        self.assertEqual(meta["scan_error"], "bad subnet")
-        pcs = store.get_discovered_pcs()
-        self.assertIn("10.0.0.1", pcs)
-        self.assertEqual(pcs["10.0.0.1"]["hostname"], "KidPC")
-
-    def test_multi_subnet_merge(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="SubnetA-PC")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="subnet-a",
-            subnet="10.0.0.0/24",
-        )
-        store.save_scan(
-            pcs={"192.168.1.10": _sample_pc_info(ip="192.168.1.10", hostname="SubnetB-PC")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="subnet-b",
-            subnet="192.168.1.0/24",
+    def test_multi_ip_merge(self) -> None:
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", hostname="SubnetA-PC"))
+        store.record_poll_inspect(
+            "192.168.1.10", _sample_pc_info(ip="192.168.1.10", hostname="SubnetB-PC")
         )
         pcs = store.get_tracked_ips()
         self.assertEqual(set(pcs.keys()), {"10.0.0.1", "192.168.1.10"})
         self.assertEqual(pcs["10.0.0.1"]["hostname"], "SubnetA-PC")
         self.assertEqual(pcs["192.168.1.10"]["hostname"], "SubnetB-PC")
 
-    def test_rescan_same_ip_uses_latest_payload(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="OldName")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="first",
-            subnet="10.0.0.0/24",
-        )
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="NewName")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="second",
-            subnet="10.0.0.0/24",
-        )
-        pcs = store.get_tracked_ips()
-        self.assertEqual(pcs["10.0.0.1"]["hostname"], "NewName")
-
-    def test_get_scan_pc_by_hostname_uses_latest_successful_scan(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="KidPC")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="first",
-            subnet="10.0.0.0/24",
-        )
-        store.save_scan_error("bad subnet", subnet="bad")
-        store.save_scan(
-            pcs={"10.0.0.2": _sample_pc_info(ip="10.0.0.2", hostname="KidPC")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="second",
-            subnet="10.0.0.0/24",
-        )
+    def test_get_scan_pc_by_hostname_uses_latest(self) -> None:
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", hostname="KidPC"))
+        store.record_poll_inspect("10.0.0.2", _sample_pc_info(ip="10.0.0.2", hostname="KidPC"))
 
         pc = store.get_scan_pc_by_hostname("kidpc")
 
         assert pc is not None
         self.assertEqual(pc["ip"], "10.0.0.2")
 
-    def test_prune_stale_tracked_ips_removes_old_scan(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+    def test_prune_stale_tracked_ips_removes_old(self) -> None:
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
         self.assertEqual(pruned, ["10.0.0.1"])
         self.assertEqual(store.get_tracked_ips(), {})
 
-    def test_prune_stale_tracked_ips_keeps_recent_scan(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=1),
-            network_label="recent-net",
-            subnet="10.0.0.0/24",
+    def test_prune_stale_tracked_ips_keeps_recent(self) -> None:
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=1),
         )
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
         self.assertEqual(pruned, [])
@@ -233,11 +155,10 @@ class ScanStoreTests(unittest.TestCase):
     def test_prune_stale_tracked_ips_keeps_recent_reachable_snapshot(self) -> None:
         from kid_pc_monitor import snapshot_store
 
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         snapshot_store.save_poll_snapshot(_sample_pc_info(ip="10.0.0.1", reachable=True))
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
@@ -245,11 +166,10 @@ class ScanStoreTests(unittest.TestCase):
         self.assertIn("10.0.0.1", store.get_tracked_ips())
 
     def test_prune_stale_tracked_ips_ignores_unreachable_snapshot(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
@@ -274,11 +194,10 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(store.get_tracked_ips(), {})
 
     def test_failed_polls_do_not_keep_stale_ip_alive(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         store.record_poll_inspect(
             "10.0.0.1",
@@ -294,11 +213,10 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(store.get_tracked_ips(), {})
 
     def test_reachable_poll_refreshes_tracked_ip(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1"))
 
@@ -320,12 +238,7 @@ class ScanStoreTests(unittest.TestCase):
         )
 
     def test_record_poll_inspect_coalesces_same_status(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", locked=False)},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="10.0.0.0/24",
-        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", locked=False))
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             initial_scans = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
@@ -348,12 +261,7 @@ class ScanStoreTests(unittest.TestCase):
             )
 
     def test_record_poll_inspect_updates_hostname_column(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", hostname="OldName")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="10.0.0.0/24",
-        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", hostname="OldName"))
 
         store.record_poll_inspect(
             "10.0.0.1",
@@ -369,12 +277,7 @@ class ScanStoreTests(unittest.TestCase):
         self.assertEqual(renamed_pc["ip"], "10.0.0.1")
 
     def test_record_poll_inspect_inserts_on_status_change(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1", locked=False)},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="10.0.0.0/24",
-        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", locked=False))
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
             initial_scans = conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0]
@@ -392,15 +295,10 @@ class ScanStoreTests(unittest.TestCase):
                 "SELECT COUNT(*) FROM scans WHERE network_label = ?",
                 (store.POLL_NETWORK_LABEL,),
             ).fetchone()[0]
-            self.assertEqual(poll_rows, 1)
+            self.assertEqual(poll_rows, initial_scans + 1)
 
     def test_record_poll_inspect_tracks_connection_failure(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone(),
-            network_label="lan",
-            subnet="10.0.0.0/24",
-        )
+        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1"))
         store.record_poll_inspect(
             "10.0.0.1",
             {
@@ -413,25 +311,11 @@ class ScanStoreTests(unittest.TestCase):
         self.assertFalse(pcs["10.0.0.1"]["reachable"])
         self.assertIn("connection_error", pcs["10.0.0.1"])
 
-    def test_load_scan_metadata_ignores_poll_rows(self) -> None:
-        scanned_at = datetime.now().astimezone() - timedelta(hours=1)
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=scanned_at,
-            network_label="home-lan",
-            subnet="10.0.0.0/24",
-        )
-        store.record_poll_inspect("10.0.0.1", _sample_pc_info(ip="10.0.0.1", locked=True))
-        meta = store.load_scan_metadata()
-        self.assertEqual(meta["last_scan_network"], "home-lan")
-        self.assertEqual(meta["scan_subnet"], "10.0.0.0/24")
-
     def test_prune_stale_tracked_ips_removes_orphan_scans(self) -> None:
-        store.save_scan(
-            pcs={"10.0.0.1": _sample_pc_info(ip="10.0.0.1")},
-            scanned_at=datetime.now().astimezone() - timedelta(hours=13),
-            network_label="old-net",
-            subnet="10.0.0.0/24",
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(ip="10.0.0.1"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
         )
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)

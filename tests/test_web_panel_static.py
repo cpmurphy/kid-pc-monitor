@@ -15,15 +15,13 @@ from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
-from kid_pc_monitor import panel_db
+from kid_pc_monitor import panel_db, scan_store
 from kid_pc_monitor import web_panel as wp
-from kid_pc_monitor.agent_protocol import LogsResult
 
 
 def _sample_pc_info(**overrides: object) -> dict:
     base: dict = {
         "ip": "192.168.1.10",
-        "port": 9999,
         "hostname": "KidPC",
         "status": "UNLOCKED",
         "locked": False,
@@ -41,6 +39,27 @@ def _sample_pc_info(**overrides: object) -> dict:
         "effective_limit_minutes": 120.0,
         "time_remaining": "90 minutes",
         "reachable": True,
+    }
+    base.update(overrides)
+    return base
+
+
+def _settings_for_reverse(**overrides: object) -> dict:
+    """Agent settings payload stored on a ReverseSession.pc_info."""
+    base: dict = {
+        "name": "KidPC",
+        "status": "UNLOCKED",
+        "current_user": "child",
+        "daily_limit": 120,
+        "bed_time": "21:00",
+        "wake_time": "07:00",
+        "manual_lock": False,
+        "cumulative_extension": 0,
+        "accumulated_seconds": 1800,
+        "time_remaining": 90,
+        "enforcement_active": False,
+        "enforcement_reason": None,
+        "access_status": "Unlocked",
     }
     base.update(overrides)
     return base
@@ -71,14 +90,29 @@ class WebPanelStaticTests(unittest.TestCase):
             patch.stop()
         self._tmpdir.cleanup()
 
+    def _seed_pc(self, **overrides: object) -> None:
+        info = _sample_pc_info(**overrides)
+        scan_store.record_poll_inspect(str(info["ip"]), info)
+
+    def _live_reverse(self, ip: str = "192.168.1.10", **settings_overrides: object):
+        session = mock.Mock()
+        session.hostname = str(settings_overrides.get("name", "KidPC"))
+        session.pc_info = _settings_for_reverse(**settings_overrides)
+        reverse = mock.Mock()
+        reverse.session_for_ip.return_value = session
+        reverse.session_for_hostname.return_value = session
+        return mock.patch.object(wp, "get_reverse_server", return_value=reverse)
+
     def _control_html(self) -> str:
-        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+        self._seed_pc()
+        with self._live_reverse():
             response = self.client.get("/control/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         return response.get_data(as_text=True)
 
     def _daily_html(self) -> str:
-        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+        self._seed_pc()
+        with self._live_reverse():
             response = self.client.get("/daily_settings/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         return response.get_data(as_text=True)
@@ -100,12 +134,8 @@ class WebPanelStaticTests(unittest.TestCase):
         return response.get_data(as_text=True)
 
     def _logs_html(self) -> str:
-        with mock.patch.object(
-            wp,
-            "get_agent_logs",
-            return_value=LogsResult(path="/tmp/log", truncated=False, lines=["line one"]),
-        ):
-            response = self.client.get("/logs/192.168.1.10")
+        self._seed_pc()
+        response = self.client.get("/logs/192.168.1.10")
         self.assertEqual(response.status_code, 200)
         return response.get_data(as_text=True)
 
@@ -169,6 +199,7 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertIn("css/action-pages.css", html)
         self.assertIn("css/logs.css", html)
         self.assertNotIn("css/control.css", html)
+        self.assertIn("not connected", html.lower())
 
     def test_usage_loads_action_and_usage_css(self) -> None:
         html = self._usage_html()
@@ -212,7 +243,8 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertIn('id="today-stats"', html)
 
     def test_control_stats_endpoint_returns_today_section(self) -> None:
-        with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
+        self._seed_pc()
+        with self._live_reverse():
             response = self.client.get("/control/192.168.1.10/stats")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
@@ -221,15 +253,15 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertIn("Daily allowance", html)
         self.assertNotIn('id="today-stats"', html)
 
-    def test_control_stats_poll_source_uses_cached_scan(self) -> None:
+    def test_control_stats_poll_source_uses_cached_registry(self) -> None:
         cached = _sample_pc_info(access_status="Locked", locked=True)
         with mock.patch.object(wp, "get_scan_pc", return_value=cached):
-            with mock.patch.object(wp, "inspect_pc") as inspect_mock:
+            with mock.patch.object(wp, "get_reverse_server") as reverse_mock:
                 response = self.client.get("/control/192.168.1.10/stats?source=poll")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("Locked", html)
-        inspect_mock.assert_not_called()
+        reverse_mock.assert_not_called()
 
     def test_control_poll_meta_returns_updated_at(self) -> None:
         updated = datetime.now().astimezone().replace(microsecond=0)
@@ -268,24 +300,12 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertNotIn("function postAction", html)
 
     def test_index_cards_navigate_via_data_attributes(self) -> None:
-        discovered = {"192.168.1.10": {"hostname": "KidPC", "reachable": True}}
-        with mock.patch.object(wp, "scan_for_servers", return_value=discovered):
-            with mock.patch.object(wp, "inspect_pc", return_value=_sample_pc_info()):
-                self.client.post(
-                    "/scan",
-                    data={"subnet": "", "csrf_token": self._csrf_from_index()},
-                )
+        self._seed_pc()
         html = self._index_html()
         self.assertIn('data-action="navigate"', html)
         self.assertIn('data-href="/control/KidPC"', html)
         self.assertNotRegex(html, _INLINE_HANDLER_RE)
         self.assertNotIn("setTimeout(", html)
-
-    def _csrf_from_index(self) -> str:
-        html = self._index_html()
-        match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-        assert match is not None, "csrf token not found on index page"
-        return match.group(1)
 
 
 if __name__ == "__main__":

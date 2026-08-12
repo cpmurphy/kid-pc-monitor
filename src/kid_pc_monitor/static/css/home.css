@@ -1,4 +1,4 @@
-/* Home page (PC scan) */
+/* Home page (connected PCs) */
 
 .container {
     max-width: 600px;
@@ -25,74 +25,10 @@
     color: #721c24;
 }
 
-.scan-btn {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    margin: 20px 0;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.scan-btn:hover {
-    background-color: #45a049;
-}
-
-.scan-form {
-    background: white;
-    padding: 15px;
-    margin: 20px 0;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.scan-form label {
-    display: block;
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-.scan-form input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-.scan-hint {
+.subtitle {
+    text-align: center;
     color: #666;
-    font-size: 13px;
-    margin: 8px 0 12px;
-}
-
-.advanced-scan { margin-bottom: 4px; }
-
-.advanced-scan > summary {
-    display: inline-block;
-    color: #2196F3;
-    cursor: pointer;
-    font-size: 14px;
-    list-style: none;
-}
-
-.advanced-scan > summary::-webkit-details-marker { display: none; }
-.advanced-scan > summary:hover { text-decoration: underline; }
-.advanced-scan[open] > summary { margin-bottom: 10px; }
-
-.scan-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    font-size: 14px;
+    margin: 24px 0;
 }
 
 .pc-card {
@@ -137,7 +73,7 @@
 .status.warning { background-color: #ff9800; color: white; }
 .status.idle    { background-color: #607d8b; color: white; }
 
-.last-scan {
+.last-updated {
     text-align: center;
     color: #666;
     font-size: 14px;

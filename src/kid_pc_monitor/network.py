@@ -36,7 +36,7 @@ def get_primary_ipv4() -> str | None:
 
 
 def get_local_ip() -> str:
-    """Primary IPv4 for display and scanning; 127.0.0.1 when unknown."""
+    """Primary IPv4 for display and local discovery; 127.0.0.1 when unknown."""
     return get_primary_ipv4() or "127.0.0.1"
 
 

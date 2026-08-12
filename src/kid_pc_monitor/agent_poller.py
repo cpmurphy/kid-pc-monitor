@@ -1,4 +1,4 @@
-"""Background agent polling for the web panel."""
+"""Background maintenance for the web panel PC registry."""
 
 from __future__ import annotations
 
@@ -7,10 +7,7 @@ import random
 import threading
 import time
 
-from kid_pc_monitor.panel_reverse_server import get_reverse_server
-from kid_pc_monitor.remote_client import connection_failure_fields, inspect_pc
-from kid_pc_monitor.scan_store import get_tracked_ips, prune_stale_tracked_ips, record_poll_inspect
-from kid_pc_monitor.snapshot_store import save_poll_snapshot, save_snapshot
+from kid_pc_monitor.scan_store import prune_stale_tracked_ips
 
 logger = logging.getLogger(__name__)
 
@@ -28,40 +25,13 @@ def _cycle_sleep_sec(interval: float) -> float:
     return random.uniform(interval - jitter, interval + jitter)
 
 
-def _has_reverse_coverage(ip: str) -> bool:
-    reverse = get_reverse_server()
-    return reverse is not None and reverse.has_session_for_ip(ip)
-
-
 def poll_once() -> None:
-    """Inspect all tracked PCs and update snapshots."""
-    targets = get_tracked_ips()
-    if not targets:
-        logger.debug("Agent poll cycle skipped: no tracked PCs")
-        return
-
-    logger.debug("Agent poll cycle starting for %d PC(s)", len(targets))
-    for ip, entry in targets.items():
-        if _has_reverse_coverage(ip):
-            logger.debug("Skipping direct poll for %s; reverse session/heartbeat is current", ip)
-            continue
-        try:
-            info = inspect_pc(ip)
-            info["ip"] = ip
-            save_poll_snapshot(info)
-            record_poll_inspect(ip, info)
-            if info.get("reachable") and info.get("current_user"):
-                save_snapshot(info)
-        except ConnectionError as exc:
-            failure = {**entry, "ip": ip, **connection_failure_fields(exc)}
-            save_poll_snapshot(failure)
-            record_poll_inspect(ip, failure)
-        except Exception:
-            logger.warning("Failed to poll agent at %s", ip, exc_info=True)
+    """Prune stale tracked PCs (status updates come from reverse sessions)."""
     pruned = prune_stale_tracked_ips()
     if pruned:
         logger.info("Pruned stale tracked PC(s): %s", ", ".join(sorted(pruned)))
-    logger.debug("Agent poll cycle finished")
+    else:
+        logger.debug("Agent registry prune cycle finished (none stale)")
 
 
 def _run(stop: threading.Event) -> None:
@@ -71,15 +41,15 @@ def _run(stop: threading.Event) -> None:
         try:
             poll_once()
         except Exception:
-            logger.exception("Agent poll cycle failed")
+            logger.exception("Agent registry prune cycle failed")
         if stop.wait(timeout=_cycle_sleep_sec(interval)):
             break
 
 
 def start_agent_poller() -> threading.Event:
-    """Start the background agent poller; returns a stop event."""
+    """Start the background registry pruner; returns a stop event."""
     stop = threading.Event()
     thread = threading.Thread(target=_run, args=(stop,), name="agent-poller", daemon=True)
     thread.start()
-    logger.info("Agent poller started (interval ~%.0fs)", _poll_interval_sec())
+    logger.info("Agent registry pruner started (interval ~%.0fs)", _poll_interval_sec())
     return stop

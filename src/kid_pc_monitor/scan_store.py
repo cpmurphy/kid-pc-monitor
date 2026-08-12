@@ -1,4 +1,4 @@
-"""SQLite persistence for web panel network scan results."""
+"""SQLite persistence for web panel tracked PCs (reverse-connected agents)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def dashboard_status_key(pc_info: dict[str, Any]) -> str:
 
 
 def _json_default(value: Any) -> str:
-    """Serialize values json.dumps cannot handle natively (e.g. scan timestamps)."""
+    """Serialize values json.dumps cannot handle natively (e.g. timestamps)."""
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
@@ -36,86 +36,6 @@ def _json_default(value: Any) -> str:
 def _payload_hostname(payload: dict[str, Any]) -> str | None:
     hostname = payload.get("hostname")
     return hostname if isinstance(hostname, str) and hostname else None
-
-
-def save_scan(
-    *,
-    pcs: dict[str, dict[str, Any]],
-    scanned_at: datetime,
-    network_label: str,
-    subnet: str,
-    error: str | None = None,
-) -> None:
-    """Record the result of a network scan (accumulates PCs across scans)."""
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO scans (scanned_at, network_label, subnet, error)
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                scanned_at.isoformat(timespec="seconds"),
-                network_label,
-                subnet,
-                error,
-            ),
-        )
-        scan_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-        if pcs:
-            conn.executemany(
-                """
-                INSERT INTO scan_pcs (scan_id, ip, hostname, payload_json)
-                VALUES (?, ?, ?, ?)
-                """,
-                [
-                    (
-                        scan_id,
-                        ip,
-                        _payload_hostname(payload := {**info, "ip": ip}),
-                        json.dumps(payload, default=_json_default),
-                    )
-                    for ip, info in pcs.items()
-                ],
-            )
-        conn.commit()
-
-
-def save_scan_error(error: str, *, subnet: str = "") -> None:
-    """Record a scan error without clearing previously tracked PCs."""
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO scans (scanned_at, network_label, subnet, error)
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                datetime.now().astimezone().isoformat(timespec="seconds"),
-                "",
-                subnet,
-                error,
-            ),
-        )
-        conn.commit()
-
-
-def _latest_scan_row(conn: sqlite3.Connection) -> sqlite3.Row | None:
-    return conn.execute(
-        "SELECT id, scanned_at, network_label, subnet, error FROM scans ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-
-
-def _latest_metadata_scan_row(conn: sqlite3.Connection) -> sqlite3.Row | None:
-    """Latest scan row shown in panel metadata (excludes poll-sourced rows)."""
-    return conn.execute(
-        """
-        SELECT id, scanned_at, network_label, subnet, error
-        FROM scans
-        WHERE network_label != ?
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        (POLL_NETWORK_LABEL,),
-    ).fetchone()
 
 
 def _latest_scan_pc_for_ip(conn: sqlite3.Connection, ip: str) -> sqlite3.Row | None:
@@ -139,7 +59,7 @@ def _payload_from_row(row: sqlite3.Row) -> dict[str, Any]:
 
 
 def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | None = None) -> None:
-    """Update tracked scan registry from a poll inspect (coalesce by dashboard status)."""
+    """Update tracked registry from a reverse status update (coalesce by dashboard status)."""
     now = when or datetime.now().astimezone()
     payload = {**pc_info, "ip": ip}
     payload_json = json.dumps(payload, default=_json_default)
@@ -194,29 +114,8 @@ def _prune_orphan_scans(conn: sqlite3.Connection) -> None:
     )
 
 
-def load_scan_metadata() -> dict[str, Any]:
-    with connect() as conn:
-        row = _latest_metadata_scan_row(conn)
-
-    if not row:
-        return {
-            "last_scan": None,
-            "last_scan_network": None,
-            "scan_subnet": "",
-            "scan_error": None,
-        }
-
-    last_scan = datetime.fromisoformat(row["scanned_at"])
-    return {
-        "last_scan": last_scan,
-        "last_scan_network": row["network_label"] or None,
-        "scan_subnet": row["subnet"] or "",
-        "scan_error": row["error"],
-    }
-
-
 def get_tracked_ips() -> dict[str, dict[str, Any]]:
-    """Return all tracked PCs from successful scans (latest sighting per IP)."""
+    """Return all tracked PCs (latest sighting per IP)."""
     with connect() as conn:
         rows = conn.execute(
             """
@@ -238,23 +137,23 @@ def get_tracked_ips() -> dict[str, dict[str, Any]]:
 
 
 def get_discovered_pcs() -> dict[str, dict[str, Any]]:
-    """Return all tracked PCs from successful scans."""
+    """Return all tracked PCs."""
     return get_tracked_ips()
 
 
 def get_scan_pc(ip: str) -> dict[str, Any] | None:
-    """Return PC info for an IP from tracked scan results."""
+    """Return PC info for an IP from the tracked registry."""
     return get_tracked_ips().get(ip)
 
 
 def get_pc_poll_updated_at(ip: str) -> datetime | None:
-    """Return when a tracked PC was last updated by the background poller."""
+    """Return when a tracked PC was last updated."""
     with connect() as conn:
         return _latest_scan_time(conn, ip)
 
 
 def get_scan_pc_by_hostname(hostname: str) -> dict[str, Any] | None:
-    """Return latest tracked PC info for a hostname from successful scans."""
+    """Return latest tracked PC info for a hostname."""
     with connect() as conn:
         row = conn.execute(
             """
@@ -312,12 +211,7 @@ def _latest_scan_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
 
 
 def _latest_reachable_scan_time(conn: sqlite3.Connection, ip: str) -> datetime | None:
-    """Latest scan/poll row where the IP actually answered.
-
-    Failed polls still refresh a row's ``scanned_at`` (the control page uses it
-    to notice new data), so staleness has to be judged on reachability instead;
-    otherwise an IP a PC has moved off of would be tracked forever.
-    """
+    """Latest registry row where the IP was marked reachable."""
     rows = conn.execute(
         """
         SELECT s.scanned_at AS scanned_at, sp.payload_json AS payload_json
@@ -336,7 +230,7 @@ def _latest_reachable_scan_time(conn: sqlite3.Connection, ip: str) -> datetime |
 
 
 def tracked_ip_last_updated(conn: sqlite3.Connection, ip: str) -> datetime | None:
-    """Return when a tracked IP was last seen reachable by a scan or poll."""
+    """Return when a tracked IP was last seen reachable."""
     candidates = [
         ts
         for ts in (_latest_reachable_scan_time(conn, ip), _latest_reachable_snapshot_time(conn, ip))
@@ -348,7 +242,7 @@ def tracked_ip_last_updated(conn: sqlite3.Connection, ip: str) -> datetime | Non
 
 
 def get_tracked_ip_contact_times() -> dict[str, datetime]:
-    """Return the last time each tracked IP actually answered (scan or reachable poll)."""
+    """Return the last time each tracked IP actually answered."""
     with connect() as conn:
         ips = [
             row["ip"]
@@ -370,7 +264,7 @@ def _stale_tracked_hours() -> float:
 
 
 def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
-    """Remove tracked PCs with no scan or reachable update within max_age_hours."""
+    """Remove tracked PCs with no reachable update within max_age_hours."""
     max_age = timedelta(
         hours=max_age_hours if max_age_hours is not None else _stale_tracked_hours()
     )
