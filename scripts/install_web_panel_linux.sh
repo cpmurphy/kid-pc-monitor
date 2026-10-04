@@ -106,11 +106,35 @@ write_unit() {
     echo "Wrote: $UNIT_PATH"
 }
 
+# Run a command. A venv feature-version mismatch exits this script; any other
+# status is returned to the caller.
+run_python() {
+    local status=0
+    "$@" || status=$?
+    if [[ "$status" -ne "0" ]]; then
+        exit "$status"
+    fi
+    return "$status"
+}
+
+# Interpreter ExecStart will use: the venv console script's Python when that
+# script exists, otherwise the interpreter selected for this install.
+unit_python() {
+    local py="$1"
+    if [[ -x "${REPO_ROOT}/venv/bin/kid-pc-web-panel" && -x "${REPO_ROOT}/venv/bin/python3" ]]; then
+        printf '%s\n' "${REPO_ROOT}/venv/bin/python3"
+    elif [[ -x "${REPO_ROOT}/.venv/bin/kid-pc-web-panel" && -x "${REPO_ROOT}/.venv/bin/python3" ]]; then
+        printf '%s\n' "${REPO_ROOT}/.venv/bin/python3"
+    else
+        printf '%s\n' "$py"
+    fi
+}
+
 # Prompt for and store the panel <-> agent shared secret via the Python helper,
 # so the guidance and storage match the other installers.
 prompt_shared_secret() {
     local py="$1"
-    if ! PYTHONPATH="${SRC_DIR}" "$py" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'; then
+    if ! run_python env PYTHONPATH="${SRC_DIR}" "$py" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'; then
         echo "Warning: shared-secret setup did not complete. You can re-run install later." >&2
     fi
 }
@@ -118,9 +142,11 @@ prompt_shared_secret() {
 cmd_install() {
     require_linux
     require_systemctl_user
-    local py
+    local py service_py
     py="$(pick_python)"
     echo "Using Python: $py"
+    service_py="$(unit_python "$py")"
+    run_python env PYTHONPATH="${SRC_DIR}" "$service_py" -c 'import kid_pc_monitor' || true
     prompt_shared_secret "$py"
     write_unit "$py"
     systemctl --user daemon-reload
@@ -168,4 +194,6 @@ main() {
     esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi

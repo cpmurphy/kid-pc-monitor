@@ -281,24 +281,22 @@ kid-pc-web-panel
 ```bash
 cd kid-pc-monitor
 python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pip install -e .
-kid-pc-web-panel
+./venv/bin/python3 -m pip install -r requirements.txt
+./venv/bin/python3 -m pip install -e .
+./venv/bin/kid-pc-web-panel
 ```
 
-After that, use `./venv/bin/kid-pc-web-panel`,
-or (the launch scripts switch to `venv/` automatically when it exists).
+The launch scripts switch to `venv/` automatically when it exists.
+If you recreate the venv, rerun both `./venv/bin/python3 -m pip install` commands above before starting the panel again.
 
 #### Install as a Service (Linux Only)
 
 Assuming you have a system that runs systemd, you can run the web
-panel as a background service.
-
-After creating the venv and running
-`./venv/bin/python3 -m pip install -r requirements.txt`:
+panel as a background service. From the repo root, using the virtualenv's Python:
 
 ```bash
+./venv/bin/python3 -m pip install -r requirements.txt
+./venv/bin/python3 -m pip install -e .
 ./scripts/install_web_panel_linux.sh install   # writes ~/.config/systemd/user/kid-pc-monitor-web-panel.service
 ./scripts/install_web_panel_linux.sh status
 # ./scripts/install_web_panel_linux.sh uninstall   # when you want it gone
