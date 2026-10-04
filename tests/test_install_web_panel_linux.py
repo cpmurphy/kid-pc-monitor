@@ -1,4 +1,4 @@
-"""The Linux installer stops when the venv Python version does not match."""
+"""The Linux installer stops when a Python command fails."""
 
 from __future__ import annotations
 
@@ -68,22 +68,15 @@ class InstallWebPanelLinuxTests(unittest.TestCase):
             systemctl_log = log.read_text(encoding="utf-8") if log.exists() else ""
             return completed, unit_exists, systemctl_log
 
-    def test_install_stops_when_venv_python_mismatches(self) -> None:
-        completed, unit_exists, systemctl_log = self._run_install(2)
-        self.assertEqual(completed.returncode, 2, completed.stderr)
-        self.assertFalse(unit_exists)
-        self.assertNotIn("enable", systemctl_log)
-        self.assertNotIn("restart", systemctl_log)
-        self.assertNotIn("Service is enabled", completed.stdout)
-        self.assertNotIn("shared-secret setup did not complete", completed.stderr)
-
-    def test_install_continues_after_other_python_failures(self) -> None:
-        completed, unit_exists, systemctl_log = self._run_install(1)
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertTrue(unit_exists)
-        self.assertIn("restart", systemctl_log)
-        self.assertIn("shared-secret setup did not complete", completed.stderr)
-        self.assertIn("Service is enabled", completed.stdout)
+    def test_install_stops_when_python_fails(self) -> None:
+        for status in (1, 2):
+            with self.subTest(status=status):
+                completed, unit_exists, systemctl_log = self._run_install(status)
+                self.assertEqual(completed.returncode, status, completed.stderr)
+                self.assertFalse(unit_exists)
+                self.assertNotIn("enable", systemctl_log)
+                self.assertNotIn("restart", systemctl_log)
+                self.assertNotIn("Service is enabled", completed.stdout)
 
 
 if __name__ == "__main__":

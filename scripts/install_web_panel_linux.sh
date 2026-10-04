@@ -106,15 +106,15 @@ write_unit() {
     echo "Wrote: $UNIT_PATH"
 }
 
-# Run a command. A venv feature-version mismatch exits this script; any other
-# status is returned to the caller.
+# Run a command and exit this script on any non-zero status.
+# An explicit exit is required: set -e does not fire when the caller uses
+# `if` or `||`, and a failed Python command must not continue the install.
 run_python() {
     local status=0
     "$@" || status=$?
-    if [[ "$status" -ne "0" ]]; then
+    if [[ "$status" -ne 0 ]]; then
         exit "$status"
     fi
-    return "$status"
 }
 
 # Interpreter ExecStart will use: the venv console script's Python when that
@@ -134,9 +134,7 @@ unit_python() {
 # so the guidance and storage match the other installers.
 prompt_shared_secret() {
     local py="$1"
-    if ! run_python env PYTHONPATH="${SRC_DIR}" "$py" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'; then
-        echo "Warning: shared-secret setup did not complete. You can re-run install later." >&2
-    fi
+    run_python env PYTHONPATH="${SRC_DIR}" "$py" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'
 }
 
 cmd_install() {
@@ -146,7 +144,7 @@ cmd_install() {
     py="$(pick_python)"
     echo "Using Python: $py"
     service_py="$(unit_python "$py")"
-    run_python env PYTHONPATH="${SRC_DIR}" "$service_py" -c 'import kid_pc_monitor' || true
+    run_python env PYTHONPATH="${SRC_DIR}" "$service_py" -c 'import kid_pc_monitor'
     prompt_shared_secret "$py"
     write_unit "$py"
     systemctl --user daemon-reload
