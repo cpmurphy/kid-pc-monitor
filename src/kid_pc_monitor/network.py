@@ -95,7 +95,7 @@ def _linux_default_interface_from_proc(proc_text: str) -> str | None:
         try:
             flags = int(flags_hex, 16)
             metric = int(fields[6])
-        except (ValueError, IndexError):
+        except ValueError, IndexError:
             continue
         if not (flags & _RTF_UP):
             continue
@@ -157,7 +157,7 @@ def _windows_primary_ipv4() -> str | None:
             stderr=subprocess.DEVNULL,
             timeout=15,
         ).strip()
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.SubprocessError, OSError:
         return None
     return _usable_ipv4(out.splitlines()[0] if out else None)
 
@@ -170,7 +170,7 @@ def _darwin_primary_ipv4() -> str | None:
             stderr=subprocess.DEVNULL,
             timeout=5,
         )
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.SubprocessError, OSError:
         return None
     match = re.search(r"interface:\s*(\S+)", route_out)
     if not match:
@@ -183,7 +183,7 @@ def _darwin_primary_ipv4() -> str | None:
             stderr=subprocess.DEVNULL,
             timeout=5,
         ).strip()
-    except (subprocess.SubprocessError, OSError):
+    except subprocess.SubprocessError, OSError:
         return None
     return _usable_ipv4(ip)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from typing import Literal
 
 from kid_pc_monitor.paths import config_dir
 
@@ -19,10 +20,27 @@ def db_path() -> Path:
     return config_dir() / DB_FILENAME
 
 
-def connect() -> sqlite3.Connection:
+class PanelConnection(sqlite3.Connection):
+    """SQLite connection that closes when its context manager exits.
+
+    ``sqlite3.Connection`` commits or rolls back on ``__exit__`` but leaves the
+    connection open. Callers use ``with connect() as conn``, so without an
+    explicit close every request and prune cycle leaks a database handle until
+    the process hits its open-file limit and later opens fail.
+    """
+
+    def __exit__(self, exc_type, exc_value, traceback) -> Literal[False]:
+        try:
+            super().__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.close()
+        return False
+
+
+def connect() -> PanelConnection:
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    conn = sqlite3.connect(path, factory=PanelConnection)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=5000")
@@ -106,7 +124,7 @@ def _backfill_scan_pcs_hostname(conn: sqlite3.Connection) -> None:
         payload_json = row["payload_json"] if isinstance(row, sqlite3.Row) else row[1]
         try:
             payload = json.loads(payload_json)
-        except (TypeError, json.JSONDecodeError):
+        except TypeError, json.JSONDecodeError:
             continue
         hostname = payload.get("hostname")
         if isinstance(hostname, str) and hostname:

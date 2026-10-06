@@ -67,7 +67,7 @@ def prompt_for_shared_secret(*, getpass_fn=getpass.getpass) -> str | None:
     while True:
         try:
             secret = getpass_fn("\n   Enter shared secret: ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\n   Cancelled; shared secret not changed.")
             return None
 
@@ -77,7 +77,7 @@ def prompt_for_shared_secret(*, getpass_fn=getpass.getpass) -> str | None:
 
         try:
             confirm = getpass_fn("   Re-enter to confirm: ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError, KeyboardInterrupt:
             print("\n   Cancelled; shared secret not changed.")
             return None
 

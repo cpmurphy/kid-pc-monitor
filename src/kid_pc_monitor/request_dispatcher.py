@@ -39,7 +39,7 @@ def _parse_hhmm(raw: Any, req_id: str | None) -> tuple[int, int]:
     try:
         hour_str, minute_str = str(raw).split(":")
         hour, minute = int(hour_str), int(minute_str)
-    except (ValueError, AttributeError):
+    except ValueError, AttributeError:
         raise ProtocolError(INVALID_VALUE, "time must be HH:MM", req_id) from None
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         raise ProtocolError(INVALID_VALUE, "time out of range (00:00–23:59)", req_id)

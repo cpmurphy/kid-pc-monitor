@@ -53,7 +53,7 @@ def _agent_loop(sock: socket.socket, stop: threading.Event) -> None:
                 body = proto.read_frame(sock)
             except TimeoutError:
                 continue
-            except (OSError, proto.ProtocolError, proto.ConnectionClosedBeforeFrame):
+            except OSError, proto.ProtocolError, proto.ConnectionClosedBeforeFrame:
                 return
             req = proto.parse_request(body, secret=SECRET, hostname=HOSTNAME)
             if req.action == "get" and req.var == "settings":

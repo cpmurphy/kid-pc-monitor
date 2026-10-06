@@ -148,7 +148,7 @@ def is_complete_daily_dict(data: dict) -> bool:
         if allowance <= 0:
             return False
         daily = load_daily_from_dict(data)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
     return daily.bed_time is not None and daily.allowance is not None and daily.allowance > 0
 
