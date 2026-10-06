@@ -63,7 +63,7 @@ def _discover_payload(base_url: str) -> dict[str, Any] | None:
             urljoin(base_url.rstrip("/") + "/", "agent/v1/discover"),
             timeout=DISCOVERY_TIMEOUT_SEC,
         )
-    except (HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError):
+    except HTTPError, URLError, TimeoutError, OSError, json.JSONDecodeError:
         return None
     if payload.get("service") != DISCOVERY_MARKER:
         return None
@@ -124,7 +124,7 @@ def _reverse_endpoint(panel_url: str) -> tuple[str, int, bool]:
     reverse_port = payload.get("reverse_port", DEFAULT_REVERSE_PORT)
     try:
         port = int(reverse_port)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         port = DEFAULT_REVERSE_PORT
     use_tls = parsed.scheme == "https"
     return host, port, use_tls

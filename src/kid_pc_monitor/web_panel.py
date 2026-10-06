@@ -146,7 +146,7 @@ def load_auth_record() -> dict | None:
         return None
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+    except json.JSONDecodeError, OSError:
         return None
 
 
