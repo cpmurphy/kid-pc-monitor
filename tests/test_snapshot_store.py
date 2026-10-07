@@ -369,6 +369,26 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(count, 0)
         self.assertIsNotNone(last_trim)
 
+    def test_trim_closes_its_connection_when_it_fails(self) -> None:
+        opened: list[sqlite3.Connection] = []
+        real_connect = store.connect
+
+        def tracking_connect() -> panel_db.PanelConnection:
+            conn = real_connect()
+            opened.append(conn)
+            return conn
+
+        with (
+            mock.patch.object(store, "connect", side_effect=tracking_connect),
+            mock.patch.object(store, "get_meta", side_effect=RuntimeError("boom")),
+            self.assertRaises(RuntimeError),
+        ):
+            store.maybe_trim_old_rows()
+
+        self.assertEqual(len(opened), 1)
+        with self.assertRaises(sqlite3.ProgrammingError):
+            opened[0].execute("SELECT 1")
+
     def test_trim_skipped_within_interval(self) -> None:
         old_date = (date.today() - timedelta(days=10)).isoformat()
         self._insert_row(

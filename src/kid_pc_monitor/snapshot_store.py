@@ -277,25 +277,24 @@ def get_usage_history_for_user(username: str, *, days: int = 7) -> list[dict[str
 
 def maybe_trim_old_rows(*, conn: sqlite3.Connection | None = None) -> None:
     """Delete snapshots older than RETENTION_DAYS; run at most every TRIM_INTERVAL_DAYS."""
-    now = datetime.now().astimezone()
-    own_conn = conn is None
-    if own_conn:
-        conn = connect()
+    if conn is None:
+        with connect() as own_conn:
+            _trim_old_rows(own_conn)
+        return
+    _trim_old_rows(conn)
 
-    assert conn is not None
+
+def _trim_old_rows(conn: sqlite3.Connection) -> None:
+    now = datetime.now().astimezone()
     last_trim_raw = get_meta(conn, META_LAST_TRIM_AT)
     if last_trim_raw:
         last_trim = datetime.fromisoformat(last_trim_raw)
         if last_trim.tzinfo is None:
             last_trim = last_trim.astimezone()
         if now - last_trim < timedelta(days=TRIM_INTERVAL_DAYS):
-            if own_conn:
-                conn.close()
             return
 
     cutoff = (_local_today() - timedelta(days=RETENTION_DAYS)).isoformat()
     conn.execute("DELETE FROM snapshots WHERE snapshot_date < ?", (cutoff,))
     set_meta(conn, META_LAST_TRIM_AT, now.isoformat(timespec="seconds"))
     conn.commit()
-    if own_conn:
-        conn.close()

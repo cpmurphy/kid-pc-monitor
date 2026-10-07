@@ -226,6 +226,7 @@ class PanelReverseServer:
 
     def _serve(self) -> None:
         while self.running:
+            server: socket.socket | None = None
             try:
                 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -261,12 +262,12 @@ class PanelReverseServer:
                     logger.exception("Reverse listener failed; retrying in 5s")
                     time.sleep(5)
             finally:
-                if self._server_socket is not None:
+                self._server_socket = None
+                if server is not None:
                     try:
-                        self._server_socket.close()
+                        server.close()
                     except OSError:
                         pass
-                    self._server_socket = None
 
     def _handle_client(self, client: socket.socket, peer_ip: str) -> None:
         session: ReverseSession | None = None
