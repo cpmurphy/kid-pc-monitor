@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Literal
 
@@ -12,6 +13,12 @@ from kid_pc_monitor.paths import config_dir
 DB_FILENAME = "panel.db"
 
 _db_path_override: Path | None = None
+
+# Switching a new database file to WAL fails at once with "database is locked"
+# when another connection is open (SQLite skips the busy timeout to avoid a
+# deadlock), so the one-time setup runs under a lock, once per path.
+_initialized_paths: set[Path] = set()
+_init_lock = threading.Lock()
 
 
 def db_path() -> Path:
@@ -41,10 +48,18 @@ def connect() -> PanelConnection:
     path = db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, factory=PanelConnection)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    ensure_schema(conn)
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA busy_timeout=5000")
+        with _init_lock:
+            if path not in _initialized_paths:
+                conn.execute("PRAGMA journal_mode=WAL")
+                ensure_schema(conn)
+                conn.commit()
+                _initialized_paths.add(path)
+    except BaseException:
+        conn.close()
+        raise
     return conn
 
 

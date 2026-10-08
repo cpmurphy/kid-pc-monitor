@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sqlite3
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -51,6 +52,26 @@ class PanelDbTests(unittest.TestCase):
             with panel_db.connect() as conn:
                 conn.execute("SELECT 1")
         self.assertEqual(db_handles(), before)
+
+    def test_concurrent_first_connections_to_new_database(self) -> None:
+        for trial in range(30):
+            path = Path(self._tmpdir.name) / f"fresh-{trial}.db"
+            errors: list[BaseException] = []
+
+            def write(errors: list[BaseException]) -> None:
+                try:
+                    with panel_db.connect() as conn:
+                        conn.execute("INSERT OR REPLACE INTO panel_meta VALUES ('k', 'v')")
+                except sqlite3.Error as exc:
+                    errors.append(exc)
+
+            with mock.patch.object(panel_db, "_db_path_override", path):
+                threads = [threading.Thread(target=write, args=(errors,)) for _ in range(6)]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+            self.assertEqual(errors, [], f"trial {trial}")
 
 
 if __name__ == "__main__":

@@ -177,19 +177,20 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
         assert session is not None
         session.close()
 
+        # The disconnect clears the heartbeat row before it records the PC as
+        # unreachable, so wait for the final write as well.
         deadline = time.time() + 3
         while time.time() < deadline:
             if (
                 self.server.session_for_hostname(HOSTNAME) is None
                 and agent_sync_store.recent_agent_for_ip("127.0.0.1") is None
+                and not scan_store.get_tracked_ips()["127.0.0.1"].get("reachable", True)
             ):
                 break
             time.sleep(0.05)
         else:
-            self.fail("Reverse session did not unregister after close")
+            self.fail("Reverse disconnect was not fully recorded after close")
 
-        tracked = scan_store.get_tracked_ips()
-        self.assertFalse(tracked["127.0.0.1"].get("reachable", True))
         dashboard, _ = snapshot_store.get_dashboard_pcs()
         self.assertFalse(dashboard["127.0.0.1"]["reachable"])
 
