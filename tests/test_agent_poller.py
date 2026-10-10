@@ -36,7 +36,7 @@ class AgentPollerTests(unittest.TestCase):
         self._patch.stop()
         self._tmpdir.cleanup()
 
-    def test_poll_once_prunes_stale_tracked_ips(self) -> None:
+    def test_poll_once_keeps_sole_stale_pc(self) -> None:
         scan_store.record_poll_inspect(
             "192.168.1.10",
             _sample_pc_info(ip="192.168.1.10"),
@@ -47,7 +47,22 @@ class AgentPollerTests(unittest.TestCase):
         ) as prune_mock:
             agent_poller.poll_once()
         prune_mock.assert_called_once_with()
-        self.assertEqual(scan_store.get_tracked_ips(), {})
+        pcs = scan_store.get_tracked_ips()
+        self.assertEqual(set(pcs), {"192.168.1.10"})
+        self.assertFalse(pcs["192.168.1.10"]["reachable"])
+
+    def test_poll_once_prunes_stale_when_another_pc_remains(self) -> None:
+        scan_store.record_poll_inspect(
+            "192.168.1.10",
+            _sample_pc_info(ip="192.168.1.10"),
+            when=datetime.now().astimezone() - timedelta(hours=13),
+        )
+        scan_store.record_poll_inspect(
+            "192.168.1.11",
+            _sample_pc_info(ip="192.168.1.11", hostname="OtherPC"),
+        )
+        agent_poller.poll_once()
+        self.assertEqual(set(scan_store.get_tracked_ips()), {"192.168.1.11"})
 
     def test_poll_once_keeps_recent_tracked_ips(self) -> None:
         scan_store.record_poll_inspect(

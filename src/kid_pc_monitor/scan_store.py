@@ -262,8 +262,44 @@ def _stale_tracked_hours() -> float:
     return float(STALE_TRACKED_HOURS)
 
 
+def _latest_tracked_row(conn: sqlite3.Connection, ip: str) -> sqlite3.Row | None:
+    return conn.execute(
+        """
+        SELECT sp.scan_id, sp.payload_json
+        FROM scan_pcs sp
+        INNER JOIN scans s ON sp.scan_id = s.id
+        WHERE sp.ip = ? AND s.error IS NULL
+        ORDER BY sp.scan_id DESC
+        LIMIT 1
+        """,
+        (ip,),
+    ).fetchone()
+
+
+def _mark_latest_not_connected(conn: sqlite3.Connection, ip: str) -> None:
+    """Mark the latest payload not reachable without touching scan timestamps."""
+    row = _latest_tracked_row(conn, ip)
+    if row is None:
+        return
+    payload = json.loads(row["payload_json"])
+    if not payload.get("reachable", True) and "connection_error" not in payload:
+        return
+    payload["reachable"] = False
+    payload.pop("connection_error", None)
+    conn.execute(
+        """
+        UPDATE scan_pcs SET payload_json = ?
+        WHERE scan_id = ? AND ip = ?
+        """,
+        (json.dumps(payload, default=_json_default), row["scan_id"], ip),
+    )
+
+
 def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
-    """Remove tracked PCs with no reachable update within max_age_hours."""
+    """Remove tracked PCs with no reachable update within max_age_hours.
+
+    The sole known PC is kept and marked not connected until another PC connects.
+    """
     max_age = timedelta(
         hours=max_age_hours if max_age_hours is not None else _stale_tracked_hours()
     )
@@ -282,11 +318,19 @@ def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
                 """
             ).fetchall()
         ]
+        stale: list[str] = []
         for ip in ips:
             last_updated = tracked_ip_last_updated(conn, ip)
             if last_updated is None or last_updated < cutoff:
-                conn.execute("DELETE FROM scan_pcs WHERE ip = ?", (ip,))
-                pruned.append(ip)
+                stale.append(ip)
+        if len(ips) == 1 and stale:
+            _mark_latest_not_connected(conn, ips[0])
+            conn.commit()
+            return []
+
+        for ip in stale:
+            conn.execute("DELETE FROM scan_pcs WHERE ip = ?", (ip,))
+            pruned.append(ip)
         _prune_orphan_scans(conn)
         conn.commit()
 

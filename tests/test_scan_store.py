@@ -132,15 +132,42 @@ class ScanStoreTests(unittest.TestCase):
         assert pc is not None
         self.assertEqual(pc["ip"], "10.0.0.2")
 
-    def test_prune_stale_tracked_ips_removes_old(self) -> None:
+    def test_prune_stale_tracked_ips_keeps_sole_pc(self) -> None:
+        recorded_at = datetime.now().astimezone() - timedelta(hours=13)
+        store.record_poll_inspect(
+            "10.0.0.1",
+            _sample_pc_info(
+                ip="10.0.0.1",
+                reachable=True,
+                connection_error="Cannot reach agent",
+            ),
+            when=recorded_at,
+        )
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            scanned_at = conn.execute("SELECT scanned_at FROM scans").fetchone()[0]
+
+        pruned = store.prune_stale_tracked_ips(max_age_hours=12)
+
+        self.assertEqual(pruned, [])
+        pcs = store.get_tracked_ips()
+        self.assertEqual(set(pcs), {"10.0.0.1"})
+        self.assertFalse(pcs["10.0.0.1"]["reachable"])
+        self.assertNotIn("connection_error", pcs["10.0.0.1"])
+        with sqlite3.connect(self.db_path) as conn:
+            panel_db.ensure_schema(conn)
+            self.assertEqual(conn.execute("SELECT scanned_at FROM scans").fetchone()[0], scanned_at)
+
+    def test_prune_stale_tracked_ips_removes_old_when_another_remains(self) -> None:
         store.record_poll_inspect(
             "10.0.0.1",
             _sample_pc_info(ip="10.0.0.1"),
             when=datetime.now().astimezone() - timedelta(hours=13),
         )
+        store.record_poll_inspect("10.0.0.2", _sample_pc_info(ip="10.0.0.2", hostname="OtherPC"))
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
         self.assertEqual(pruned, ["10.0.0.1"])
-        self.assertEqual(store.get_tracked_ips(), {})
+        self.assertEqual(set(store.get_tracked_ips()), {"10.0.0.2"})
 
     def test_prune_stale_tracked_ips_keeps_recent(self) -> None:
         store.record_poll_inspect(
@@ -189,9 +216,10 @@ class ScanStoreTests(unittest.TestCase):
                 ),
             )
             conn.commit()
+        store.record_poll_inspect("10.0.0.2", _sample_pc_info(ip="10.0.0.2", hostname="OtherPC"))
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
         self.assertEqual(pruned, ["10.0.0.1"])
-        self.assertEqual(store.get_tracked_ips(), {})
+        self.assertEqual(set(store.get_tracked_ips()), {"10.0.0.2"})
 
     def test_failed_polls_do_not_keep_stale_ip_alive(self) -> None:
         store.record_poll_inspect(
@@ -207,10 +235,11 @@ class ScanStoreTests(unittest.TestCase):
             "10.0.0.1",
             {"hostname": "KidPC", "ip": "10.0.0.1", "reachable": False},
         )
+        store.record_poll_inspect("10.0.0.2", _sample_pc_info(ip="10.0.0.2", hostname="OtherPC"))
 
         pruned = store.prune_stale_tracked_ips(max_age_hours=12)
         self.assertEqual(pruned, ["10.0.0.1"])
-        self.assertEqual(store.get_tracked_ips(), {})
+        self.assertEqual(set(store.get_tracked_ips()), {"10.0.0.2"})
 
     def test_reachable_poll_refreshes_tracked_ip(self) -> None:
         store.record_poll_inspect(
@@ -317,16 +346,19 @@ class ScanStoreTests(unittest.TestCase):
             _sample_pc_info(ip="10.0.0.1"),
             when=datetime.now().astimezone() - timedelta(hours=13),
         )
+        store.record_poll_inspect("10.0.0.2", _sample_pc_info(ip="10.0.0.2", hostname="OtherPC"))
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 1)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 2)
 
         store.prune_stale_tracked_ips(max_age_hours=12)
 
         with sqlite3.connect(self.db_path) as conn:
             panel_db.ensure_schema(conn)
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 0)
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scan_pcs").fetchone()[0], 0)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scans").fetchone()[0], 1)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM scan_pcs").fetchone()[0], 1)
+            remaining = conn.execute("SELECT ip FROM scan_pcs").fetchone()[0]
+        self.assertEqual(remaining, "10.0.0.2")
 
 
 if __name__ == "__main__":
