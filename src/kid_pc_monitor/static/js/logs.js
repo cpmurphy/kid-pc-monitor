@@ -1,5 +1,7 @@
 "use strict";
 
+import { reloadBypassingCache } from "./core.js";
+
 // Agent-log viewer (logs.html). Guarded on the log element being present.
 
 const el = document.getElementById("agent-log");
@@ -41,7 +43,7 @@ if (el) {
     if (refresh) {
         refresh.addEventListener("click", function () {
             sessionStorage.setItem(STICK_KEY, isNearBottom(el) ? "1" : "0");
-            location.reload();
+            reloadBypassingCache();
         });
     }
 

@@ -304,8 +304,47 @@ class WebPanelStaticTests(unittest.TestCase):
         html = self._index_html()
         self.assertIn('data-action="navigate"', html)
         self.assertIn('data-href="/control/KidPC"', html)
+        self.assertIn('id="home-dashboard"', html)
         self.assertNotRegex(html, _INLINE_HANDLER_RE)
         self.assertNotIn("setTimeout(", html)
+
+    def test_dynamic_responses_are_not_stored(self) -> None:
+        self._seed_pc()
+        paths = (
+            "/",
+            "/control/192.168.1.10",
+            "/control/192.168.1.10/poll-meta",
+            "/set-password",
+            "/agent/v1/discover",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                if path.startswith("/control/"):
+                    with self._live_reverse():
+                        response = self.client.get(path)
+                else:
+                    response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                cache_control = response.headers["Cache-Control"]
+                self.assertIn("no-store", cache_control)
+                self.assertIn("no-cache", cache_control)
+                self.assertIn("max-age=0", cache_control)
+                self.assertEqual(response.headers["Pragma"], "no-cache")
+                self.assertEqual(response.headers["Expires"], "0")
+
+    def test_static_assets_stay_cacheable(self) -> None:
+        response = self.client.get("/static/js/home.js")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("no-store", response.headers.get("Cache-Control", ""))
+
+    def test_home_refresh_bypasses_browser_cache(self) -> None:
+        response = self.client.get("/static/js/home.js")
+        body = response.get_data(as_text=True)
+        self.assertIn('cache: "no-store"', body)
+        self.assertIn("searchParams.set", body)
+        self.assertIn("pageshow", body)
+        self.assertIn("visibilitychange", body)
+        self.assertNotIn("location.reload(", body)
 
 
 if __name__ == "__main__":
