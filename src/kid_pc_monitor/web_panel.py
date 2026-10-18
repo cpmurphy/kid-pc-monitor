@@ -15,6 +15,7 @@ from urllib.parse import urljoin, urlparse
 
 from flask import (
     Flask,
+    Response,
     abort,
     flash,
     redirect,
@@ -71,6 +72,11 @@ PANEL_USERNAME = "Kid PC Monitor"
 AUTH_FILE = "web_panel_auth.json"
 SESSION_AUTH_KEY = "panel_authenticated"
 CSRF_SESSION_KEY = "_csrf_token"
+# Live PC status is rendered into these responses. no-cache makes a browser
+# revalidate a copy it already stored; no-store keeps the new body out of the
+# cache. DuckDuckGo's mobile browser will replay a stored document (including
+# for location.reload()) long after Safari has fetched a fresh page.
+DYNAMIC_CACHE_CONTROL = "private, no-cache, no-store, must-revalidate, max-age=0"
 
 
 def _csrf_token() -> str:
@@ -344,6 +350,15 @@ def create_app() -> Flask:
             return
         if request.method == "POST" and not _csrf_valid():
             abort(400)
+
+    @app.after_request
+    def prevent_dynamic_page_cache(response: Response) -> Response:
+        if request.endpoint == "static":
+            return response
+        response.headers["Cache-Control"] = DYNAMIC_CACHE_CONTROL
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     @app.context_processor
     def inject_panel_context() -> dict[str, Any]:

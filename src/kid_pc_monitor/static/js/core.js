@@ -31,6 +31,14 @@ export function getIp() {
     return el ? el.getAttribute("data-ip") : "";
 }
 
+// location.reload() is served from the HTTP cache by some mobile browsers
+// (DuckDuckGo). A unique query forces a network fetch of this document.
+export function reloadBypassingCache() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("_", String(Date.now()));
+    window.location.replace(url.toString());
+}
+
 export function refreshPageStats(opts) {
     opts = opts || {};
     const container = document.getElementById("today-stats");
@@ -41,7 +49,7 @@ export function refreshPageStats(opts) {
     if (opts.source === "poll") {
         statsUrl += "?source=poll";
     }
-    return fetch(statsUrl, { headers: { Accept: "text/html" } })
+    return fetch(statsUrl, { cache: "no-store", headers: { Accept: "text/html" } })
         .then(function (response) {
             if (!response.ok) {
                 return null;
@@ -78,7 +86,7 @@ export function startControlPagePoll() {
     }
 
     function checkPollUpdate() {
-        fetch(metaUrl, { headers: { Accept: "application/json" } })
+        fetch(metaUrl, { cache: "no-store", headers: { Accept: "application/json" } })
             .then(function (response) {
                 if (!response.ok) {
                     return null;
@@ -98,7 +106,7 @@ export function startControlPagePoll() {
             });
     }
 
-    fetch(metaUrl, { headers: { Accept: "application/json" } })
+    fetch(metaUrl, { cache: "no-store", headers: { Accept: "application/json" } })
         .then(function (response) {
             if (!response.ok) {
                 return null;
@@ -153,9 +161,7 @@ export function postAction(body, opts) {
                 if (opts.refreshStats) {
                     refreshPageStats();
                 } else if (opts.reloadDelay) {
-                    setTimeout(function () {
-                        location.reload();
-                    }, opts.reloadDelay);
+                    setTimeout(reloadBypassingCache, opts.reloadDelay);
                 }
             }
         })
