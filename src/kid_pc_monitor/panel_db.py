@@ -139,7 +139,7 @@ def _backfill_scan_pcs_hostname(conn: sqlite3.Connection) -> None:
         payload_json = row["payload_json"] if isinstance(row, sqlite3.Row) else row[1]
         try:
             payload = json.loads(payload_json)
-        except TypeError, json.JSONDecodeError:
+        except (TypeError, json.JSONDecodeError):
             continue
         hostname = payload.get("hostname")
         if isinstance(hostname, str) and hostname:

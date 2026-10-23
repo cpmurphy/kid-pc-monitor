@@ -2,7 +2,7 @@
 
 DIY parental control system for tech-savvy parents. If you know what 'pip install' means, this could be for you!
 
-![Python](https://img.shields.io/badge/python-3.7+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Kids PC](https://img.shields.io/badge/kids_PC-Windows-lightgrey.svg)
 ![Web panel](https://img.shields.io/badge/web_panel-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)
@@ -182,7 +182,7 @@ To use this tool effectively, you'll want to have a separate parent/admin
 machine to run the web interface.
 
 - **Kid's PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
-- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.7+ (runs the Flask web panel only) The web panel listens on TCP **5000** for your browser or phone.
+- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.11+ (runs the Flask web panel only) The web panel listens on TCP **5000** for your browser or phone.
 
 ## Network Considerations
 
