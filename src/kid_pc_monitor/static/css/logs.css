@@ -1,33 +1,30 @@
 /* Agent log page */
 
+.page-logs {
+    --page-width: 960px;
+}
+
 .log-toolbar {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 16px;
-}
-
-.log-nav-btn {
-    margin: 0;
-    border: none;
-    cursor: pointer;
-    font-family: inherit;
+    margin-bottom: 10px;
 }
 
 .agent-log-view {
-    margin-top: 10px;
-    padding: 12px 14px;
-    max-height: 75vh;
+    margin: 0;
+    padding: 14px 16px;
+    max-height: 72vh;
     overflow: auto;
-    background: #1e1e1e;
-    color: #d4d4d4;
-    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
-    font-size: 12px;
-    line-height: 1.45;
+    background: #16181d;
+    color: #d5d8de;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
-    border-radius: 6px;
-    border: 1px solid #333;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
 }
 
 .log-path {

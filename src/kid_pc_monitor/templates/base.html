@@ -1,15 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="light dark">
     <title>{% block title %}Kids PC Control Panel{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/panel.css') }}">
     {% block stylesheets %}{% endblock %}
     {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
+    <header class="app-header">
+        <div class="app-header-inner">
+            <a class="brand" href="{{ url_for('index') }}">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+                </span>
+                Kids PC Control Panel
+            </a>
+            {% block account_links %}
+            <nav class="account-links" aria-label="Account">
+                {% if not password_protected %}
+                <a href="{{ url_for('set_password') }}">Add password</a>
+                {% elif panel_auth %}
+                <a href="{{ url_for('set_password') }}">Change password</a>
+                <a href="{{ url_for('logout') }}">Log out</a>
+                {% else %}
+                <a href="{{ url_for('login', next=request.path) }}">Log in</a>
+                {% endif %}
+            </nav>
+            {% endblock %}
+        </div>
+    </header>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
 </body>

@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Sign in — Kids PC Control Panel{% endblock %}
+{% block title %}Log in — Kids PC Control Panel{% endblock %}
 {% block body_class %}page-login{% endblock %}
 
 {% block stylesheets %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 {% endblock %}
 
+{% block account_links %}{% endblock %}
+
 {% block content %}
+  <main class="auth-wrap">
     <div class="box">
-        <h1>Sign in</h1>
+        <h1>Log in</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -26,8 +29,9 @@
             <label for="password">Password</label>
             <input type="password" id="password" name="password" required minlength="1" maxlength="128"
                    autocomplete="current-password" inputmode="text">
-            <button type="submit">Continue</button>
+            <button type="submit" class="btn btn-primary btn-block">Log in</button>
         </form>
-        <p class="hint">The account label helps Safari and other browsers save this password. It is not used to sign in.</p>
+        <p class="hint">The account label helps Safari and other browsers save this password. It is not used to log in.</p>
     </div>
+  </main>
 {% endblock %}

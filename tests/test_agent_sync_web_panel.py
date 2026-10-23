@@ -196,14 +196,14 @@ class ReverseTcpWebPanelTests(unittest.TestCase):
 
         home = self.client.get("/")
         self.assertEqual(home.status_code, 200)
-        self.assertIn("NOT CONNECTED", home.get_data(as_text=True))
-        self.assertNotIn("CAN'T CONTROL", home.get_data(as_text=True))
+        self.assertIn("Not connected", home.get_data(as_text=True))
+        self.assertNotIn("Can't control", home.get_data(as_text=True))
 
         response = self.client.get("/control/127.0.0.1")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn("recorded snapshot", html.lower())
-        self.assertNotIn("Quick Actions", html)
+        self.assertNotIn('data-action="lock"', html)
 
     def test_action_uses_live_reverse_session(self) -> None:
         self._connect_agent()

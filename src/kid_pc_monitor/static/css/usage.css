@@ -1,11 +1,12 @@
 /* Usage history page */
 
-.usage-footnote {
-    text-align: center;
+.usage-pc-group {
+    padding: 18px 0 6px;
+    overflow-x: auto;
 }
 
-.usage-pc-group {
-    margin-top: 20px;
+.usage-pc-group .action-title {
+    padding: 0 20px;
 }
 
 .usage-table {
@@ -17,18 +18,29 @@
 
 .usage-table th,
 .usage-table td {
-    padding: 8px 10px;
+    padding: 9px 10px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border);
     white-space: nowrap;
 }
 
+.usage-table th:first-child,
+.usage-table td:first-child {
+    padding-left: 20px;
+}
+
+.usage-table th:last-child,
+.usage-table td:last-child {
+    padding-right: 20px;
+}
+
 .usage-table th {
-    color: #555;
+    color: var(--text-2);
     font-weight: 600;
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    background: var(--surface-2);
 }
 
 .usage-table .num {
@@ -40,12 +52,8 @@
     font-style: italic;
 }
 
-.usage-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
 .usage-table tr.is-today td {
-    background-color: #f3f8fe;
+    background-color: var(--accent-soft);
     font-weight: 600;
 }
 
@@ -56,7 +64,22 @@
 @media (max-width: 480px) {
     .usage-table th,
     .usage-table td {
-        padding: 6px 4px;
+        padding: 8px 5px;
         font-size: 13px;
+    }
+
+    .usage-table th {
+        font-size: 11px;
+        letter-spacing: 0.02em;
+    }
+
+    .usage-table th:first-child,
+    .usage-table td:first-child {
+        padding-left: 14px;
+    }
+
+    .usage-table th:last-child,
+    .usage-table td:last-child {
+        padding-right: 14px;
     }
 }

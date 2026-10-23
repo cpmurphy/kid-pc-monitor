@@ -1,99 +1,150 @@
 /* Shared by control, daily settings, logs, and usage history */
 
 .action-group {
-    background: white;
-    padding: 20px;
-    margin: 15px 0;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 20px 20px;
+    margin: 0 0 16px;
+}
+
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .action-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.btn {
-    display: block;
-    width: 100%;
-    padding: 15px;
-    margin: 10px 0;
-    border: none;
-    border-radius: 5px;
+    margin: 0 0 12px;
     font-size: 16px;
-    cursor: pointer;
+    font-weight: 650;
+    color: var(--text);
 }
 
-.btn-lock     { background-color: #ff9800; color: white; }
-.btn-lock:hover     { background-color: #e68900; }
-.btn-shutdown { background-color: #f44336; color: white; }
-.btn-shutdown:hover { background-color: #da190b; }
-.btn-message  { background-color: #2196F3; color: white; }
-.btn-message:hover  { background-color: #0b7dda; }
-.btn-limit    { background-color: #9c27b0; color: white; }
-.btn-limit:hover    { background-color: #7b1fa2; }
-.btn-save     { background-color: #2196F3; color: white; }
-.btn-save:hover     { background-color: #0b7dda; }
-.btn-clear    { background-color: #f44336; color: white; }
-
-.status-message {
-    padding: 15px;
-    margin: 15px 0;
-    border-radius: 5px;
-    text-align: center;
-    display: none;
+.card-head .action-title {
+    margin: 0;
 }
 
-.status-message.success {
-    background-color: #d4edda;
-    color: #155724;
+.btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
 }
 
-.status-message.error {
-    background-color: #f8d7da;
-    color: #721c24;
+/* Today card ------------------------------------------------------------- */
+
+.usage-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
 }
 
-/* Server-rendered status banners (vs. the JS-driven toast which starts hidden) */
-.status-message.banner {
+.usage-figure {
+    display: flex;
+    flex-direction: column;
+}
+
+.usage-figure.end {
+    text-align: right;
+}
+
+.usage-value {
+    font-size: 28px;
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
+
+.usage-label {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.meter {
+    height: 8px;
+    margin: 12px 0 4px;
+    border-radius: 999px;
+    background: var(--neutral-soft);
+    overflow: hidden;
+}
+
+.meter-fill {
     display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--success);
 }
 
-.status-message.info {
-    background-color: #e2e3e5;
-    color: #383d41;
+.meter.near .meter-fill { background: var(--warning); }
+.meter.over .meter-fill { background: var(--danger); }
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin: 16px 0 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--border);
+    overflow: hidden;
 }
 
-.status-message.warning {
-    background-color: #fff3cd;
-    color: #856404;
+.stat-grid > div {
+    padding: 10px 12px;
+    background: var(--surface);
 }
 
-.status-message.snapshot {
-    background-color: #e8f4fd;
-    color: #0c5460;
+.stat-grid dt {
+    font-size: 12.5px;
+    color: var(--text-2);
 }
 
-.note {
-    color: #666;
+.stat-grid dd {
+    margin: 2px 0 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-grid .muted {
+    font-weight: 500;
+}
+
+.inline-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--danger-soft);
+    color: var(--danger);
     font-size: 14px;
-    margin: 0 0 10px 0;
+    font-weight: 550;
 }
 
-.readonly-value { color: #333; }
-.muted          { color: #999; }
-.stat-row       { margin: 8px 0; line-height: 1.5; }
-.locked-text    { color: #c62828; font-weight: 600; }
+.card-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
 
-.clear-inline {
-    margin-left: 10px;
-    padding: 5px 10px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
+.card-links a {
+    font-size: 14px;
+    font-weight: 550;
+}
+
+.card-links a + a::before {
+    content: "·";
+    margin-right: 8px;
+    color: var(--text-3);
 }

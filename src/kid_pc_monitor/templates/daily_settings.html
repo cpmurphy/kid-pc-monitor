@@ -9,46 +9,59 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container" data-ip="{{ ip }}">
-        <a href="{{ url_for('control', target=pc_info.get('hostname') or ip) }}" class="back-btn">← Back to control</a>
+    <main class="container" data-ip="{{ ip }}">
+        <a href="{{ url_for('control', target=pc_info.get('hostname') or ip) }}" class="back-link">← {{ pc_info.hostname }}</a>
 
-        <h1>⚙️ Daily settings</h1>
-        <p class="subtitle">{{ pc_info.hostname }} · {{ ip }}</p>
-        <p class="hint center">
-            These settings apply every day. Changes take effect immediately on the kid's PC.
-        </p>
+        <div class="page-head">
+            <h1>Daily settings</h1>
+            <p class="page-meta">
+                These apply every day and take effect immediately on {{ pc_info.hostname }}.
+            </p>
+        </div>
 
-        <div id="status-message" class="status-message"></div>
+        <div id="status-message" class="status-message" role="status" aria-live="polite"></div>
 
-        <div class="action-group">
-            <div class="action-title">⏱️ Daily allowance</div>
-            <p class="hint">Screen-time cap per day (minutes). Leave blank for no cap.</p>
-            <input type="number" id="daily-limit-minutes"
-                   placeholder="Minutes, e.g. 120"
-                   value="{{ pc_info.daily_limit if pc_info.get('daily_limit') is not none else '' }}">
-            <button class="btn btn-save" data-action="save-daily-limit">Save daily allowance</button>
+        <section class="action-group">
+            <h2 class="action-title">Daily allowance</h2>
+            <p class="hint">Screen-time cap per day, in minutes. Leave it unset for no cap.</p>
+            <div class="field-row">
+                <input type="number" id="daily-limit-minutes" min="1" inputmode="numeric"
+                       placeholder="e.g. 120" aria-label="Daily allowance in minutes"
+                       value="{{ pc_info.daily_limit if pc_info.get('daily_limit') is not none else '' }}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-daily-limit">Save</button>
+            </div>
             {% if pc_info.get('daily_limit') is not none %}
-            <button class="btn btn-clear" data-action="clear-daily-limit">Remove daily allowance</button>
+            <div class="setting-footer">
+                <button type="button" class="btn btn-text danger btn-clear" data-action="clear-daily-limit">Remove daily allowance</button>
+            </div>
             {% endif %}
-        </div>
+        </section>
 
-        <div class="action-group">
-            <div class="action-title">🕐 Bedtime</div>
-            <p class="hint">PC locks at this time until wake-up.</p>
-            <input type="time" id="bed-time" value="{{ pc_info.get('bed_time', '21:00') or '21:00' }}">
-            <button class="btn btn-save" data-action="save-bed-time">Save bedtime</button>
+        <section class="action-group">
+            <h2 class="action-title">Bedtime</h2>
+            <p class="hint">The PC locks at this time until wake-up.</p>
+            <div class="field-row">
+                <input type="time" id="bed-time" aria-label="Bedtime"
+                       value="{{ pc_info.get('bed_time', '21:00') or '21:00' }}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-bed-time">Save</button>
+            </div>
             {% if pc_info.get('bed_time') %}
-            <button class="btn btn-clear" data-action="clear-bed-time">Remove bedtime</button>
+            <div class="setting-footer">
+                <button type="button" class="btn btn-text danger btn-clear" data-action="clear-bed-time">Remove bedtime</button>
+            </div>
             {% endif %}
-        </div>
+        </section>
 
-        <div class="action-group">
-            <div class="action-title">🌅 Wake-up time</div>
-            <p class="hint">Bedtime locks lift here. Daily usage resets at wake-up.</p>
-            <input type="time" id="wake-time" value="{{ pc_info.get('wake_time', '07:00') or '07:00' }}">
-            <button class="btn btn-save" data-action="save-wake-time">Save wake-up time</button>
-        </div>
-    </div>
+        <section class="action-group">
+            <h2 class="action-title">Wake-up time</h2>
+            <p class="hint">Bedtime locks lift here, and daily usage resets.</p>
+            <div class="field-row">
+                <input type="time" id="wake-time" aria-label="Wake-up time"
+                       value="{{ pc_info.get('wake_time', '07:00') or '07:00' }}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-wake-time">Save</button>
+            </div>
+        </section>
+    </main>
 {% endblock %}
 
 {% block scripts %}

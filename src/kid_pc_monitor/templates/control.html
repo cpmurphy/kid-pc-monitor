@@ -9,39 +9,27 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container" data-ip="{{ ip }}">
-        <div class="nav-row">
-            <a href="/" class="back-btn">← Back to PCs</a>
-        </div>
-        <p class="account-links">
-            {% if not password_protected %}
-            <a href="{{ url_for('set_password') }}">Add password protection</a>
-            {% elif panel_auth %}
-            <a href="{{ url_for('logout') }}">Log out</a>
-            &nbsp;·&nbsp;
-            <a href="{{ url_for('set_password') }}">Change password</a>
-            {% else %}
-            <a href="{{ url_for('login', next=request.path) }}">Log in</a>
-            {% endif %}
-        </p>
+    <main class="container" data-ip="{{ ip }}">
+        <a href="/" class="back-link">← All PCs</a>
 
-        <h1>💻 {{ pc_info.hostname }}</h1>
-        <p class="subtitle">{{ ip }}</p>
-        {% if pc_info.get('current_user') %}
-        <p class="subtitle">👤 User: <strong>{{ pc_info.current_user }}</strong></p>
-        {% endif %}
+        <div class="page-head">
+            <h1>{{ pc_info.hostname }}</h1>
+            <p class="page-meta">
+                {% if pc_info.get('current_user') %}{{ pc_info.current_user }}<span class="meta-sep">·</span>{% endif %}{{ ip }}
+            </p>
+        </div>
 
         {% if pc_info.get('is_snapshot') %}
         <div class="status-message banner snapshot">
-            📋 Showing recorded snapshot from {{ format_snapshot_recorded_at(pc_info.snapshot_recorded_at) }} — not live data.
+            Showing a recorded snapshot from {{ format_snapshot_recorded_at(pc_info.snapshot_recorded_at) }}, not live data.
         </div>
         {% elif pc_info.get('connection_error') %}
         <div class="status-message banner warning">
-            ⚠ {{ pc_info.connection_error }}
+            {{ pc_info.connection_error }}
         </div>
         {% elif not pc_info.get('reachable', true) or pc_info.get('agent_not_running') %}
         <div class="status-message banner info">
-            ○ Agent not connected — the PC may be off, signed out, or the agent stopped.
+            Agent not connected — the PC may be off, signed out, or the agent stopped.
             It will reappear when the kid is signed in and the agent reconnects.
         </div>
         {% endif %}
@@ -50,36 +38,41 @@
             {% include "control_today_stats.html" %}
         </div>
 
-        <div id="status-message" class="status-message"></div>
+        <div id="status-message" class="status-message" role="status" aria-live="polite"></div>
 
         {% if pc_info.get('reachable', true) %}
-        <div class="action-group">
-            <div class="action-title">🔒 Quick Actions</div>
-            <button class="btn btn-lock" data-action="lock">Lock Computer Now</button>
-            <button class="btn btn-shutdown" data-action="shutdown">Shutdown Computer</button>
-        </div>
-
-        <div class="action-group">
-            <div class="action-title">💬 Send Message</div>
-            <input type="text" id="message-text" placeholder="Type your message here...">
-            <button class="btn btn-message" data-action="send-message">Send Message</button>
-        </div>
-
-        <div class="action-group">
-            <div class="action-title">➕ Grant Extension</div>
-            <p class="note">
-                Adds extra time for today only. Does not change the daily allowance default.
-            </p>
-            <div class="quick-limit-row">
-                <span class="quick-limit" data-action="quick-extend" data-minutes="15">15 min</span>
-                <span class="quick-limit" data-action="quick-extend" data-minutes="30">30 min</span>
-                <span class="quick-limit" data-action="quick-extend" data-minutes="60">1 hour</span>
+        <section class="action-group">
+            <h2 class="action-title">Quick actions</h2>
+            <div class="btn-row">
+                <button type="button" class="btn btn-primary btn-lock" data-action="lock">Lock now</button>
+                <button type="button" class="btn btn-danger btn-shutdown" data-action="shutdown">Shut down</button>
             </div>
-            <input type="number" id="extension-minutes" placeholder="Or enter minutes...">
-            <button class="btn btn-limit" data-action="grant-extension">Grant Extension</button>
-        </div>
+        </section>
+
+        <section class="action-group">
+            <h2 class="action-title">Extra time</h2>
+            <p class="note">Adds time for today only. The daily allowance isn't changed.</p>
+            <div class="quick-limit-row">
+                <button type="button" class="quick-limit" data-action="quick-extend" data-minutes="15">+15 min</button>
+                <button type="button" class="quick-limit" data-action="quick-extend" data-minutes="30">+30 min</button>
+                <button type="button" class="quick-limit" data-action="quick-extend" data-minutes="60">+1 hour</button>
+            </div>
+            <div class="field-row">
+                <input type="number" id="extension-minutes" min="1" inputmode="numeric"
+                       placeholder="Other amount (minutes)" aria-label="Extra minutes">
+                <button type="button" class="btn btn-secondary btn-limit" data-action="grant-extension">Add</button>
+            </div>
+        </section>
+
+        <section class="action-group">
+            <h2 class="action-title">Send a message</h2>
+            <div class="field-row">
+                <input type="text" id="message-text" placeholder="Shown on the kid's screen" aria-label="Message">
+                <button type="button" class="btn btn-secondary btn-message" data-action="send-message">Send</button>
+            </div>
+        </section>
         {% endif %}
-    </div>
+    </main>
 {% endblock %}
 
 {% block scripts %}

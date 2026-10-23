@@ -1,22 +1,11 @@
 "use strict";
 
-// Home page: PC card navigation and live status refresh.
+// Home page: live status refresh.
 //
 // DuckDuckGo's mobile browser replays a cached document for a normal reload, so a
 // dashboard loaded while a PC was offline can still say "not connected" a day
 // later. Safari revalidates that navigation. Fetch this page with cache
 // "no-store" and a unique query so the status cards update from the network.
-
-document.addEventListener("click", function (event) {
-    const target = event.target.closest('[data-action="navigate"]');
-    if (!target) {
-        return;
-    }
-    const href = target.getAttribute("data-href");
-    if (href) {
-        location.href = href;
-    }
-});
 
 const HOME_REFRESH_MS = 30000;
 let refreshInFlight = null;

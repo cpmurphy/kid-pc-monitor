@@ -299,11 +299,10 @@ class WebPanelStaticTests(unittest.TestCase):
         self.assertNotRegex(html, _INLINE_HANDLER_RE)
         self.assertNotIn("function postAction", html)
 
-    def test_index_cards_navigate_via_data_attributes(self) -> None:
+    def test_index_cards_are_links(self) -> None:
         self._seed_pc()
         html = self._index_html()
-        self.assertIn('data-action="navigate"', html)
-        self.assertIn('data-href="/control/KidPC"', html)
+        self.assertIn('class="pc-card" href="/control/KidPC"', html)
         self.assertIn('id="home-dashboard"', html)
         self.assertNotRegex(html, _INLINE_HANDLER_RE)
         self.assertNotIn("setTimeout(", html)
