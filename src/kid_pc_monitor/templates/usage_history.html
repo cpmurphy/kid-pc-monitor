@@ -41,7 +41,7 @@
                     </thead>
                     <tbody>
                         {% for day in group.days %}
-                        <tr class="{{ ['is-today' if loop.last, 'no-data' if day.get('no_data')] | select | join(' ') }}">
+                        <tr class="{{ ['is-today' if loop.first, 'no-data' if day.get('no_data')] | select | join(' ') }}">
                             <td class="usage-date">{{ format_usage_date(day.date) }}</td>
                             {% if day.get('no_data') %}
                             <td colspan="4" class="muted">No data</td>

@@ -238,7 +238,7 @@ def _empty_day_entry(day: date) -> dict[str, Any]:
 
 
 def get_usage_history_for_user(username: str, *, days: int = 7) -> list[dict[str, Any]]:
-    """Return usage rows for the last N calendar days, grouped by hostname."""
+    """Return usage rows for the last N calendar days (newest first), grouped by hostname."""
     today = _local_today()
     start = today - timedelta(days=days - 1)
     start_str = start.isoformat()
@@ -264,7 +264,7 @@ def get_usage_history_for_user(username: str, *, days: int = 7) -> list[dict[str
             row["snapshot_date"], payload
         )
 
-    day_range = [start + timedelta(days=offset) for offset in range(days)]
+    day_range = [today - timedelta(days=offset) for offset in range(days)]
     groups: list[dict[str, Any]] = []
     for hostname in sorted(by_hostname):
         known = by_hostname[hostname]

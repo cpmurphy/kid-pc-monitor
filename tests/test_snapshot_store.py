@@ -323,9 +323,12 @@ class SnapshotStoreTests(unittest.TestCase):
         self.assertEqual(len(groups), 1)
         self.assertEqual(groups[0]["hostname"], "KidPC")
         self.assertEqual(len(groups[0]["days"]), 7)
-        self.assertFalse(groups[0]["days"][-1].get("no_data"))
-        self.assertEqual(groups[0]["days"][-1]["accumulated_seconds"], 500)
-        self.assertTrue(groups[0]["days"][0].get("no_data"))
+        days = groups[0]["days"]
+        self.assertEqual(days[0]["date"], today.isoformat())
+        self.assertEqual(days[-1]["date"], (today - timedelta(days=6)).isoformat())
+        self.assertFalse(days[0].get("no_data"))
+        self.assertEqual(days[0]["accumulated_seconds"], 500)
+        self.assertTrue(days[-1].get("no_data"))
 
     def test_usage_history_groups_multiple_pcs(self) -> None:
         today = date.today().isoformat()
