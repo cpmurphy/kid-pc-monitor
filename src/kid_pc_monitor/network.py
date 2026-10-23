@@ -119,7 +119,8 @@ def _linux_ipv4_for_interface(ifname: str) -> str | None:
         sock.close()
 
 
-def _linux_primary_ipv4() -> str | None:
+def get_linux_default_interface() -> str | None:
+    """Name of the Linux interface carrying the default route, if any."""
     proc_path = Path("/proc/net/route")
     if not proc_path.is_file():
         return None
@@ -127,7 +128,11 @@ def _linux_primary_ipv4() -> str | None:
         proc_text = proc_path.read_text(encoding="utf-8")
     except OSError:
         return None
-    iface = _linux_default_interface_from_proc(proc_text)
+    return _linux_default_interface_from_proc(proc_text)
+
+
+def _linux_primary_ipv4() -> str | None:
+    iface = get_linux_default_interface()
     if not iface:
         return None
     return _usable_ipv4(_linux_ipv4_for_interface(iface))

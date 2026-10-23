@@ -168,7 +168,8 @@ Pick whichever is easiest:
   `python scripts\install.py --update` (add `--pull` to pull first).
 
 The **parent web panel** runs from the checkout directly, so there you only need
-`git pull` and a restart of the panel (or its systemd service).
+`git pull` and a restart of the panel. On Linux, re-running
+`./scripts/install_web_panel_linux.sh install` does both the dependency update and the restart.
 
 ## 📸 Screenshots
 
@@ -199,7 +200,8 @@ The parent computer and kid computers usually need to be:
 * able to reach the reverse control port at `tcp://<parent-pc-ip>:9998`
 
 The web panel host must allow inbound TCP **5000** (browsers + discovery) and
-**9998** (agent reverse control) from the LAN. On Linux, for example:
+**9998** (agent reverse control) from the LAN. Many machines have no active
+firewall and need nothing; the Linux installer checks for you. With ufw, for example:
 
 ```bash
 sudo ufw allow 5000/tcp
@@ -276,31 +278,45 @@ kid-pc-web-panel
 <# Open in browser: http://YOUR-PC-IP:5000 #>
 ```
 
-#### MacOS/Linux
+#### Linux (recommended: one command)
+
+On a Linux box with systemd, the installer does everything: it creates a
+virtualenv (fetching Python 3.11+ with [uv](https://docs.astral.sh/uv/) if
+your distro's Python is older, after asking), installs the panel, asks for
+the shared secret, and starts it as a background service.
+
+```bash
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
+cd kid-pc-monitor
+./scripts/install_web_panel_linux.sh install
+```
+
+After starting the service it checks two things and only suggests changes
+when they are actually needed:
+
+- **Start at boot** — if systemd "lingering" is off for your account, the
+  panel would only run while you are logged in; it offers to run
+  `sudo loginctl enable-linger $USER`.
+- **Firewall** — it looks for an active firewalld, ufw, or nftables/iptables
+  service and checks whether TCP 5000 and 9998 are already allowed. If a
+  firewall blocks them it shows (and offers to run) the exact commands; if
+  there is no active firewall it tells you no changes are needed.
+
+Other commands: `status`, `uninstall`, and `cat-unit` (preview the unit file).
+Re-run `install` at any time, e.g. after `git pull`, to update dependencies
+and restart the panel.
+
+#### MacOS (or Linux without the service)
 
 ```bash
 cd kid-pc-monitor
 python3 -m venv venv
-./venv/bin/python3 -m pip install -r requirements.txt
 ./venv/bin/python3 -m pip install -e .
 ./venv/bin/kid-pc-web-panel
 ```
 
 The launch scripts switch to `venv/` automatically when it exists.
-If you recreate the venv, rerun both `./venv/bin/python3 -m pip install` commands above before starting the panel again.
-
-#### Install as a Service (Linux Only)
-
-Assuming you have a system that runs systemd, you can run the web
-panel as a background service. From the repo root, using the virtualenv's Python:
-
-```bash
-./venv/bin/python3 -m pip install -r requirements.txt
-./venv/bin/python3 -m pip install -e .
-./scripts/install_web_panel_linux.sh install   # writes ~/.config/systemd/user/kid-pc-monitor-web-panel.service
-./scripts/install_web_panel_linux.sh status
-# ./scripts/install_web_panel_linux.sh uninstall   # when you want it gone
-```
+If you recreate the venv, rerun the `pip install` command above before starting the panel again.
 
 ## Option B: Single PC Setup
 
