@@ -9,17 +9,13 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        <div class="nav-row">
-            <a href="/" class="back-btn">← Back to PCs</a>
-        </div>
+    <main class="container">
+        <a href="/" class="back-link">← All PCs</a>
 
-        <h1>📈 Usage history</h1>
-        <p class="subtitle">👤 {{ username }}</p>
-        <p class="note usage-footnote">
-            Daily totals are from recorded snapshots (last scan of each calendar day).
-            Agent usage resets at wake-up time, not midnight.
-        </p>
+        <div class="page-head">
+            <h1>Usage history</h1>
+            <p class="page-meta">{{ username }}<span class="meta-sep">·</span>Last 7 days</p>
+        </div>
 
         {% if not pc_groups %}
         <div class="status-message banner info">
@@ -27,16 +23,16 @@
         </div>
         {% else %}
             {% for group in pc_groups %}
-            <div class="action-group usage-pc-group">
-                <div class="action-title">💻 {{ group.hostname }}</div>
+            <section class="action-group usage-pc-group">
+                <h2 class="action-title">{{ group.hostname }}</h2>
                 <table class="usage-table">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th class="num">Used</th>
-                            <th class="num">Allowance</th>
+                            <th class="num">Allowed</th>
                             <th class="num">Extra</th>
-                            <th class="num">Remaining</th>
+                            <th class="num">Left</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,8 +69,13 @@
                         {% endfor %}
                     </tbody>
                 </table>
-            </div>
+            </section>
             {% endfor %}
         {% endif %}
-    </div>
+
+        <p class="note">
+            Daily totals come from the last recorded snapshot of each calendar day.
+            The agent resets usage at wake-up time, not midnight.
+        </p>
+    </main>
 {% endblock %}

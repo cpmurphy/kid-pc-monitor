@@ -123,7 +123,7 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
-        self.assertIn("CAN'T CONTROL", html)
+        self.assertIn("Can't control", html)
 
     def test_registry_shows_not_connected_for_no_route_to_host(self) -> None:
         os_exc = OSError(113, "No route to host")
@@ -139,8 +139,8 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
 
         home = self.client.get("/")
         html = home.get_data(as_text=True)
-        self.assertIn("NOT CONNECTED", html)
-        self.assertNotIn("CAN'T CONTROL", html)
+        self.assertIn("Not connected", html)
+        self.assertNotIn("Can't control", html)
 
     def test_registry_shows_not_connected_for_refused_connection(self) -> None:
         os_exc = ConnectionRefusedError(111, "Connection refused")
@@ -155,8 +155,8 @@ class WebPanelConnectionErrorTests(unittest.TestCase):
         )
 
         html = self.client.get("/").get_data(as_text=True)
-        self.assertIn("NOT CONNECTED", html)
-        self.assertNotIn("CAN'T CONTROL", html)
+        self.assertIn("Not connected", html)
+        self.assertNotIn("Can't control", html)
 
     def test_control_page_shows_connection_error(self) -> None:
         stale = ConnectionError(
