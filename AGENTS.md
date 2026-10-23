@@ -88,7 +88,7 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 - **Cross-user install**: admin runs installer, child runs agent. Requires **system-wide Python** (installer refuses per-user installs). Files go to `C:\ProgramData\KidPCMonitor`; child gets read+execute via `icacls`.
 - Same-user install: task runs as current user, elevated (`Highest`).
 - `scripts/install_web_panel.py` is the Windows web-panel installer (also creates a scheduled task). Parent host needs inbound **5000** and **9998**.
-- `scripts/install_web_panel_linux.sh` writes a systemd `--user` unit on Linux.
+- `scripts/install_web_panel_linux.sh install` is self-contained on Linux: it creates/repairs `venv/` (system Python 3.11+, else uv-managed Python), runs `pip install -e .`, writes a systemd `--user` unit, then checks linger and firewall (`kid_pc_monitor.linux_firewall`) and only suggests changes that are needed.
 - Uninstall removes any leftover legacy inbound TCP 9999 firewall rule from older installs.
 
 ## State & Logging Paths
