@@ -33,6 +33,7 @@ from kid_pc_monitor.panel_format import (
     format_minutes_duration,
     format_seconds_duration,
     format_snapshot_recorded_at,
+    format_usage_date,
 )
 from kid_pc_monitor.panel_reverse_server import (
     get_reverse_server,
@@ -369,6 +370,7 @@ def create_app() -> Flask:
             "format_minutes_duration": format_minutes_duration,
             "format_seconds_duration": format_seconds_duration,
             "format_snapshot_recorded_at": format_snapshot_recorded_at,
+            "format_usage_date": format_usage_date,
             "csrf_token": _csrf_token,
         }
 

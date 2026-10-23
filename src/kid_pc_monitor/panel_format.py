@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+import re
+from datetime import date, datetime, timedelta
 
 
 def format_minutes_duration(minutes: int | float | None) -> str:
@@ -18,6 +19,31 @@ def format_minutes_duration(minutes: int | float | None) -> str:
 
 def format_seconds_duration(seconds: int | float) -> str:
     return format_minutes_duration(seconds / 60)
+
+
+def format_usage_date(day: str) -> str:
+    """Format an ISO calendar date as a short weekday + date, e.g. 'Mon Oct 20'."""
+    try:
+        parsed = date.fromisoformat(day)
+    except ValueError:
+        return day
+    return f"{parsed.strftime('%a %b')} {parsed.day}"
+
+
+_REMAINING_MINUTES_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:min(?:ute)?s?)?\s*$")
+
+
+def parse_remaining_minutes(value: object) -> float | None:
+    """Return minutes from a ``time_remaining`` value (number or 'N minutes' text)."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, int | float):
+        return float(value)
+    if isinstance(value, str):
+        match = _REMAINING_MINUTES_RE.match(value)
+        if match:
+            return float(match.group(1))
+    return None
 
 
 def _format_compact_clock_time(dt: datetime) -> str:

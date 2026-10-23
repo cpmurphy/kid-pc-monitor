@@ -33,37 +33,37 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Used</th>
-                            <th>Allowance</th>
-                            <th>Extra</th>
-                            <th>Remaining</th>
+                            <th class="num">Used</th>
+                            <th class="num">Allowance</th>
+                            <th class="num">Extra</th>
+                            <th class="num">Remaining</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for day in group.days %}
-                        <tr>
-                            <td>{{ day.date }}</td>
+                        <tr class="{{ ['is-today' if loop.last, 'no-data' if day.get('no_data')] | select | join(' ') }}">
+                            <td class="usage-date">{{ format_usage_date(day.date) }}</td>
                             {% if day.get('no_data') %}
                             <td colspan="4" class="muted">No data</td>
                             {% else %}
-                            <td>{{ format_seconds_duration(day.accumulated_seconds) }}</td>
-                            <td>
+                            <td class="num">{{ format_seconds_duration(day.accumulated_seconds) }}</td>
+                            <td class="num">
                                 {% if day.daily_limit is not none %}
                                     {{ format_minutes_duration(day.daily_limit) }}
                                 {% else %}
                                     <span class="muted">Not set</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td class="num">
                                 {% if day.cumulative_extension_seconds > 0 %}
                                     +{{ format_seconds_duration(day.cumulative_extension_seconds) }}
                                 {% else %}
-                                    <span class="muted">None</span>
+                                    <span class="muted">—</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if day.time_remaining and day.time_remaining != 'No limits set' %}
-                                    {{ day.time_remaining }}
+                            <td class="num">
+                                {% if day.remaining_minutes is not none %}
+                                    {{ format_minutes_duration([day.remaining_minutes, 0] | max) }}
                                 {% else %}
                                     <span class="muted">—</span>
                                 {% endif %}

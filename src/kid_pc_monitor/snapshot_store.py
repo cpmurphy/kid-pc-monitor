@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Any
 
 from kid_pc_monitor.panel_db import connect, get_meta, set_meta
+from kid_pc_monitor.panel_format import parse_remaining_minutes
 from kid_pc_monitor.scan_store import (
     dashboard_status_key,
     get_tracked_ip_contact_times,
@@ -227,6 +228,7 @@ def _day_entry_from_payload(snapshot_date: str, payload: dict[str, Any]) -> dict
         "daily_limit": payload.get("daily_limit"),
         "cumulative_extension_seconds": int(payload.get("cumulative_extension_seconds") or 0),
         "time_remaining": payload.get("time_remaining"),
+        "remaining_minutes": parse_remaining_minutes(payload.get("time_remaining")),
         "recorded_at": payload.get("_recorded_at"),
     }
 
