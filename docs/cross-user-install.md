@@ -34,7 +34,7 @@ A later revision added a second "cross-user" mode behind a top-level prompt. Tha
 
 Prereqs:
 - A Windows 10/11 machine with two local accounts. Call them `parent` (administrator, the account running the installer) and `kid` (standard user — not an administrator). Both must have logged in at least once so `Get-LocalUser` shows them.
-- Python 3.7+ installed **for all users** (so `pythonw.exe` lives under `C:\Program Files\Python…`, not `%LOCALAPPDATA%\Programs\Python\…`). Verify with `where pythonw.exe` from an admin shell.
+- Python 3.11+ installed **for all users** (so `pythonw.exe` lives under `C:\Program Files\Python…`, not `%LOCALAPPDATA%\Programs\Python\…`). Verify with `where pythonw.exe` from an admin shell.
 - The repo cloned and `pip install -r requirements.txt` run.
 
 ### 1. Cross-user install (the main path)

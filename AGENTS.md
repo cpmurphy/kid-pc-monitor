@@ -18,6 +18,8 @@ Entry points (after `pip install -e .`):
 
 ## Dev Setup
 
+Minimum Python is **3.11** (`requires-python`, ruff `target-version`, CI matrix). Don't use newer-only syntax such as unparenthesized `except A, B:` (3.14).
+
 ```bash
 pip install -r requirements.txt
 pip install -e ".[dev]"
