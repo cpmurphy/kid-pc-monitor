@@ -246,6 +246,11 @@ class WebPanelHistoryTests(unittest.TestCase):
         self.assertIn("Usage history", html)
         self.assertIn("KidPC", html)
         self.assertIn("30 min", html)
+        self.assertIn("1:30", html)
+        self.assertNotIn("minutes", html)
+        today = snapshot_store._local_today()
+        self.assertIn(f"{today.strftime('%a %b')} {today.day}<", html)
+        self.assertNotIn(str(today.year), html)
 
     def test_usage_page_multi_pc(self) -> None:
         snapshot_store.save_snapshot(

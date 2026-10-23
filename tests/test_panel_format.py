@@ -5,7 +5,11 @@ from __future__ import annotations
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from kid_pc_monitor.panel_format import format_snapshot_recorded_at
+from kid_pc_monitor.panel_format import (
+    format_snapshot_recorded_at,
+    format_usage_date,
+    parse_remaining_minutes,
+)
 
 
 class FormatSnapshotRecordedAtTests(unittest.TestCase):
@@ -54,3 +58,27 @@ class FormatSnapshotRecordedAtTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FormatUsageDateTests(unittest.TestCase):
+    def test_short_weekday_without_year(self) -> None:
+        self.assertEqual(format_usage_date("2026-10-19"), "Mon Oct 19")
+
+    def test_single_digit_day_not_padded(self) -> None:
+        self.assertEqual(format_usage_date("2026-10-06"), "Tue Oct 6")
+
+    def test_invalid_date_passes_through(self) -> None:
+        self.assertEqual(format_usage_date("not-a-date"), "not-a-date")
+
+
+class ParseRemainingMinutesTests(unittest.TestCase):
+    def test_minutes_text(self) -> None:
+        self.assertEqual(parse_remaining_minutes("90 minutes"), 90)
+
+    def test_number(self) -> None:
+        self.assertEqual(parse_remaining_minutes(45), 45)
+
+    def test_unparseable_values(self) -> None:
+        self.assertIsNone(parse_remaining_minutes(None))
+        self.assertIsNone(parse_remaining_minutes("No limits set"))
+        self.assertIsNone(parse_remaining_minutes(True))

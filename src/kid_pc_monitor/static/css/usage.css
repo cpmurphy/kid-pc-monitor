@@ -12,6 +12,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    font-variant-numeric: tabular-nums;
 }
 
 .usage-table th,
@@ -19,9 +20,43 @@
     padding: 8px 10px;
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap;
 }
 
 .usage-table th {
     color: #555;
     font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.usage-table .num {
+    text-align: right;
+}
+
+.usage-table tr.no-data td.muted {
+    text-align: center;
+    font-style: italic;
+}
+
+.usage-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.usage-table tr.is-today td {
+    background-color: #f3f8fe;
+    font-weight: 600;
+}
+
+.usage-table tr.is-today .muted {
+    font-weight: normal;
+}
+
+@media (max-width: 480px) {
+    .usage-table th,
+    .usage-table td {
+        padding: 6px 4px;
+        font-size: 13px;
+    }
 }
