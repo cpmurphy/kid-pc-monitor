@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
@@ -422,6 +423,9 @@ func TestWallClockIgnoresLocation(t *testing.T) {
 func TestUnreadableFileIsAnErrorNotAVerdict(t *testing.T) {
 	if os.Getuid() == 0 {
 		t.Skip("permission bits do not apply to root")
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod 0 only sets the read-only attribute on Windows; the file stays readable")
 	}
 	dir := t.TempDir()
 	daily := filepath.Join(dir, DailySettingsFile)
