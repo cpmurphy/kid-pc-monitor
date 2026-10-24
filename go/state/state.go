@@ -111,12 +111,11 @@ func RuntimeToJSON(r RuntimeState) ([]byte, error) {
 	return json.MarshalIndent(runtimeToFile(r), "", "  ")
 }
 
-// stringTime parses a JSON value that must be an HH:MM string. Any other type
-// is a ValueError, as Python's str() of it is never a valid time.
-func stringTime(v any) (policy.TimeOfDay, error) {
+// toTime reads an HH:MM string.
+func toTime(v any, field string) (policy.TimeOfDay, error) {
 	s, ok := v.(string)
 	if !ok {
-		return policy.TimeOfDay{}, valueErrorf("invalid time %v; use HH:MM", v)
+		return policy.TimeOfDay{}, valueErrorf("%s must be an HH:MM string", field)
 	}
 	t, err := policy.ParseTimeHHMM(s)
 	if err != nil {
@@ -126,25 +125,25 @@ func stringTime(v any) (policy.TimeOfDay, error) {
 }
 
 // LoadDailyFromDocument builds DailySettings from a decoded daily_settings.json.
+// Every invalid value is a *ValueError.
 func LoadDailyFromDocument(data Document) (DailySettings, error) {
-	var d DailySettings
-	d.WakeTime = policy.DefaultWakeTime
+	d := DailySettings{WakeTime: policy.DefaultWakeTime}
 	if v, present := data["wake_time"]; present {
-		wake, err := stringTime(v)
+		wake, err := toTime(v, "wake_time")
 		if err != nil {
 			return d, err
 		}
 		d.WakeTime = wake
 	}
 	if v := data["bed_time"]; v != nil && v != "" {
-		bed, err := stringTime(v)
+		bed, err := toTime(v, "bed_time")
 		if err != nil {
 			return d, err
 		}
 		d.BedTime = &bed
 	}
 	if v := data["allowance"]; v != nil {
-		n, err := toInt(v)
+		n, err := toNonNegInt(v, "allowance")
 		if err != nil {
 			return d, err
 		}
@@ -156,11 +155,12 @@ func LoadDailyFromDocument(data Document) (DailySettings, error) {
 // IsCompleteDailyDocument reports whether wake_time, bed_time and a positive
 // allowance are all configured and valid.
 func IsCompleteDailyDocument(data Document) bool {
-	if !truthy(data["wake_time"]) || !truthy(data["bed_time"]) || data["allowance"] == nil {
-		return false
+	for _, key := range []string{"wake_time", "bed_time"} {
+		if s, ok := data[key].(string); !ok || strings.TrimFunc(s, isSpace) == "" {
+			return false
+		}
 	}
-	allowance, err := toInt(data["allowance"])
-	if err != nil || allowance <= 0 {
+	if data["allowance"] == nil {
 		return false
 	}
 	d, err := LoadDailyFromDocument(data)
@@ -168,6 +168,7 @@ func IsCompleteDailyDocument(data Document) bool {
 }
 
 // LoadRuntimeFromDocument builds RuntimeState from a decoded state.json.
+// Every invalid value is a *ValueError.
 func LoadRuntimeFromDocument(data Document) (RuntimeState, error) {
 	var r RuntimeState
 	raw, ok := data["timestamp"].(string)
@@ -180,13 +181,17 @@ func LoadRuntimeFromDocument(data Document) (RuntimeState, error) {
 	}
 	r.Timestamp = ts
 	if v, present := data["accumulated_seconds"]; present {
-		if r.AccumulatedSeconds, err = toFloat(v); err != nil {
+		if r.AccumulatedSeconds, err = toNonNegFloat(v, "accumulated_seconds"); err != nil {
 			return r, err
 		}
 	}
-	r.ManualLockActive = truthy(data["manual_lock_active"])
+	if v, present := data["manual_lock_active"]; present {
+		if r.ManualLockActive, err = toBool(v, "manual_lock_active"); err != nil {
+			return r, err
+		}
+	}
 	if v, present := data["cumulative_extension_seconds"]; present {
-		if r.CumulativeExtensionSeconds, err = toInt(v); err != nil {
+		if r.CumulativeExtensionSeconds, err = toNonNegInt(v, "cumulative_extension_seconds"); err != nil {
 			return r, err
 		}
 	}
@@ -196,25 +201,21 @@ func LoadRuntimeFromDocument(data Document) (RuntimeState, error) {
 // legacyBedTime mirrors _legacy_lock_times_to_bed_time: the first legacy lock
 // time becomes the bed time.
 func legacyBedTime(raw any) (*policy.TimeOfDay, error) {
-	if !truthy(raw) {
+	if raw == nil {
 		return nil, nil
 	}
-	var first any
-	switch x := raw.(type) {
-	case []any:
-		first = x[0]
-	case string:
-		first = string([]rune(x)[0])
-	case map[string]any:
-		return nil, &ValueError{"KeyError: 0"} // Python: KeyError; never written by any version
-	default:
-		return nil, typeErrorf("%s is not subscriptable", typeName(raw))
+	list, ok := raw.([]any)
+	if !ok {
+		return nil, valueErrorf("lock_times must be a list")
 	}
-	s, isString := first.(string)
-	if !isString || !strings.Contains(s, ":") {
+	if len(list) == 0 {
 		return nil, nil
 	}
-	t, err := policy.ParseTimeHHMM(s)
+	first, isString := list[0].(string)
+	if !isString || !strings.Contains(first, ":") {
+		return nil, nil
+	}
+	t, err := policy.ParseTimeHHMM(first)
 	if err != nil {
 		return nil, &ValueError{err.Error()}
 	}
@@ -222,7 +223,7 @@ func legacyBedTime(raw any) (*policy.TimeOfDay, error) {
 }
 
 // LegacyToState converts a legacy pc_control_state.json payload into current
-// settings and runtime state as of now.
+// settings and runtime state as of now. Every invalid value is a *ValueError.
 func LegacyToState(legacy Document, now time.Time) (DailySettings, RuntimeState, error) {
 	var d DailySettings
 	var r RuntimeState
@@ -240,7 +241,7 @@ func LegacyToState(legacy Document, now time.Time) (DailySettings, RuntimeState,
 	}
 	d.BedTime = bed
 	if v := legacy["usage_allowance"]; v != nil {
-		n, err := toInt(v)
+		n, err := toNonNegInt(v, "usage_allowance")
 		if err != nil {
 			return d, r, err
 		}
@@ -249,18 +250,21 @@ func LegacyToState(legacy Document, now time.Time) (DailySettings, RuntimeState,
 
 	r = FreshRuntimeState(now)
 	if v, present := legacy["accumulated_seconds"]; present {
-		if r.AccumulatedSeconds, err = toFloat(v); err != nil {
+		if r.AccumulatedSeconds, err = toNonNegFloat(v, "accumulated_seconds"); err != nil {
 			return d, r, err
 		}
 	}
-	r.ManualLockActive = truthy(legacy["manual_lock_active"])
+	if v, present := legacy["manual_lock_active"]; present {
+		if r.ManualLockActive, err = toBool(v, "manual_lock_active"); err != nil {
+			return d, r, err
+		}
+	}
 
-	// Python first checks whether the runtime (stamped now) is stale, which it
-	// never is, and only then looks at the legacy accumulation date.
+	// Usage recorded for an earlier period does not carry over.
 	if v, present := legacy["accumulated_date"]; present {
 		s, ok := v.(string)
 		if !ok {
-			return d, r, typeErrorf("fromisoformat: argument must be str")
+			return d, r, valueErrorf("accumulated_date must be a YYYY-MM-DD date")
 		}
 		y, m, day, err := ParseISODate(s)
 		if err != nil {

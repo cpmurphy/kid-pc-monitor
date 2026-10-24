@@ -105,6 +105,10 @@ python scripts/cross_check_go.py         # live Go<->Python sessions and state-f
 
 `tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.22+; the Python tests do not.
 
+### State file handling
+
+`agent_state.py` never silently discards a file: an unusable `daily_settings.json` / `state.json` is renamed to `<name>.corrupt-<timestamp>` and the last good `<name>.bak` (refreshed on every save) is restored; `AgentStateStore.problems` lists what happened. Values are validated strictly (see `go/state/doc.go`). A load that fails with an I/O error makes `PCTimeControl` skip saving, so defaults never overwrite real files.
+
 ## Windows Install Quirks
 
 - **Cross-user install**: admin runs installer, child runs agent. Requires **system-wide Python** (installer refuses per-user installs). Files go to `C:\ProgramData\KidPCMonitor`; child gets read+execute via `icacls`.

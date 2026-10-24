@@ -793,6 +793,10 @@ SCENARIOS: list[dict[str, Any]] = [
 ]
 
 
+def _reject_constant(name: str) -> Any:
+    raise ValueError(name)
+
+
 def read_tree(directory: Path) -> dict[str, Any]:
     tree: dict[str, Any] = {}
     for path in sorted(directory.iterdir()) if directory.is_dir() else []:
@@ -800,8 +804,8 @@ def read_tree(directory: Path) -> dict[str, Any]:
             continue
         text = path.read_text(encoding="utf-8")
         try:
-            tree[path.name] = json.loads(text)
-        except json.JSONDecodeError:
+            tree[path.name] = json.loads(text, parse_constant=_reject_constant)
+        except ValueError:
             tree[path.name] = {"_raw": text}
     return tree
 

@@ -12,11 +12,6 @@
 // second and sub-second fields, and its location is ignored. Pass time.Now()
 // directly. Differences between two times are wall-clock differences, so a
 // daylight-saving change does not shorten or lengthen a curfew.
-//
-// # Differences from Python
-//
-// ParseTimeHHMM accepts ASCII digits only; Python's int() also accepts other
-// Unicode digit characters and integers that overflow int64 report an error.
 package policy
 
 import (
@@ -24,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"kidpcmonitor/internal/pycompat"
 )
 
 // TimeOfDay is an HH:MM wall-clock time.
@@ -87,21 +80,32 @@ func contains(list []string, s string) bool {
 	return false
 }
 
-// ParseTimeHHMM parses HH:MM or H:MM.
+// ParseTimeHHMM parses H:MM or HH:MM: one or two ASCII digits for the hour and
+// exactly two for the minute, ignoring surrounding whitespace.
 func ParseTimeHHMM(value string) (TimeOfDay, error) {
-	parts := strings.Split(strings.TrimFunc(value, isPySpace), ":")
-	if len(parts) != 2 {
+	text := strings.TrimFunc(value, isPySpace)
+	hourText, minuteText, found := strings.Cut(text, ":")
+	if !found || !asciiDigits(hourText, 1, 2) || !asciiDigits(minuteText, 2, 2) {
 		return TimeOfDay{}, fmt.Errorf("invalid time %q; use HH:MM", value)
 	}
-	hour, hst := pycompat.Int(parts[0])
-	minute, mst := pycompat.Int(parts[1])
-	if hst != pycompat.OK || mst != pycompat.OK {
-		return TimeOfDay{}, fmt.Errorf("invalid time %q; use HH:MM", value)
-	}
-	if hour < 0 || hour > 23 || minute < 0 || minute > 59 {
+	hour, _ := strconv.Atoi(hourText)
+	minute, _ := strconv.Atoi(minuteText)
+	if hour > 23 || minute > 59 {
 		return TimeOfDay{}, fmt.Errorf("invalid time %q; hour/minute out of range", value)
 	}
-	return TimeOfDay{int(hour), int(minute)}, nil
+	return TimeOfDay{hour, minute}, nil
+}
+
+func asciiDigits(s string, minLen, maxLen int) bool {
+	if len(s) < minLen || len(s) > maxLen {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func isPySpace(r rune) bool {

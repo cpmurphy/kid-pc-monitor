@@ -82,8 +82,9 @@ func ParseISODate(s string) (year int, month time.Month, day int, err error) {
 
 // ParseISODatetime parses an ISO 8601 date-time like datetime.fromisoformat
 // and returns its wall-clock fields in UTC; any UTC offset is discarded.
-// Accepted: YYYY-MM-DD, optionally followed by 'T' or ' ' and HH[:MM[:SS[.f]]],
-// optionally followed by Z or an offset such as +02:00 or -0530.
+// The grammar is exactly: YYYY-MM-DD, optionally followed by 'T' or ' ' and
+// HH[:MM[:SS[(.|,)digits]]], optionally followed by Z or an offset (±HH, ±HH:MM
+// or ±HHMM). Fractions beyond microseconds are truncated.
 func ParseISODatetime(s string) (time.Time, error) {
 	r := &isoReader{s: s}
 	year, month, day, err := readDate(r, s)
@@ -143,7 +144,7 @@ func ParseISODatetime(s string) (time.Time, error) {
 	return time.Date(year, time.Month(month), day, hour, minute, second, nanos, time.UTC), nil
 }
 
-// skipOffset consumes an optional Z / ±HH[:MM[:SS]] / ±HHMM suffix.
+// skipOffset consumes an optional Z / ±HH / ±HH:MM / ±HHMM suffix.
 func skipOffset(r *isoReader, s string) error {
 	if r.done() {
 		return nil
@@ -159,22 +160,17 @@ func skipOffset(r *isoReader, s string) error {
 	if !ok {
 		return isoError(s)
 	}
-	mm, ss := 0, 0
+	mm := 0
 	if r.eat(':') {
 		if mm, ok = r.digits(2); !ok {
 			return isoError(s)
-		}
-		if r.eat(':') {
-			if ss, ok = r.digits(2); !ok {
-				return isoError(s)
-			}
 		}
 	} else if !r.done() {
 		if mm, ok = r.digits(2); !ok {
 			return isoError(s)
 		}
 	}
-	if hh > 23 || mm > 59 || ss > 59 {
+	if hh > 23 || mm > 59 {
 		return valueErrorf("offset out of range in %q", s)
 	}
 	return nil

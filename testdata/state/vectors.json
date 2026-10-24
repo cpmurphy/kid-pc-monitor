@@ -3898,8 +3898,7 @@
      "bed_time": "21:00"
     },
     "state.json.corrupt-20260517T100000": {
-     "timestamp": "2026-05-17T09:00:00",
-     "accumulated_seconds": NaN
+     "_raw": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": NaN}"
     }
    }
   },

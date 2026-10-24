@@ -4,31 +4,43 @@
 //
 // It is a port of src/kid_pc_monitor/agent_state.py. testdata/state/vectors.json
 // is generated from the Python implementation and vectors_test.go checks that
-// this package agrees on every case, including the quirks listed below, so a
-// Go agent can take over the files a Python agent wrote and vice versa.
+// this package agrees on every case, so a Go agent can take over the files a
+// Python agent wrote and vice versa.
 //
-// # Faithfully ported behavior worth knowing
+// # Files are never silently discarded
 //
-//   - A file that is not valid JSON (including one with a UTF-8 byte-order
-//     mark, which Notepad adds) is treated as missing, and is overwritten with
-//     defaults when nothing else supplies settings.
-//   - Loaded values follow Python's conversion rules: allowance "90" and 90.7
-//     become 90, and manual_lock_active "false" is true (any non-empty string
-//     is).
-//   - Failures are classified like Python's exceptions. A ValueError in
-//     state.json means "start with a fresh runtime"; a TypeError (for example
-//     a null number) or any error in daily_settings.json aborts Load. The
-//     caller decides what to do then; Python's agent keeps running with
-//     built-in defaults, which means no limits. See IsValueError/IsTypeError.
-//   - Reading a legacy pc_control_state.json while only state.json is missing
-//     overwrites daily_settings.json with the legacy values.
+// A file that exists but cannot be used (not UTF-8, not JSON, NaN/Infinity,
+// not an object, or holding an invalid value) is renamed to
+// <name>.corrupt-<timestamp>, and the last good copy, <name>.bak, is restored
+// in its place. Every Save refreshes the backup, but only from a file that
+// itself validates. Only if there is no usable backup do defaults apply, and
+// the corrupt file stays on disk for the parent to inspect. A file that has
+// merely gone missing is restored from its backup too. Store.Problems lists
+// what happened.
 //
-// # Differences from Python
+// A file that could not be read at all (permission denied, in use by another
+// program) says nothing about its content, so Load returns that error instead
+// of touching anything. Callers must not Save after a failed Load.
 //
-// This package is deliberately stricter than Python on inputs the agent never
-// writes: integers outside int64, non-finite floats (NaN/Infinity), floats
-// written with underscores or in hex, Unicode digits, basic-format or
-// week-date ISO timestamps, and ISO date-time separators other than 'T' and
-// ' '. A top-level JSON value that is not an object is an error. Time zones in
-// timestamps are discarded: only the written wall-clock fields matter.
+// # Strict values
+//
+// Values are validated, not coerced, and every invalid value is a *ValueError:
+//
+//   - times are H:MM or HH:MM strings;
+//   - allowance and extension seconds are whole numbers (an integer, an
+//     integral float such as 90.0, or a decimal string), never booleans, and
+//     not negative or beyond ±2^53;
+//   - accumulated seconds is a finite, non-negative number or decimal string;
+//   - manual_lock_active is true/false (0, 1, "true" and "false" are
+//     tolerated), never merely "truthy";
+//   - timestamps follow an explicit ISO 8601 grammar (see ParseISODatetime)
+//     and are naive wall-clock times: any UTC offset is dropped.
+//
+// A legacy pc_control_state.json is only consulted when there is no usable
+// daily_settings.json, and never overwrites one.
+//
+// # Known limits
+//
+// A JSON document nested more than about a thousand levels deep is rejected by
+// Python's parser but accepted by Go's; no version of the agent writes one.
 package state

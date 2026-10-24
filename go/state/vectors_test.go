@@ -345,6 +345,16 @@ func TestVectorStore(t *testing.T) {
 					t.Errorf("result:\n got  %v\n want %v", got, c["ok"])
 				}
 			}
+			var problems []any
+			for _, p := range store.Problems {
+				problems = append(problems, obj{"file": p.File, "action": p.Action})
+			}
+			if problems == nil {
+				problems = []any{}
+			}
+			if !reflect.DeepEqual(problems, plain(c["problems"])) {
+				t.Errorf("problems:\n got  %v\n want %v", problems, c["problems"])
+			}
 			if after := readTree(t, dataDir); !reflect.DeepEqual(after, plain(c["files_after"])) {
 				t.Errorf("files after:\n got  %v\n want %v", after, plain(c["files_after"]))
 			}
@@ -360,11 +370,8 @@ func TestVectorInstallerHelpers(t *testing.T) {
 			writeFiles(t, profile, c["profile"].(obj))
 			writeFiles(t, pd, c["program_data"].(obj))
 
-			found, source, err := FindCompleteDailySettings(
+			found, source := FindCompleteDailySettings(
 				filepath.Join(profile, DailySettingsFile), filepath.Join(pd, DailySettingsFile))
-			if err != nil {
-				t.Fatal(err)
-			}
 			if want, ok := c["found"].(obj); !ok {
 				if found != nil {
 					t.Errorf("found %v, want nothing", dailyJSON(*found))
@@ -381,10 +388,7 @@ func TestVectorInstallerHelpers(t *testing.T) {
 				}
 			}
 
-			target, err := ProgramDataTargetUser(pd)
-			if err != nil {
-				t.Fatal(err)
-			}
+			target := ProgramDataTargetUser(pd)
 			want, _ := c["target_user"].(string)
 			if target != want {
 				t.Errorf("target user = %q, want %q", target, want)
@@ -412,5 +416,28 @@ func TestWallClockIgnoresLocation(t *testing.T) {
 	now := time.Date(2026, 5, 17, 23, 30, 0, 0, time.FixedZone("PST", -8*3600))
 	if w := policy.Wall(now); w.Hour() != 23 || w.Day() != 17 || w.Location() != time.UTC {
 		t.Errorf("Wall(%v) = %v", now, w)
+	}
+}
+
+func TestUnreadableFileIsAnErrorNotAVerdict(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("permission bits do not apply to root")
+	}
+	dir := t.TempDir()
+	daily := filepath.Join(dir, DailySettingsFile)
+	if err := os.WriteFile(daily, []byte(`{"allowance": 60}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(daily, 0); err != nil {
+		t.Fatal(err)
+	}
+	store := &Store{DataDir: dir, CurrentUser: "kid", Clock: func() time.Time { return time.Now() },
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil))}
+	if _, _, err := store.Load(); err == nil {
+		t.Fatal("Load succeeded on an unreadable file")
+	}
+	matches, _ := filepath.Glob(filepath.Join(dir, "*.corrupt-*"))
+	if len(matches) != 0 {
+		t.Errorf("an unreadable file was quarantined: %v", matches)
 	}
 }
