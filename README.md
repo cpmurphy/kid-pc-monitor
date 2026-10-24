@@ -94,6 +94,25 @@ For this setup, you want to:
  1. You would like the first option, `Create/Update scheduled task`
  2. Enter the kid's username when asked.
  3. Enter the regular bed time, wake-up time and daily time allowance.
+
+#### Alternative: the Go agent (no Python on the kid's PC)
+
+`scripts\install_agent.ps1` installs the compiled Go agent instead. It asks the
+same questions and replaces a Python agent's task in place (your schedule and
+shared secret are reused). It builds the agent from the checkout, so install
+[Go](https://go.dev/dl/) first, or pass `-AgentExe` with a prebuilt
+`kid-pc-agent.exe`. From an administrator PowerShell:
+
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
+cd kid-pc-monitor
+powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
+```
+
+Other modes: `-Uninstall`, `-Update [-Pull]`, `-EnableAutoUpdate` and
+`-DisableAutoUpdate`; `update.bat` uses them automatically once the Go agent is
+installed. The install folder is restricted to SYSTEM, Administrators and the
+child (read only).
  
 
 ### On the parent PC
