@@ -142,13 +142,14 @@ class Node:
         return {child.name: child.arg for child in self.children}
 
 
-_BARE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.:+\-]*$")
+_BARE_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.:+\-]*")
 _KEYWORDS = {"true", "false", "null"}
 
 
 def _is_bare(text: str) -> bool:
     """True when ``text`` can be emitted as an unquoted identifier."""
-    return bool(_BARE_RE.match(text)) and text not in _KEYWORDS
+    # fullmatch, not ``$``: ``$`` also matches before a trailing newline.
+    return bool(_BARE_RE.fullmatch(text)) and text not in _KEYWORDS
 
 
 def _escape(text: str) -> str:

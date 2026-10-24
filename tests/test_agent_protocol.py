@@ -43,6 +43,14 @@ class KdlSerializationTests(unittest.TestCase):
         self.assertEqual(proto.format_value("true"), '"true"')  # keyword must quote
         self.assertEqual(proto.format_value(""), '""')
 
+    def test_trailing_newline_is_quoted(self) -> None:
+        self.assertEqual(proto.format_value("hello\n"), '"hello\\n"')
+        body = proto.build_request(
+            "message", secret=SECRET, val="hello\n", name=HOSTNAME, timestamp=1000, nonce="a" * 32
+        )
+        req = proto.parse_request(body, secret=SECRET, hostname=HOSTNAME, now=1000)
+        self.assertEqual(req.val, "hello\n")
+
     def test_escape_round_trip(self) -> None:
         original = 'line1\nline2\t"quoted"\\end'
         body = proto.serialize([Node("msg", [original])])
