@@ -62,6 +62,11 @@ class KdlSerializationTests(unittest.TestCase):
         parsed = {n.name: n for n in proto.parse(body)}
         self.assertEqual(parsed["error"].child_map(), {"code": "invalid_value", "message": "nope"})
 
+    def test_parse_rejects_trailing_backslash_in_string(self) -> None:
+        with self.assertRaises(ProtocolError):
+            proto.parse('a "oops\\')
+        self.assertEqual(proto.peek_version('v 3\na "oops\\'), proto.CLIENT_DEFAULT_VERSION)
+
     def test_parse_rejects_unbalanced_brace(self) -> None:
         with self.assertRaises(ProtocolError):
             proto.parse("foo {\n  bar 1")

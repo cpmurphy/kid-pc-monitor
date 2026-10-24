@@ -196,6 +196,8 @@ def _serialize_into(nodes: list[Node], indent: int, lines: list[str]) -> None:
 def _unescape(text: str, start: int) -> tuple[str, int]:
     """Decode one escape sequence after the backslash at ``start - 1``."""
     simple = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\", "/": "/"}
+    if start >= len(text):
+        raise ProtocolError(INVALID_REQUEST, "unterminated string")
     ch = text[start]
     if ch in simple:
         return simple[ch], start + 1
