@@ -28,7 +28,7 @@ responsibility for any problems with this version.
 ## ⚠️ Technical Skills Required
 
 This is NOT a one-click solution. You'll need to:
-- Install Python
+- Install Python on the parent machine (the kid's PC doesn't need it)
 - Use a terminal / command prompt
 - Understand IP addresses
 - Open firewall ports where needed
@@ -51,12 +51,17 @@ You need:
 
 ### Before You Start
 
-On every computer you will need:
+**On every computer:** [Git](https://git-scm.com/install/) (on the kid's PC,
+choose the default "for all users" install so automatic updates can use it).
 
-1. [Python](https://www.python.org/downloads/)
+Test it:
 
+```powershell
+git --version
+```
 
-During installation on Windows:
+**On the parent computer only:** [Python](https://www.python.org/downloads/)
+3.11 or later, for the web panel. During installation on Windows:
 
 - Check "Add Python to PATH"
 - Choose "Install for all users"
@@ -67,63 +72,48 @@ Test it:
 python --version
 ```
 
-2.  [Git](https://git-scm.com/install/)
-
-
-Test it:
-
-```powershell
-git --version
-```
+The kid's PC needs neither Python nor any other runtime: the agent is a single
+compiled program.
 
 ### On the Kid’s PC
 
-Log in  as an Admin user and open PowerShell.
+Log in as an Admin user and open PowerShell with **Run as administrator**.
 
 Run:
-```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-pip install -r requirements.txt
-python scripts\install.py
-```
-
-The install script walks you through the installation.
-For this setup, you want to:
-
- 1. You would like the first option, `Create/Update scheduled task`
- 2. Enter the kid's username when asked.
- 3. Enter the regular bed time, wake-up time and daily time allowance.
-
-#### Alternative: the Go agent (no Python on the kid's PC)
-
-`scripts\install_agent.ps1` installs the compiled Go agent instead. It asks the
-same questions and replaces a Python agent's task in place (your schedule and
-shared secret are reused). If [Go](https://go.dev/dl/) is installed it builds
-the agent from the checkout; otherwise it downloads `kid-pc-agent.exe` from the
-latest [GitHub release](https://github.com/cpmurphy/kid-pc-monitor/releases)
-and checks it against the release's `SHA256SUMS` (`-Download` forces this,
-`-Version v1.2.0` picks a release, `-AgentExe` installs a file you already
-have). From an administrator PowerShell:
-
 ```powershell
 git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
 ```
 
-Other modes: `-Uninstall`, `-Update [-Pull]`, `-EnableAutoUpdate` and
-`-DisableAutoUpdate`; `update.bat` uses them automatically once the Go agent is
-installed. The install folder is restricted to SYSTEM, Administrators and the
-child (read only).
+The install script walks you through the installation.
+For this setup, you want to:
 
-The released exe is not code-signed, so SmartScreen or antivirus may warn about
-it; building it yourself with Go avoids that.
+ 1. Choose the first option, `Create/Update scheduled task`.
+ 2. Enter the kid's username when asked.
+ 3. Enter the regular bed time, wake-up time and daily time allowance.
+ 4. Enter the shared secret (use the same one when you install the web panel).
 
-**Publishing a release:** push a version tag (`git tag v1.2.0` then
-`git push origin v1.2.0`). `.github/workflows/release.yml` runs the full CI,
-then attaches `kid-pc-agent-windows-amd64.exe`, `-arm64.exe`,
-`install_agent.ps1` and `SHA256SUMS` to that tag's release.
+The installer downloads the agent, `kid-pc-agent.exe`, from the latest
+[GitHub release](https://github.com/cpmurphy/kid-pc-monitor/releases) and checks
+it against the release's `SHA256SUMS` before installing it. If
+[Go](https://go.dev/dl/) is installed it builds the agent from your checkout
+instead. The released program is not code-signed, so SmartScreen or antivirus
+may warn about it; building it yourself with Go avoids that.
+
+Options: `-Download` (use the release even if Go is installed), `-Version v1.1.0`
+(a specific release), `-AgentExe <path>` (install a file you already have),
+`-Install` / `-Uninstall` (skip the menu).
+
+<details>
+<summary>Moving from the Python agent</summary>
+
+Just run `install_agent.ps1` as above. It replaces the Python agent's task in
+place, keeps its schedule, usage and shared secret, and removes the Python
+agent's files from `C:\ProgramData\KidPCMonitor`. The original Python agent
+(`pip install -r requirements.txt`, then `python scripts\install.py`) still
+works if you need it.
+</details>
  
 
 ### On the parent PC
@@ -165,12 +155,14 @@ IPv4 Address . . . . . . . . . . : 192.168.x.x
 
 ### On the Kid’s PC
 
+From an administrator PowerShell:
+
 ```powershell
 cd kid-pc-monitor
-python scripts\install.py
+powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1 -Uninstall
 ```
 
-Choose option 2, `Remove scheduled task`
+(Or run it without `-Uninstall` and choose option 2, `Remove scheduled task`.)
 
 ### On the Parent’s PC
 
@@ -183,19 +175,22 @@ Choose option 2, `Remove scheduled task`
 
 ## 🔄 Updating (this fork)
 
-The agent runs from a **copy** in `C:\ProgramData\KidPCMonitor`, so pulling new
-code into your checkout isn't enough on its own — it also has to be redeployed.
-Pick whichever is easiest:
+The agent runs from a **copy** in `C:\ProgramData\KidPCMonitor`, so it has to be
+redeployed to update. Each update installs the latest release (or, if Go is
+installed, a fresh build of your checkout) and restarts the agent. Pick
+whichever is easiest:
 
 - **One-click (recommended):** double-click **`update.bat`** in the repo folder on
   the kid's PC. It elevates, runs `git pull`, redeploys the agent, and restarts it.
 - **Fully automatic:** run **`update.bat auto`** once. It installs a scheduled task
-  that pulls and redeploys automatically — about 2 minutes after each startup and
-  daily at 4am — so the agent runs the latest code at the kid's next logon. Turn it
-  off with `update.bat auto-off`. (Automatic updates need **Git installed for all
-  users** so the SYSTEM task can find it on the system PATH.)
-- **By hand:** from an administrator prompt, `git pull` then
-  `python scripts\install.py --update` (add `--pull` to pull first).
+  that updates automatically — about 2 minutes after each startup and daily at
+  4am. Turn it off with `update.bat auto-off`. (Automatic updates need **Git
+  installed for all users** so the SYSTEM task can find it on the system PATH.)
+- **By hand:** from an administrator PowerShell,
+  `powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1 -Update -Pull`.
+
+The agent logs its version when it starts (`version=v1.1.0` in
+`pc_control.log`), so you can check which release is running.
 
 The **parent web panel** runs from the checkout directly, so there you only need
 `git pull` and a restart of the panel. On Linux, re-running
@@ -265,25 +260,22 @@ Only Windows is supported currently.
 ```powershell
 git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
-pip install -r requirements.txt
 
 <# Run installer as administrator #>
-python scripts\install.py
+powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
 ```
 
 Run the installer from an administrator account and, when prompted,
 enter the **child's Windows username**. The agent then launches in that
 child's session at their logon. Specifics:
-- Files install to `C:\ProgramData\KidPCMonitor` and the child account is granted read+execute.
-- Python must be installed **for all users** (not the per-user `%LOCALAPPDATA%\Programs\Python\…` install) so the child's task can launch `pythonw.exe`. The installer refuses with a clear message if only a per-user Python is found.
-- The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid).
-- The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile.
+- The agent, `kid-pc-agent.exe`, installs to `C:\ProgramData\KidPCMonitor`. That folder is restricted to SYSTEM and Administrators (full control) and the child account (read and execute), so the child can't change or replace anything in it.
+- The scheduled task runs at the child's logon only, with `LeastPrivilege` (no UAC prompt for the kid), and starts enforcing immediately.
+- The agent writes its log and state to `%LOCALAPPDATA%\KidPCMonitor` in the child's profile. If the child has never signed in, the schedule is kept in ProgramData and applied at their first logon.
 
 You may also enter your **own** username to monitor the account you are
 signed in as. This is the weakest setup — the agent runs unelevated, so
 that account can stop the task and undo locks — so the installer warns
-and asks you to confirm. In this self-install case a per-user Python is
-accepted (the task runs in your own session and can reach it).
+and asks you to confirm.
 
 The agent connects outbound to the parent web panel (discovery on TCP **5000**,
 reverse control on TCP **9998**). No inbound Windows Firewall rule is required
@@ -363,8 +355,8 @@ cd kid-pc-monitor
 pip install -r requirements.txt
 
 <# Install both services #>
-python scripts/install.py           <# Installs pc_control #>
-python scripts/install_web_panel.py <# Installs web panel #>
+powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1  <# Installs the agent #>
+python scripts\install_web_panel.py                                 <# Installs web panel #>
 ```
 
 2. **On your phone:**
@@ -372,7 +364,8 @@ python scripts/install_web_panel.py <# Installs web panel #>
    - Bookmark it for easy access
    - For iOS Safari password autofill hints, see [FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password)
 
-Both services run invisibly in the background using `pythonw.exe`.
+Both services run invisibly in the background (the agent as `kid-pc-agent.exe`,
+the web panel with `pythonw.exe`).
 
 **Note:** With this setup, a tech-savvy child could potentially discover the web panel at `localhost:5000`. Option A is more secure.
 
@@ -442,9 +435,9 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 - Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
 
 ### "Lock status not updating"
-- Restart `pc_control.py`
-- Check if LogonUI.exe detection works
-- See logs in console window
+- Restart the agent: in an administrator PowerShell, `Stop-ScheduledTask KidPCMonitor; Start-ScheduledTask KidPCMonitor` (it runs only while the child is signed in).
+- Read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` in the child's profile.
+- `go run ./cmd/wincheck status` (from `go/`, with Go installed) shows what the lock detection sees.
 
 ## 🛡️ Security Notes
 
@@ -460,7 +453,15 @@ Parents and developers welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
+The agent is written in Go (`go/`, see [go/README.md](go/README.md)); the
+original Python agent in `src/kid_pc_monitor/` remains the reference it is
+tested against. **Publishing a release:** push a version tag (`git tag v1.2.0`
+then `git push origin v1.2.0`). `.github/workflows/release.yml` runs the full
+CI, then attaches `kid-pc-agent-windows-amd64.exe`, `-arm64.exe`,
+`install_agent.ps1` and `SHA256SUMS` to that tag's release.
+
 ### Recent Improvements
+- ✅ **Go agent** — The kid's PC runs a single compiled program; no Python needed. Released builds, checksum-verified installs, locked-down install folder, enforcement from the first second of logon
 - ✅ **Mutual authentication** — HMAC-signed agent protocol (v3); shared secret stored encrypted at rest
 - ✅ **Web panel security** — Optional password login; CSRF protection on state-changing actions
 - ✅ **Linux/macOS parent support** — Run the web panel on non-Windows machines; systemd user-service installer
