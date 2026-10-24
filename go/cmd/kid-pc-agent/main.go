@@ -6,6 +6,10 @@
 // daily limits with the monitoring loop, and keeps a reverse connection open
 // to the parent panel until it is interrupted.
 //
+// Unlike the Python agent, the start-up connectivity diagnostics run in the
+// background after enforcement has started, so a slow PowerShell query never
+// leaves the PC unenforced at logon.
+//
 // Build it as a GUI-subsystem program so the scheduled task does not open a
 // console window (the Python installer uses pythonw.exe for the same reason):
 //
@@ -55,9 +59,6 @@ func run() int {
 
 	controlLog := logs.Logger("PCTimeControl")
 	platform := &winplatform.Platform{Logger: controlLog}
-	platform.LogConnectivityDiagnostics(log, winplatform.ConnectivityInfo{
-		User: user, Executable: exe, LogFile: logFile, LogLevel: levelName,
-	})
 
 	control, err := monitor.New(monitor.Config{
 		Platform:       platform,
@@ -81,6 +82,12 @@ func run() int {
 		defer close(monitorDone)
 		control.Run(ctx)
 	}()
+
+	// The diagnostics only log; Get-NetConnectionProfile can take its full
+	// 15 s timeout in a standard user's session, so enforcement must not wait.
+	go platform.LogConnectivityDiagnostics(log, winplatform.ConnectivityInfo{
+		User: user, Executable: exe, LogFile: logFile, LogLevel: levelName,
+	})
 
 	client := &agent.ReverseClient{Control: control, DataDir: dataDir, Logger: logs.Logger("AgentReverseClient")}
 	clientDone := make(chan struct{})
