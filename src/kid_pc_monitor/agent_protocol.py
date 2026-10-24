@@ -33,6 +33,10 @@ MAX_LOG_TAIL_LINES = 5000
 # Reject absurd length prefixes outright; real frames are well under 1 KiB.
 MAX_FRAME_BYTES = 64 * 1024
 
+# Real frames nest blocks two levels deep; refuse hostile nesting before it
+# exhausts the parser's recursion limit.
+MAX_NESTING_DEPTH = 32
+
 # ---------------------------------------------------------------------------
 # Error codes (see docs/agent-protocol.md)
 # ---------------------------------------------------------------------------
@@ -270,12 +274,17 @@ def _tokenize(text: str) -> list[tuple[str, Any]]:
 
 
 def peek_version(body: str) -> int:
-    """Best-effort read of ``v`` for error responses when full parse fails."""
+    """Best-effort read of ``v`` for error responses when full parse fails.
+
+    Only a supported version is echoed: responses can only be signed at a
+    supported version, so anything else (an old panel's ``v 2``, a bogus
+    ``v true``) is answered at the default version.
+    """
     try:
         for node in parse(body):
             if node.name == "v" and node.args:
                 version = node.args[0]
-                if isinstance(version, int):
+                if isinstance(version, int) and version in SUPPORTED_VERSIONS:
                     return version
     except ProtocolError:
         pass
@@ -287,8 +296,9 @@ def parse(text: str) -> list[Node]:
     tokens = _tokenize(text)
     pos = 0
 
-    def parse_nodes(in_block: bool) -> list[Node]:
+    def parse_nodes(depth: int) -> list[Node]:
         nonlocal pos
+        in_block = depth > 0
         nodes: list[Node] = []
         while pos < len(tokens):
             kind, value = tokens[pos]
@@ -312,14 +322,16 @@ def parse(text: str) -> list[Node]:
                 pos += 1
             children: list[Node] = []
             if pos < len(tokens) and tokens[pos][0] == "LB":
+                if depth >= MAX_NESTING_DEPTH:
+                    raise ProtocolError(INVALID_REQUEST, "blocks nested too deeply")
                 pos += 1
-                children = parse_nodes(in_block=True)
+                children = parse_nodes(depth + 1)
             nodes.append(Node(value, args, children))
         if in_block:
             raise ProtocolError(INVALID_REQUEST, "missing '}'")
         return nodes
 
-    return parse_nodes(in_block=False)
+    return parse_nodes(0)
 
 
 # ===========================================================================

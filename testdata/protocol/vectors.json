@@ -870,6 +870,212 @@
    "name": "null_node_name",
    "text": "null",
    "error": "invalid_request"
+  },
+  {
+   "name": "nesting_at_limit",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [],
+     "children": [
+      {
+       "name": "a",
+       "args": [],
+       "children": [
+        {
+         "name": "a",
+         "args": [],
+         "children": [
+          {
+           "name": "a",
+           "args": [],
+           "children": [
+            {
+             "name": "a",
+             "args": [],
+             "children": [
+              {
+               "name": "a",
+               "args": [],
+               "children": [
+                {
+                 "name": "a",
+                 "args": [],
+                 "children": [
+                  {
+                   "name": "a",
+                   "args": [],
+                   "children": [
+                    {
+                     "name": "a",
+                     "args": [],
+                     "children": [
+                      {
+                       "name": "a",
+                       "args": [],
+                       "children": [
+                        {
+                         "name": "a",
+                         "args": [],
+                         "children": [
+                          {
+                           "name": "a",
+                           "args": [],
+                           "children": [
+                            {
+                             "name": "a",
+                             "args": [],
+                             "children": [
+                              {
+                               "name": "a",
+                               "args": [],
+                               "children": [
+                                {
+                                 "name": "a",
+                                 "args": [],
+                                 "children": [
+                                  {
+                                   "name": "a",
+                                   "args": [],
+                                   "children": [
+                                    {
+                                     "name": "a",
+                                     "args": [],
+                                     "children": [
+                                      {
+                                       "name": "a",
+                                       "args": [],
+                                       "children": [
+                                        {
+                                         "name": "a",
+                                         "args": [],
+                                         "children": [
+                                          {
+                                           "name": "a",
+                                           "args": [],
+                                           "children": [
+                                            {
+                                             "name": "a",
+                                             "args": [],
+                                             "children": [
+                                              {
+                                               "name": "a",
+                                               "args": [],
+                                               "children": [
+                                                {
+                                                 "name": "a",
+                                                 "args": [],
+                                                 "children": [
+                                                  {
+                                                   "name": "a",
+                                                   "args": [],
+                                                   "children": [
+                                                    {
+                                                     "name": "a",
+                                                     "args": [],
+                                                     "children": [
+                                                      {
+                                                       "name": "a",
+                                                       "args": [],
+                                                       "children": [
+                                                        {
+                                                         "name": "a",
+                                                         "args": [],
+                                                         "children": [
+                                                          {
+                                                           "name": "a",
+                                                           "args": [],
+                                                           "children": [
+                                                            {
+                                                             "name": "a",
+                                                             "args": [],
+                                                             "children": [
+                                                              {
+                                                               "name": "a",
+                                                               "args": [],
+                                                               "children": [
+                                                                {
+                                                                 "name": "a",
+                                                                 "args": [],
+                                                                 "children": [
+                                                                  {
+                                                                   "name": "a",
+                                                                   "args": []
+                                                                  }
+                                                                 ]
+                                                                }
+                                                               ]
+                                                              }
+                                                             ]
+                                                            }
+                                                           ]
+                                                          }
+                                                         ]
+                                                        }
+                                                       ]
+                                                      }
+                                                     ]
+                                                    }
+                                                   ]
+                                                  }
+                                                 ]
+                                                }
+                                               ]
+                                              }
+                                             ]
+                                            }
+                                           ]
+                                          }
+                                         ]
+                                        }
+                                       ]
+                                      }
+                                     ]
+                                    }
+                                   ]
+                                  }
+                                 ]
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           ]
+                          }
+                         ]
+                        }
+                       ]
+                      }
+                     ]
+                    }
+                   ]
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nesting_over_limit",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+   "error": "invalid_request"
+  },
+  {
+   "name": "nesting_hostile",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {",
+   "error": "invalid_request"
   }
  ],
  "frame_encode": [
@@ -1110,7 +1316,19 @@
   },
   {
    "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ",
-   "valid": true
+   "valid": false
+  },
+  {
+   "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": false
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaa_aaaaaaaaaaaaaaa",
+   "valid": false
+  },
+  {
+   "nonce": " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": false
   }
  ],
  "timestamp_window": [
@@ -1385,6 +1603,60 @@
     "name": "Kinder-PC ü"
    },
    "body": "v 3\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Bct9KMsUgws5_dy7QQ14hZsiqZCdrHeFQTX4lVo4L_M=\"\n}"
+  }
+ ],
+ "peek_version": [
+  {
+   "body": "v 3",
+   "version": 3
+  },
+  {
+   "body": "v 3\naction get",
+   "version": 3
+  },
+  {
+   "body": "id x\nv 3",
+   "version": 3
+  },
+  {
+   "body": "v 2",
+   "version": 3
+  },
+  {
+   "body": "v 9\nid x",
+   "version": 3
+  },
+  {
+   "body": "v true",
+   "version": 3
+  },
+  {
+   "body": "v \"3\"",
+   "version": 3
+  },
+  {
+   "body": "id x",
+   "version": 3
+  },
+  {
+   "body": "",
+   "version": 3
+  },
+  {
+   "body": "v 3\na \"oops",
+   "version": 3
+  },
+  {
+   "body": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {",
+   "version": 3
+  },
+  {
+   "body": "v\nv 3",
+   "version": 3
+  },
+  {
+   "body": "v 2\nv 3",
+   "version": 3
   }
  ],
  "parse_request": [
@@ -1958,6 +2230,17 @@
    "hostname": "kid-pc",
    "now": 1710000000,
    "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  signature AAAA\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "non_ascii_signature",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  signature \"sigé\"\n}",
    "error": {
     "code": "authentication_failed",
     "req_id": "q1"

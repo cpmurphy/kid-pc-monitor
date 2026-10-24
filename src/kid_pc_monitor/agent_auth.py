@@ -15,6 +15,7 @@ import base64
 import hashlib
 import hmac
 import secrets
+import string
 import time
 
 # The only signature algorithm v2 defines.
@@ -55,7 +56,8 @@ def compute_signature(key: bytes, canonical: str) -> str:
 def verify_signature(key: bytes, canonical: str, signature: str) -> bool:
     """Constant-time check that ``signature`` matches ``canonical`` under ``key``."""
     expected = compute_signature(key, canonical)
-    return hmac.compare_digest(expected, signature)
+    # Compare bytes: compare_digest raises TypeError for non-ASCII ``str``.
+    return hmac.compare_digest(expected.encode("ascii"), signature.encode("utf-8"))
 
 
 def make_nonce() -> str:
@@ -67,11 +69,8 @@ def is_valid_nonce(nonce: object) -> bool:
     """True when ``nonce`` is a hex string of at least the minimum length."""
     if not isinstance(nonce, str) or len(nonce) < NONCE_MIN_HEX_CHARS:
         return False
-    try:
-        int(nonce, 16)
-    except ValueError:
-        return False
-    return True
+    # Not ``int(nonce, 16)``, which also accepts "0x", underscores and spaces.
+    return all(ch in string.hexdigits for ch in nonce)
 
 
 def now_timestamp() -> int:

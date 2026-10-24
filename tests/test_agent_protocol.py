@@ -67,6 +67,23 @@ class KdlSerializationTests(unittest.TestCase):
             proto.parse('a "oops\\')
         self.assertEqual(proto.peek_version('v 3\na "oops\\'), proto.CLIENT_DEFAULT_VERSION)
 
+    def test_parse_limits_nesting_depth(self) -> None:
+        depth = proto.MAX_NESTING_DEPTH
+
+        def nested(levels: int) -> str:
+            return "a {" * levels + "}" * levels
+
+        self.assertEqual(len(proto.parse(nested(depth))), 1)
+        with self.assertRaises(ProtocolError):
+            proto.parse(nested(depth + 1))
+        with self.assertRaises(ProtocolError):
+            proto.parse(nested(5000))
+
+    def test_peek_version_only_echoes_supported_versions(self) -> None:
+        self.assertEqual(proto.peek_version("v 3"), 3)
+        for body in ("v 2", "v 9", "v true", 'v "3"', "id x"):
+            self.assertEqual(proto.peek_version(body), proto.CLIENT_DEFAULT_VERSION, body)
+
     def test_parse_rejects_unbalanced_brace(self) -> None:
         with self.assertRaises(ProtocolError):
             proto.parse("foo {\n  bar 1")

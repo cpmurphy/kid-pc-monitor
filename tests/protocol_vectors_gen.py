@@ -183,9 +183,19 @@ PARSE_TEXTS: list[tuple[str, str]] = [
 ]
 
 
+def _nested(levels: int) -> str:
+    return "a {" * levels + "}" * levels
+
+
 def parse_cases() -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
-    for name, text in PARSE_TEXTS:
+    texts = [
+        *PARSE_TEXTS,
+        ("nesting_at_limit", _nested(proto.MAX_NESTING_DEPTH)),
+        ("nesting_over_limit", _nested(proto.MAX_NESTING_DEPTH + 1)),
+        ("nesting_hostile", "a {" * 5000),
+    ]
+    for name, text in texts:
         case: dict[str, Any] = {"name": name, "text": text}
         try:
             case["nodes"] = nodes_json(proto.parse(text))
@@ -275,6 +285,9 @@ NONCE_INPUTS: list[str] = [
     "g" * 32,
     "a" * 31 + "z",
     "a" * 31 + " ",
+    "0x" + "a" * 30,
+    "a" * 16 + "_" + "a" * 15,
+    " " + "a" * 31,
 ]
 
 
@@ -462,6 +475,7 @@ def parse_request_inputs() -> list[tuple[str, dict[str, Any]]]:
         ),
     )
     case("garbage_signature", with_auth(_req_nodes("unlock"), [Node("signature", ["AAAA"])]))
+    case("non_ascii_signature", with_auth(_req_nodes("unlock"), [Node("signature", ["sigé"])]))
     case("missing_timestamp", signed_body(_req_nodes("unlock", timestamp=None)))
     case("missing_nonce", signed_body(_req_nodes("unlock", nonce=None)))
     case("timestamp_is_string", signed_body(_req_nodes("unlock", timestamp="1710000000")))
@@ -850,6 +864,27 @@ def parse_response_cases() -> list[dict[str, Any]]:
     return out
 
 
+PEEK_VERSION_BODIES: list[str] = [
+    "v 3",
+    "v 3\naction get",
+    "id x\nv 3",
+    "v 2",
+    "v 9\nid x",
+    "v true",
+    'v "3"',
+    "id x",
+    "",
+    'v 3\na "oops',
+    "a {" * 5000,
+    "v\nv 3",
+    "v 2\nv 3",
+]
+
+
+def peek_version_cases() -> list[dict[str, Any]]:
+    return [{"body": body, "version": proto.peek_version(body)} for body in PEEK_VERSION_BODIES]
+
+
 # ---------------------------------------------------------------------------
 # Whole file
 # ---------------------------------------------------------------------------
@@ -881,6 +916,7 @@ def build_vectors() -> dict[str, Any]:
         "nonce": nonce_cases(),
         "timestamp_window": window_cases(),
         "build_request": build_request_cases(),
+        "peek_version": peek_version_cases(),
         "parse_request": parse_request_cases(),
         "build_response": build_response_cases(),
         "parse_response": parse_response_cases(),
