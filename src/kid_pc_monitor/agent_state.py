@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from datetime import time as dtime
@@ -184,18 +185,38 @@ def load_runtime_from_dict(data: dict) -> RuntimeState:
     )
 
 
-def program_data_daily_path() -> Path | None:
+class _PlatformDefault:
+    """Sentinel: use the platform's ProgramData directory (Windows only)."""
+
+
+PLATFORM_DEFAULT = _PlatformDefault()
+ProgramDataDir = Path | None | _PlatformDefault
+
+
+def _program_data_dir(program_data_dir: ProgramDataDir = PLATFORM_DEFAULT) -> Path | None:
+    """The KidPCMonitor ProgramData directory, or None when there isn't one.
+
+    An explicit ``Path`` (or ``None``) overrides the platform lookup so tests
+    and the Go port can pin it.
+    """
+    if not isinstance(program_data_dir, _PlatformDefault):
+        return program_data_dir
     if sys.platform != "win32":
         return None
     program_data = os.environ.get("ProgramData", r"C:\ProgramData")
-    return Path(program_data) / "KidPCMonitor" / DEFAULT_VALUES_FILE
+    return Path(program_data) / "KidPCMonitor"
 
 
-def program_data_legacy_install_config_path() -> Path | None:
-    if sys.platform != "win32":
-        return None
-    program_data = os.environ.get("ProgramData", r"C:\ProgramData")
-    return Path(program_data) / "KidPCMonitor" / LEGACY_INSTALL_CONFIG
+def program_data_daily_path(program_data_dir: ProgramDataDir = PLATFORM_DEFAULT) -> Path | None:
+    base = _program_data_dir(program_data_dir)
+    return None if base is None else base / DEFAULT_VALUES_FILE
+
+
+def program_data_legacy_install_config_path(
+    program_data_dir: ProgramDataDir = PLATFORM_DEFAULT,
+) -> Path | None:
+    base = _program_data_dir(program_data_dir)
+    return None if base is None else base / LEGACY_INSTALL_CONFIG
 
 
 def _read_json(path: Path) -> dict | None:
@@ -208,9 +229,9 @@ def _read_json(path: Path) -> dict | None:
         return None
 
 
-def program_data_target_user() -> str | None:
+def program_data_target_user(program_data_dir: ProgramDataDir = PLATFORM_DEFAULT) -> str | None:
     """Return the monitored account from ProgramData daily_settings.json, if set."""
-    path = program_data_daily_path()
+    path = program_data_daily_path(program_data_dir)
     if path is None:
         return None
     data = _read_json(path)
@@ -242,10 +263,25 @@ def migrate_legacy_state(
     legacy_path: Path,
     *,
     current_user: str,
+    now: datetime | None = None,
 ) -> tuple[DailySettings, RuntimeState] | None:
     legacy = _read_json(legacy_path)
     if legacy is None:
         return None
+    migrated = legacy_to_state(legacy, now=now)
+    logger.info(
+        "Migrated legacy state for %s from %s",
+        current_user,
+        legacy_path,
+    )
+    return migrated
+
+
+def legacy_to_state(
+    legacy: dict, *, now: datetime | None = None
+) -> tuple[DailySettings, RuntimeState]:
+    """Convert a legacy ``pc_control_state.json`` payload to current settings and state."""
+    now = now or datetime.now()
 
     wake_time = DEFAULT_WAKE_TIME
     if isinstance(legacy.get("wake_time"), str):
@@ -262,7 +298,6 @@ def migrate_legacy_state(
         allowance=allowance,
     )
 
-    now = datetime.now()
     accumulated_seconds = float(legacy.get("accumulated_seconds", 0.0))
     manual_lock_active = bool(legacy.get("manual_lock_active", False))
 
@@ -284,16 +319,26 @@ def migrate_legacy_state(
         else:
             runtime.accumulated_seconds = accumulated_seconds
 
-    logger.info(
-        "Migrated legacy state for %s from %s",
-        current_user,
-        legacy_path,
-    )
     return daily, runtime
 
 
-def _bootstrap_daily_from_program_data(current_user: str) -> DailySettings | None:
-    for path in (program_data_daily_path(),):
+def _daily_path_for(program_data_dir: ProgramDataDir) -> Path | None:
+    # No argument on the default path keeps ``program_data_daily_path`` patchable.
+    if isinstance(program_data_dir, _PlatformDefault):
+        return program_data_daily_path()
+    return program_data_daily_path(program_data_dir)
+
+
+def _legacy_install_path_for(program_data_dir: ProgramDataDir) -> Path | None:
+    if isinstance(program_data_dir, _PlatformDefault):
+        return program_data_legacy_install_config_path()
+    return program_data_legacy_install_config_path(program_data_dir)
+
+
+def _bootstrap_daily_from_program_data(
+    current_user: str, program_data_dir: ProgramDataDir = PLATFORM_DEFAULT
+) -> DailySettings | None:
+    for path in (_daily_path_for(program_data_dir),):
         if path is None:
             continue
         data = _read_json(path)
@@ -308,7 +353,7 @@ def _bootstrap_daily_from_program_data(current_user: str) -> DailySettings | Non
         except ValueError as exc:
             logger.warning("Invalid program-data daily settings at %s: %s", path, exc)
 
-    legacy_install = program_data_legacy_install_config_path()
+    legacy_install = _legacy_install_path_for(program_data_dir)
     if legacy_install is not None:
         data = _read_json(legacy_install)
         if data is not None:
@@ -333,9 +378,18 @@ def _bootstrap_daily_from_program_data(current_user: str) -> DailySettings | Non
 class AgentStateStore:
     """Read/write daily_settings.json and state.json under the agent data directory."""
 
-    def __init__(self, data_directory: Path, *, current_user: str) -> None:
+    def __init__(
+        self,
+        data_directory: Path,
+        *,
+        current_user: str,
+        clock: Callable[[], datetime] = datetime.now,
+        program_data_dir: ProgramDataDir = PLATFORM_DEFAULT,
+    ) -> None:
         self.data_directory = data_directory
         self.current_user = current_user
+        self.clock = clock
+        self.program_data_dir = program_data_dir
         self.daily_path = data_directory / DEFAULT_VALUES_FILE
         self.state_path = data_directory / STATE_FILE
         self.legacy_state_path = data_directory / LEGACY_STATE_FILE
@@ -343,29 +397,34 @@ class AgentStateStore:
     def load(self) -> tuple[DailySettings, RuntimeState]:
         daily = self._load_daily()
         runtime = self._load_runtime(daily.wake_time)
-        if reset_runtime_if_needed(runtime, daily.wake_time):
+        if reset_runtime_if_needed(runtime, daily.wake_time, self.clock()):
             logger.info("Runtime state is from a previous usage period; resetting daily counters")
         return daily, runtime
 
     def save(self, daily: DailySettings, runtime: RuntimeState) -> None:
-        runtime.timestamp = datetime.now()
+        runtime.timestamp = self.clock()
         _write_json(self.daily_path, daily_to_dict(daily))
         _write_json(self.state_path, runtime_to_dict(runtime))
+
+    def _migrate_legacy(self) -> tuple[DailySettings, RuntimeState] | None:
+        return migrate_legacy_state(
+            self.legacy_state_path, current_user=self.current_user, now=self.clock()
+        )
 
     def _load_daily(self) -> DailySettings:
         data = _read_json(self.daily_path)
         if data is not None:
             return load_daily_from_dict(data)
 
-        migrated = migrate_legacy_state(self.legacy_state_path, current_user=self.current_user)
+        migrated = self._migrate_legacy()
         if migrated is not None:
             daily, runtime = migrated
             self.save(daily, runtime)
             return daily
 
-        bootstrapped = _bootstrap_daily_from_program_data(self.current_user)
+        bootstrapped = _bootstrap_daily_from_program_data(self.current_user, self.program_data_dir)
         if bootstrapped is not None:
-            runtime = fresh_runtime_state()
+            runtime = fresh_runtime_state(self.clock())
             self.save(bootstrapped, runtime)
             return bootstrapped
 
@@ -374,7 +433,7 @@ class AgentStateStore:
             wake_time=DEFAULT_WAKE_TIME,
             allowance=None,
         )
-        runtime = fresh_runtime_state()
+        runtime = fresh_runtime_state(self.clock())
         self.save(daily, runtime)
         return daily
 
@@ -386,10 +445,10 @@ class AgentStateStore:
             except ValueError as exc:
                 logger.warning("Invalid %s: %s; starting fresh", self.state_path, exc)
 
-        migrated = migrate_legacy_state(self.legacy_state_path, current_user=self.current_user)
+        migrated = self._migrate_legacy()
         if migrated is not None:
             daily, runtime = migrated
             self.save(daily, runtime)
             return runtime
 
-        return fresh_runtime_state()
+        return fresh_runtime_state(self.clock())

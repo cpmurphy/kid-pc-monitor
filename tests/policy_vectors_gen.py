@@ -38,6 +38,10 @@ def t(text: str | None) -> dtime | None:
     return None if text is None else lp.parse_time_hhmm(text)
 
 
+def tod(text: str) -> dtime:
+    return lp.parse_time_hhmm(text)
+
+
 # ---------------------------------------------------------------------------
 # Simple helpers
 # ---------------------------------------------------------------------------
@@ -130,7 +134,7 @@ def usage_period_cases() -> list[dict[str, Any]]:
         {
             "now": now,
             "wake": wake,
-            "result": lp.usage_period_date(datetime.fromisoformat(now), t(wake)).isoformat(),
+            "result": lp.usage_period_date(datetime.fromisoformat(now), tod(wake)).isoformat(),
         }
         for now, wake in itertools.product(NOWS, WAKES)
     ]
@@ -142,7 +146,7 @@ def curfew_cases() -> list[dict[str, Any]]:
             "now": now,
             "bed": bed,
             "wake": wake,
-            "result": lp.is_in_bedtime_curfew(datetime.fromisoformat(now), t(bed), t(wake)),
+            "result": lp.is_in_bedtime_curfew(datetime.fromisoformat(now), tod(bed), tod(wake)),
         }
         for now, bed, wake in itertools.product(NOWS, [b for b in BEDS if b], WAKES)
     ]
