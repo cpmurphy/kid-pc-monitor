@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"kidpcmonitor/internal/pycompat"
+	"unicode"
 )
 
 // Value is a KDL scalar: nil, bool, int64 or string.
@@ -26,16 +25,6 @@ func normalize(v Value) Value {
 	}
 	return v
 }
-
-type intStatus = pycompat.Status
-
-const (
-	intOK       = pycompat.OK
-	intNotInt   = pycompat.NotInt
-	intOverflow = pycompat.Overflow
-)
-
-func pyInt(s string) (int64, intStatus) { return pycompat.Int(s) }
 
 // pyStr renders v the way Python's str() would.
 func pyStr(v Value) string {
@@ -101,6 +90,54 @@ func pyTruthy(v Value) bool {
 		return x != 0
 	case string:
 		return x != ""
+	}
+	return true
+}
+
+// pySpace matches the characters Python's str.strip() removes.
+func pySpace(r rune) bool {
+	return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f)
+}
+
+// maxParsedInt bounds numbers accepted from request fields.
+const maxParsedInt = 1 << 53
+
+// ParseInt reads a whole-number request field: an int, or a decimal string
+// such as "15" or " -3 " (ASCII digits, optional sign), within ±2^53. Anything
+// else is an invalid_value error carrying reqID.
+func ParseInt(raw Value, reqID *string) (int64, error) {
+	var n int64
+	switch x := normalize(raw).(type) {
+	case int64:
+		n = x
+	case string:
+		text := strings.TrimFunc(x, pySpace)
+		digits := strings.TrimLeft(text, "+-")
+		if len(text)-len(digits) > 1 || !asciiDigits(digits) {
+			return 0, perr(InvalidValue, "expected a number", reqID)
+		}
+		parsed, err := strconv.ParseInt(text, 10, 64)
+		if err != nil {
+			return 0, perr(InvalidValue, "number out of range", reqID)
+		}
+		n = parsed
+	default:
+		return 0, perr(InvalidValue, "expected a number", reqID)
+	}
+	if n > maxParsedInt || n < -maxParsedInt {
+		return 0, perr(InvalidValue, "number out of range", reqID)
+	}
+	return n, nil
+}
+
+func asciiDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
 	}
 	return true
 }

@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"kidpcmonitor/dispatcher"
 	"kidpcmonitor/policy"
 	"kidpcmonitor/protocol"
 	"kidpcmonitor/state"
@@ -75,132 +76,58 @@ func fatalf(format string, args ...any) {
 // Toy agent
 // ---------------------------------------------------------------------------
 
-type toyAgent struct {
+// toyControl is an in-memory dispatcher.Control: it keeps settings in memory
+// and touches nothing on the host.
+type toyControl struct {
 	hostname    string
-	dailyLimit  int64
-	bedTime     string
-	wakeTime    string
+	allowance   *int64
+	bedTime     *policy.TimeOfDay
+	wakeTime    policy.TimeOfDay
 	manualLock  bool
 	extension   int64
-	accumulated int64
+	accumulated float64
 	messages    []string
 }
 
-func (a *toyAgent) settings() protocol.Node {
-	status := "UNLOCKED"
-	access := "Unlocked"
-	if a.manualLock {
-		status, access = "LOCKED", "Locked — manual lock"
+func (c *toyControl) Hostname() string                      { return c.hostname }
+func (c *toyControl) CurrentUser() string                   { return "kid" }
+func (c *toyControl) ScreenLocked() bool                    { return c.manualLock }
+func (c *toyControl) DailyAllowance() *int64                { return c.allowance }
+func (c *toyControl) BedTime() *policy.TimeOfDay            { return c.bedTime }
+func (c *toyControl) WakeTime() policy.TimeOfDay            { return c.wakeTime }
+func (c *toyControl) ManualLockActive() bool                { return c.manualLock }
+func (c *toyControl) CumulativeExtensionSeconds() int64     { return c.extension }
+func (c *toyControl) AccumulatedSeconds() float64           { return c.accumulated }
+func (c *toyControl) TimeRemainingMinutes() (float64, bool) { return 0, false }
+func (c *toyControl) AgentLogPath() string                  { return `C:\ProgramData\KidPCMonitor\pc_control.log` }
+func (c *toyControl) AccessStatus() string {
+	if c.manualLock {
+		return "Locked — manual lock"
 	}
-	return protocol.Block("settings",
-		protocol.N("name", a.hostname),
-		protocol.N("status", status),
-		protocol.N("current_user", "kid"),
-		protocol.N("daily_limit", a.dailyLimit),
-		protocol.N("bed_time", a.bedTime),
-		protocol.N("manual_lock", a.manualLock),
-		protocol.N("wake_time", a.wakeTime),
-		protocol.N("cumulative_extension", a.extension),
-		protocol.N("accumulated_seconds", a.accumulated),
-		protocol.N("time_remaining", nil),
-		protocol.N("enforcement_active", a.manualLock),
-		protocol.N("enforcement_reason", nil),
-		protocol.N("access_status", access),
-	)
+	return "Unlocked"
 }
+func (c *toyControl) EnforcementLockState() (bool, string) { return false, "" }
 
-func (a *toyAgent) get(variable string) (protocol.Value, bool) {
-	s := a.settings().ChildMap()
-	v, ok := s[variable]
-	return v, ok
-}
-
-func invalid(req *protocol.Request, msg string) error {
-	return &protocol.ProtocolError{Code: protocol.InvalidValue, Message: msg, ReqID: req.ID}
-}
-
-func asInt(v protocol.Value) (int64, bool) {
-	n, ok := v.(int64)
-	return n, ok
-}
-
-func (a *toyAgent) dispatch(req *protocol.Request) ([]protocol.Node, error) {
-	switch req.Action {
-	case "list_capabilities":
-		return protocol.CapabilitiesContent(), nil
-	case "get":
-		if *req.Var == "settings" {
-			return protocol.BlockContent(a.settings()), nil
-		}
-		v, _ := a.get(*req.Var)
-		return protocol.OKContent(v), nil
-	case "set":
-		return a.set(req)
-	case "clear":
-		switch *req.Var {
-		case "daily_limit":
-			a.dailyLimit = 120
-		case "bed_time":
-			a.bedTime = "21:00"
-		case "manual_lock":
-			a.manualLock = false
-		case "cumulative_extension":
-			a.extension = 0
-		default:
-			return nil, invalid(req, *req.Var+" cannot be cleared")
-		}
-		return protocol.OKContent("cleared"), nil
-	case "lock":
-		a.manualLock = true
-		return protocol.OKContent("locked"), nil
-	case "unlock":
-		a.manualLock = false
-		return protocol.OKContent("unlocked"), nil
-	case "extend":
-		minutes, ok := asInt(req.Val)
-		if !ok || minutes <= 0 {
-			return nil, invalid(req, "minutes must be a positive number")
-		}
-		a.extension += minutes * 60
-		return protocol.OKContent(minutes), nil
-	case "message":
-		text, ok := req.Val.(string)
-		if !ok {
-			return nil, invalid(req, "message must be text")
-		}
-		a.messages = append(a.messages, text)
-		return protocol.OKContent(text), nil // echoed so the peer can check the escaping
-	case "shutdown":
-		seconds := int64(protocol.DefaultShutdownSeconds)
-		if req.Val != nil {
-			var ok bool
-			if seconds, ok = asInt(req.Val); !ok || seconds < 0 {
-				return nil, invalid(req, "seconds must not be negative")
-			}
-		}
-		return protocol.OKContent(seconds), nil
-	case "get_logs":
-		tail := int64(protocol.DefaultLogTailLines)
-		if req.Tail != nil {
-			tail = *req.Tail
-		}
-		all := logLines(10)
-		truncated := tail < int64(len(all))
-		if truncated {
-			all = all[int64(len(all))-tail:]
-		}
-		lines := make([]protocol.Value, len(all))
-		for i, l := range all {
-			lines[i] = l
-		}
-		return protocol.BlockContent(protocol.Block("logs",
-			protocol.N("path", `C:\ProgramData\KidPCMonitor\pc_control.log`),
-			protocol.N("truncated", truncated),
-			protocol.N("lines", lines...),
-		)), nil
+func (c *toyControl) ReadLogTail(tail int64) ([]string, bool, error) {
+	all := logLines(10)
+	if tail >= int64(len(all)) {
+		return all, false, nil
 	}
-	return nil, &protocol.ProtocolError{Code: protocol.UnknownAction, Message: req.Action, ReqID: req.ID}
+	return all[int64(len(all))-tail:], true, nil
 }
+
+func (c *toyControl) SetDailyAllowance(m *int64) { c.allowance = m }
+func (c *toyControl) SetBedTime(h, m int)        { c.bedTime = policy.At(h, m) }
+func (c *toyControl) ClearBedTime()              { c.bedTime = nil }
+func (c *toyControl) ClearWarnings()             {}
+func (c *toyControl) SetWakeTime(h, m int)       { c.wakeTime = policy.TimeOfDay{Hour: h, Minute: m} }
+func (c *toyControl) EngageManualLock()          { c.manualLock = true }
+func (c *toyControl) ClearManualLock()           { c.manualLock = false }
+func (c *toyControl) ClearExtensions()           { c.extension = 0 }
+func (c *toyControl) ExtendTime(minutes int64)   { c.extension += minutes * 60; c.manualLock = false }
+func (c *toyControl) SendParentMessage(t string) { c.messages = append(c.messages, t) }
+func (c *toyControl) ShutdownPC(seconds int64)   {}
+func (c *toyControl) SaveState()                 {}
 
 func logLines(n int) []string {
 	lines := make([]string, n)
@@ -208,39 +135,6 @@ func logLines(n int) []string {
 		lines[i] = fmt.Sprintf(`[2026-05-31 12:00:%02d] INFO kid_pc_monitor: line %d "quoted" \ ünï`, i, i)
 	}
 	return lines
-}
-
-func (a *toyAgent) set(req *protocol.Request) ([]protocol.Node, error) {
-	switch *req.Var {
-	case "daily_limit":
-		n, ok := asInt(req.Val)
-		if !ok || n < protocol.MinDailyLimit || n > protocol.MaxDailyLimit {
-			return nil, invalid(req, fmt.Sprintf("minutes must be between %d and %d",
-				protocol.MinDailyLimit, protocol.MaxDailyLimit))
-		}
-		a.dailyLimit = n
-	case "bed_time", "wake_time":
-		s, ok := req.Val.(string)
-		if !ok {
-			return nil, invalid(req, "expected a HH:MM time")
-		}
-		if *req.Var == "bed_time" {
-			a.bedTime = s
-		} else {
-			a.wakeTime = s
-		}
-	case "manual_lock":
-		b, ok := req.Val.(bool)
-		if !ok {
-			return nil, invalid(req, "expected true or false")
-		}
-		a.manualLock = b
-	default:
-		return nil, &protocol.ProtocolError{
-			Code: protocol.Forbidden, Message: *req.Var + " is read-only", ReqID: req.ID,
-		}
-	}
-	return protocol.OKContent(req.Val), nil
 }
 
 func runAgent(addr, secret, hostname string) {
@@ -252,9 +146,16 @@ func runAgent(addr, secret, hostname string) {
 		fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-	agent := &toyAgent{
-		hostname: hostname, dailyLimit: 120, bedTime: "21:00", wakeTime: "07:00", accumulated: 1234,
+	allowance := int64(120)
+	control := &toyControl{
+		hostname: hostname, allowance: &allowance, bedTime: policy.At(21, 0),
+		wakeTime: policy.TimeOfDay{Hour: 7}, accumulated: 1234,
 	}
+	// When the panel hangs up, report the popups the agent was asked to show so
+	// the driver can check the text arrived byte for byte.
+	defer func() { _ = json.NewEncoder(os.Stdout).Encode(map[string]any{"messages": control.messages}) }()
+
+	dispatch := dispatcher.Handler(control)
 	br := bufio.NewReader(conn)
 	for {
 		_ = conn.SetReadDeadline(time.Now().Add(2 * time.Minute))
@@ -265,7 +166,7 @@ func runAgent(addr, secret, hostname string) {
 			}
 			fatalf("read: %v", err)
 		}
-		resp := protocol.HandleRequest(body, secret, hostname, time.Now().Unix(), agent.dispatch)
+		resp := protocol.HandleRequest(body, secret, hostname, time.Now().Unix(), dispatch)
 		if err := protocol.WriteFrame(conn, resp); err != nil {
 			fatalf("write: %v", err)
 		}

@@ -195,12 +195,13 @@ func parseBare(word string) (Value, error) {
 	case "null":
 		return nil, nil
 	}
-	n, st := pyInt(word)
-	switch st {
-	case intOK:
+	digits := strings.TrimLeft(word, "+-")
+	if len(word)-len(digits) <= 1 && asciiDigits(digits) {
+		n, err := strconv.ParseInt(word, 10, 64)
+		if err != nil {
+			return nil, bad("integer out of range")
+		}
 		return n, nil
-	case intOverflow:
-		return nil, bad("integer out of range")
 	}
 	return word, nil
 }

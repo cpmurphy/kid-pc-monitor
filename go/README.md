@@ -8,12 +8,13 @@ toward a compiled Windows agent. Standard library only.
 | `protocol/` | Wire protocol: KDL-subset parser/serializer, framing, HMAC auth, request/response build and parse, and `HandleRequest` (the agent's authenticate → dispatch → sign entry point). |
 | `policy/` | Lock policy: bedtime curfew, allowance, minutes until lock, access status. Pure functions. |
 | `state/` | `daily_settings.json` / `state.json` persistence, wake-time rollover, legacy migration, ProgramData bootstrap. |
-| `internal/pycompat/` | The few Python builtins (`int(str)`) whose exact behavior the formats depend on. |
+| `dispatcher/` | Executes validated requests against a `Control` interface (get/set/clear/extend/message/shutdown/lock/get_logs) and builds the response content; `dispatcher.Handler(control)` plugs into `protocol.HandleRequest`. |
 | `cmd/xcheck/` | Test fixture used by `scripts/cross_check_go.py`: a toy agent, a toy panel, and state-file helpers. Not a product. |
 | `../testdata/*/vectors.json` | Golden vectors generated from the Python implementation. |
 
-Not ported yet: the monitoring loop and parent actions (`pc_time_control.py`),
-the request dispatcher, and the Windows platform layer.
+Not ported yet: the monitoring loop and the `Control` implementation behind the
+dispatcher (`pc_time_control.py`: usage accounting, warnings, lock enforcement),
+and the Windows platform layer.
 
 ## The Python code is the reference
 

@@ -94,6 +94,7 @@ The Python code is the reference; Go packages under `go/` mirror it and are held
 | `agent_protocol.py`, `agent_auth.py` | `go/protocol` | `testdata/protocol/vectors.json` | `tests/protocol_vectors_gen.py` |
 | `lock_policy.py` | `go/policy` | `testdata/policy/vectors.json` | `tests/policy_vectors_gen.py` |
 | `agent_state.py` | `go/state` | `testdata/state/vectors.json` | `tests/state_vectors_gen.py` |
+| `request_dispatcher.py` | `go/dispatcher` | `testdata/dispatcher/vectors.json` | `tests/dispatcher_vectors_gen.py` |
 
 Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
 

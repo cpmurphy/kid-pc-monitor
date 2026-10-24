@@ -238,25 +238,6 @@ type Request struct {
 	Tail      *int64
 }
 
-// parseIntValue mirrors Python's _parse_int: bools are rejected, ints pass,
-// anything else must parse as an integer after str().
-func parseIntValue(raw Value, reqID *string) (int64, error) {
-	switch x := raw.(type) {
-	case bool:
-		return 0, perr(InvalidValue, "expected a number", reqID)
-	case int64:
-		return x, nil
-	}
-	n, st := pyInt(pyStr(raw))
-	switch st {
-	case intOK:
-		return n, nil
-	case intOverflow:
-		return 0, perr(InvalidValue, "number out of range", reqID)
-	}
-	return 0, perr(InvalidValue, "expected a number", reqID)
-}
-
 // ParseRequest parses, authenticates and structurally validates a request.
 // hostname is the agent's own name, used to reject frames addressed to a
 // different PC. Value-level checks belong to the dispatcher.
@@ -346,7 +327,7 @@ func ParseRequest(body, secret, hostname string, now int64) (*Request, error) {
 
 	var tail *int64
 	if raw := fields["tail"]; raw != nil {
-		n, err := parseIntValue(raw, reqID)
+		n, err := ParseInt(raw, reqID)
 		if err != nil {
 			return nil, err
 		}

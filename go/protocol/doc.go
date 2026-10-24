@@ -15,19 +15,13 @@
 //
 // # Known differences from the Python implementation
 //
-// Python's int() accepts more spellings than the protocol ever produces
-// (Unicode digits, arbitrary-precision integers, 0x-prefixed hex in \u{...}
-// escapes). This package is deliberately stricter:
-//
-//   - A bare integer that does not fit in an int64 is a parse error
-//     (invalid_request); Python keeps it as a big integer.
-//   - Only ASCII digits are integers; "٣" stays a string.
-//   - \u{...} escapes take plain hex digits and reject surrogates.
 //   - A frame body that is not valid UTF-8 is invalid_request; Python raises
 //     UnicodeDecodeError.
 //   - Error message text for invalid_request/unknown_action may differ in
 //     detail (for example Python's repr() of odd values). Error codes and
 //     request ids always agree; the vectors check those.
 //
-// None of these can occur in frames produced by either implementation.
+// Integers are plain ASCII decimal (optional sign) within 64 bits in the
+// document and within ±2^53 as request fields; both implementations enforce
+// the same rules.
 package protocol

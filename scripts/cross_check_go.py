@@ -105,6 +105,7 @@ def go_agent_session(exe: Path) -> Checks:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        encoding="utf-8",
     )
     try:
         sock, _ = listener.accept()
@@ -168,8 +169,14 @@ def go_agent_session(exe: Path) -> Checks:
         checks.check("get bed_time", ask("get", var="bed_time").result, "21:30")
         checks.check("extend", ask("extend", val=15).ok, True)
         checks.check("cumulative_extension (seconds)", ask("get", var="cumulative_extension").result, 900)
-        checks.check("message round-trips exactly", ask("message", val=MESSAGE_TEXT).result, MESSAGE_TEXT)
-        checks.check("message with trailing newline", ask("message", val="hello\n").result, "hello\n")
+        checks.check("message accepted", ask("message", val=MESSAGE_TEXT).result, "message sent")
+        checks.check("message with trailing newline", ask("message", val="hello\n").ok, True)
+        r = raw(req("message", val="   ", name=GO_HOSTNAME))
+        checks.check("blank message refused", r.error_code, "invalid_value")
+        r = raw(req("extend", val=-30, name=GO_HOSTNAME))
+        checks.check("negative extension refused", r.error_code, "invalid_value")
+        r = raw(req("set", var="bed_time", val="7:5", name=GO_HOSTNAME))
+        checks.check("sloppy time refused", r.error_code, "invalid_value")
 
         r = ask("get_logs", tail=3)
         logs = r.logs
@@ -215,7 +222,16 @@ def go_agent_session(exe: Path) -> Checks:
     except subprocess.TimeoutExpired:
         agent.kill()
     output = agent.stdout.read() if agent.stdout else ""
-    checks.check("agent exited cleanly", (agent.returncode, output.strip()), (0, ""))
+    checks.check("agent exited cleanly", agent.returncode, 0)
+    try:
+        report = json.loads(output)
+    except ValueError:
+        report = {"unparseable": output}
+    checks.check(
+        "popup text reached the agent byte for byte",
+        report.get("messages"),
+        [MESSAGE_TEXT, "hello\n"],
+    )
     return checks
 
 

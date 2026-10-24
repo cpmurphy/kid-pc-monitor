@@ -153,29 +153,37 @@ func TestMessageWithTrailingNewlineSurvives(t *testing.T) {
 	}
 }
 
-func TestPyInt(t *testing.T) {
-	for in, want := range map[string]int64{
-		"0": 0, "-7": -7, "+5": 5, "007": 7, "1_000": 1000, " 12 ": 12,
-		"9223372036854775807": 1<<63 - 1, "-9223372036854775808": -1 << 63,
+func TestParseInt(t *testing.T) {
+	for in, want := range map[any]int64{
+		int64(0): 0, int64(-7): -7, "15": 15, " -3 ": -3, "+5": 5, "007": 7,
+		int64(1 << 53): 1 << 53, "9007199254740992": 1 << 53,
 	} {
-		if got, st := pyInt(in); st != intOK || got != want {
-			t.Errorf("pyInt(%q) = %d, %v; want %d", in, got, st, want)
+		if got, err := ParseInt(in, nil); err != nil || got != want {
+			t.Errorf("ParseInt(%#v) = %d, %v; want %d", in, got, err, want)
 		}
 	}
-	for _, in := range []string{"", "-", "+", "1.5", "0x10", "1e5", "_1", "1_", "1__0", "12abc", "٣"} {
-		if _, st := pyInt(in); st != intNotInt {
-			t.Errorf("pyInt(%q) status = %v, want not-int", in, st)
-		}
-	}
-	for _, in := range []string{"9223372036854775808", "-9223372036854775809", "99999999999999999999999"} {
-		if _, st := pyInt(in); st != intOverflow {
-			t.Errorf("pyInt(%q) status = %v, want overflow", in, st)
+	for _, in := range []any{
+		true, nil, 1.5, "", "1_0", "1.5", "12abc", "++5", "+-5", "٣", "0x10",
+		int64(1<<53 + 1), "9007199254740993", "99999999999999999999999",
+	} {
+		if got, err := ParseInt(in, nil); CodeOf(err) != InvalidValue {
+			t.Errorf("ParseInt(%#v) = %d, %v; want invalid_value", in, got, err)
 		}
 	}
 }
 
-func TestIntegerOverflowIsParseError(t *testing.T) {
-	if _, err := Parse("a 99999999999999999999999"); CodeOf(err) != InvalidRequest {
+func TestBareIntegersAreStrict(t *testing.T) {
+	nodes, err := Parse("a 1_0\nb +5\nc ٣\nd 9223372036854775807")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Value{"1_0", int64(5), "٣", int64(9223372036854775807)}
+	for i, n := range nodes {
+		if n.Arg() != want[i] {
+			t.Errorf("node %s: got %#v, want %#v", n.Name, n.Arg(), want[i])
+		}
+	}
+	if _, err := Parse("a 9223372036854775808"); CodeOf(err) != InvalidRequest {
 		t.Errorf("err = %v, want invalid_request", err)
 	}
 }
