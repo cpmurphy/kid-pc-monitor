@@ -99,9 +99,12 @@ For this setup, you want to:
 
 `scripts\install_agent.ps1` installs the compiled Go agent instead. It asks the
 same questions and replaces a Python agent's task in place (your schedule and
-shared secret are reused). It builds the agent from the checkout, so install
-[Go](https://go.dev/dl/) first, or pass `-AgentExe` with a prebuilt
-`kid-pc-agent.exe`. From an administrator PowerShell:
+shared secret are reused). If [Go](https://go.dev/dl/) is installed it builds
+the agent from the checkout; otherwise it downloads `kid-pc-agent.exe` from the
+latest [GitHub release](https://github.com/cpmurphy/kid-pc-monitor/releases)
+and checks it against the release's `SHA256SUMS` (`-Download` forces this,
+`-Version v1.2.0` picks a release, `-AgentExe` installs a file you already
+have). From an administrator PowerShell:
 
 ```powershell
 git clone https://github.com/cpmurphy/kid-pc-monitor.git
@@ -113,6 +116,14 @@ Other modes: `-Uninstall`, `-Update [-Pull]`, `-EnableAutoUpdate` and
 `-DisableAutoUpdate`; `update.bat` uses them automatically once the Go agent is
 installed. The install folder is restricted to SYSTEM, Administrators and the
 child (read only).
+
+The released exe is not code-signed, so SmartScreen or antivirus may warn about
+it; building it yourself with Go avoids that.
+
+**Publishing a release:** push a version tag (`git tag v1.2.0` then
+`git push origin v1.2.0`). `.github/workflows/release.yml` runs the full CI,
+then attaches `kid-pc-agent-windows-amd64.exe`, `-arm64.exe`,
+`install_agent.ps1` and `SHA256SUMS` to that tag's release.
  
 
 ### On the parent PC

@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # release.yml runs the whole suite before publishing.
+  workflow_call:
 
 permissions:
   contents: read
@@ -70,15 +72,55 @@ jobs:
           ./venv/bin/pip install -e ".[dev]"
           ./venv/bin/python scripts/cross_check_go.py
 
+  # The Windows-only Go code (winplatform, the agent itself), the installer's
+  # functions, and the real agent against the Python panel (cross-check D).
+  go-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: go vet
+        working-directory: go
+        run: go vet ./...
+
+      - name: go test
+        working-directory: go
+        run: go test ./...
+
+      - name: Build the agent as releases do
+        working-directory: go
+        run: go build -trimpath -buildvcs=false -ldflags "-H=windowsgui -s -w" -o kid-pc-agent.exe ./cmd/kid-pc-agent
+
+      - name: Install Python package
+        run: |
+          python -m venv venv
+          .\venv\Scripts\python.exe -m pip install --upgrade pip
+          .\venv\Scripts\python.exe -m pip install -e ".[dev]"
+
+      - name: Installer tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\tests\install_agent_test.ps1 -Python .\venv\Scripts\python.exe
+
+      - name: Cross-check against Python
+        run: .\venv\Scripts\python.exe scripts/cross_check_go.py
+
   # Single required check for branch rules / Dependabot auto-merge.
   ci:
-    needs: [test, go]
+    needs: [test, go, go-windows]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: All jobs passed
         run: |
-          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.go.result }}" != "success" ]; then
-            echo "test: ${{ needs.test.result }}, go: ${{ needs.go.result }}"
+          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.go.result }}" != "success" ] || [ "${{ needs.go-windows.result }}" != "success" ]; then
+            echo "test: ${{ needs.test.result }}, go: ${{ needs.go.result }}, go-windows: ${{ needs.go-windows.result }}"
             exit 1
           fi

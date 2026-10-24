@@ -33,6 +33,9 @@ import (
 	"kidpcmonitor/winplatform"
 )
 
+// version is set by release builds (-ldflags "-X main.version=v1.2.3").
+var version = "dev"
+
 func main() {
 	os.Exit(run())
 }
@@ -55,7 +58,8 @@ func run() int {
 
 	exe, _ := os.Executable()
 	user := agent.CurrentUser()
-	log.Info(fmt.Sprintf("Agent process starting (pid=%d, user=%s, script=%s)", os.Getpid(), user, exe))
+	log.Info(fmt.Sprintf("Agent process starting (pid=%d, user=%s, script=%s, version=%s)",
+		os.Getpid(), user, exe, version))
 
 	controlLog := logs.Logger("PCTimeControl")
 	platform := &winplatform.Platform{Logger: controlLog}

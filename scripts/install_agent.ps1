@@ -10,8 +10,9 @@ from an elevated Windows PowerShell 5.1 (or PowerShell 7) prompt:
     powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
 
 With no switches it shows a menu (install / remove). It:
-  - builds kid-pc-agent.exe from go/ (Go 1.22+ needed) unless -AgentExe
-    points at a prebuilt one;
+  - gets kid-pc-agent.exe: -AgentExe if given, else a build from go/ when Go
+    1.22+ and the sources are present, else the GitHub release's exe for this
+    PC's architecture (checked against the release's SHA256SUMS);
   - copies it to %ProgramData%\KidPCMonitor, removes the Python agent's
     files from there, and restricts the folder to SYSTEM and Administrators
     (full control) plus the monitored account (read + execute);
@@ -25,6 +26,15 @@ With no switches it shows a menu (install / remove). It:
 A prebuilt kid-pc-agent.exe to install instead of building one. Build it with
   go build -ldflags "-H=windowsgui" ./cmd/kid-pc-agent
 so the task does not open a console window.
+
+.PARAMETER Download
+Download the released agent even when Go is installed.
+
+.PARAMETER Version
+The release tag to download (for example v1.2.0). Default: the latest release.
+
+.PARAMETER Repository
+The GitHub repository to download releases from (owner/name).
 
 .PARAMETER Install
 Run the install without showing the menu (it still asks its questions).
@@ -47,6 +57,9 @@ Remove the automatic-update task.
 [CmdletBinding()]
 param(
     [string]$AgentExe,
+    [switch]$Download,
+    [string]$Version,
+    [string]$Repository = 'cpmurphy/kid-pc-monitor',
     [switch]$Install,
     [switch]$Uninstall,
     [switch]$Update,
@@ -70,6 +83,8 @@ $LegacyFirewallRule = 'Kid PC Monitor Agent (TCP 9999)'
 $LegacyPythonFiles = @('kid_pc_monitor', 'pc_control.py', 'requirements.txt')
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$GitHubApi = 'https://api.github.com'
+$GitHubWeb = 'https://github.com'
 
 # ---------------------------------------------------------------------------
 # Small helpers
@@ -247,8 +262,90 @@ function Find-GoTool {
     return $null
 }
 
-# The kid-pc-agent.exe to install: -AgentExe, else a fresh build from go/.
-# Returns @{ Path; Temporary } so a build can be deleted after copying.
+function Test-GoSources {
+    return Test-Path -LiteralPath (Join-Path $RepoRoot 'go\go.mod')
+}
+
+# The release asset suffix for this Windows: amd64 or arm64.
+function Get-AgentArch {
+    $arch = if ($env:PROCESSOR_ARCHITEW6432) { $env:PROCESSOR_ARCHITEW6432 } else { $env:PROCESSOR_ARCHITECTURE }
+    switch ($arch) {
+        'AMD64' { return 'amd64' }
+        'ARM64' { return 'arm64' }
+        default { throw "There is no released agent for $arch Windows; build it with Go instead." }
+    }
+}
+
+function Get-AgentAssetName([string]$Arch) {
+    return "kid-pc-agent-windows-$Arch.exe"
+}
+
+# SHA256SUMS ("<hash>  <name>" per line, as sha256sum writes it) as a
+# name -> lower-case hash table.
+function Read-Checksums([string]$Text) {
+    $sums = @{}
+    foreach ($line in ($Text -split "`r?`n")) {
+        if ($line -cmatch '^([0-9a-fA-F]{64}) [ *](.+)$') {
+            $sums[$Matches[2].Trim()] = $Matches[1].ToLowerInvariant()
+        }
+    }
+    return $sums
+}
+
+function Invoke-Download([string]$Url, [string]$OutFile) {
+    # Windows PowerShell 5.1 may not offer TLS 1.2 by default; GitHub needs it.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor
+        [Net.SecurityProtocolType]::Tls12
+    $ProgressPreference = 'SilentlyContinue' # the progress bar makes downloads crawl in 5.1
+    try {
+        Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
+    } catch {
+        throw "Could not download ${Url}: $($_.Exception.Message)"
+    }
+}
+
+# Download this architecture's agent from a GitHub release (-Version, else the
+# latest) and check it against the release's SHA256SUMS.
+function Get-ReleasedAgent {
+    $asset = Get-AgentAssetName (Get-AgentArch)
+    $tag = $Version
+    $temp = [IO.Path]::GetTempPath()
+    if (-not $tag) {
+        $latest = Join-Path $temp ("kid-pc-monitor-latest-{0}.json" -f [guid]::NewGuid())
+        try {
+            Invoke-Download "$GitHubApi/repos/$Repository/releases/latest" $latest
+            $tag = Get-JsonValue (Read-JsonObject $latest) 'tag_name'
+        } finally {
+            Remove-Item -LiteralPath $latest -Force -ErrorAction SilentlyContinue
+        }
+        if (-not ($tag -is [string] -and $tag)) { throw "Could not find the latest release of $Repository." }
+    }
+    $base = "$GitHubWeb/$Repository/releases/download/$tag"
+    Write-Host "`nDownloading $asset from release $tag of $Repository ..."
+    $exe = Join-Path $temp ("kid-pc-agent-{0}.exe" -f [guid]::NewGuid())
+    $sumsFile = Join-Path $temp ("kid-pc-agent-{0}.sha256" -f [guid]::NewGuid())
+    try {
+        Invoke-Download "$base/$asset" $exe
+        Invoke-Download "$base/SHA256SUMS" $sumsFile
+        $expected = (Read-Checksums ([IO.File]::ReadAllText($sumsFile)))[$asset]
+        if (-not $expected) { throw "SHA256SUMS in release $tag has no entry for $asset." }
+        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $exe).Hash.ToLowerInvariant()
+        if ($actual -ne $expected) {
+            throw "The downloaded $asset does not match SHA256SUMS (got $actual, expected $expected)."
+        }
+    } catch {
+        Remove-Item -LiteralPath $exe -Force -ErrorAction SilentlyContinue
+        throw
+    } finally {
+        Remove-Item -LiteralPath $sumsFile -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host "   SHA-256 verified: $actual"
+    return @{ Path = $exe; Temporary = $true }
+}
+
+# The kid-pc-agent.exe to install: -AgentExe; else a build from go/ when Go and
+# the sources are here (and -Download was not given); else the released exe.
+# Returns @{ Path; Temporary } so a temporary file can be deleted after copying.
 function Resolve-AgentExe {
     if ($AgentExe) {
         if (-not (Test-Path -LiteralPath $AgentExe -PathType Leaf)) {
@@ -256,15 +353,12 @@ function Resolve-AgentExe {
         }
         return @{ Path = (Resolve-Path -LiteralPath $AgentExe).ProviderPath; Temporary = $false }
     }
-    $go = Find-GoTool
-    if (-not $go) {
-        throw ("The Go toolchain was not found. Install Go for all users from https://go.dev/dl/ " +
-            "or pass -AgentExe <path to kid-pc-agent.exe>.")
+    $go = if ($Download) { $null } else { Find-GoTool }
+    if (-not $go -or -not (Test-GoSources)) {
+        if (-not $Download) { Write-Host "`nGo or the agent sources are not here; using the released agent." }
+        return Get-ReleasedAgent
     }
     $goDir = Join-Path $RepoRoot 'go'
-    if (-not (Test-Path -LiteralPath (Join-Path $goDir 'go.mod'))) {
-        throw "Could not find the Go sources at $goDir."
-    }
     $out = Join-Path ([IO.Path]::GetTempPath()) ("kid-pc-agent-{0}.exe" -f [guid]::NewGuid())
     Write-Host "`nBuilding the Go agent with $go ..."
     Push-Location $goDir
@@ -883,23 +977,38 @@ function Invoke-Update {
 }
 
 function Enable-AutoUpdate {
-    if (-not (Find-GoTool)) {
-        Write-Host "ERROR: Automatic updates rebuild the agent, so Go must be installed for all users."
-        return $false
+    $fromCheckout = Test-GoSources
+    if ($fromCheckout) {
+        # Run this checkout's installer: git pull, then build with Go (or
+        # download when Go is missing).
+        $script = $PSCommandPath
+        $workDir = $RepoRoot
+        $arguments = '-Update -Pull'
+        $git = Get-Command git -ErrorAction SilentlyContinue
+        if ($git) {
+            # The task runs as SYSTEM; trust the (user-owned) repo for it.
+            $previous = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            & $git.Source config --system --add safe.directory ($RepoRoot -replace '\\', '/') 2>&1 | Out-Null
+            $ErrorActionPreference = $previous
+        }
+    } else {
+        # A standalone copy of this script (say, from a release download):
+        # SYSTEM must not run it from a folder others can write to, so run a
+        # copy kept in the locked-down install folder.
+        New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+        $script = Join-Path $InstallDir 'install_agent.ps1'
+        if ($PSCommandPath -ne $script) { Copy-Item -LiteralPath $PSCommandPath -Destination $script -Force }
+        $workDir = $InstallDir
+        $arguments = '-Update'
     }
-    $git = Get-Command git -ErrorAction SilentlyContinue
-    if ($git) {
-        # The task runs as SYSTEM; trust the (user-owned) repo for it.
-        $previous = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        & $git.Source config --system --add safe.directory ($RepoRoot -replace '\\', '/') 2>&1 | Out-Null
-        $ErrorActionPreference = $previous
-    }
+    if ($Download) { $arguments += ' -Download' }
+    if ($Repository -ne 'cpmurphy/kid-pc-monitor') { $arguments += " -Repository `"$Repository`"" }
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     try {
         $action = New-ScheduledTaskAction -Execute $powershell `
-            -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Update -Pull" `
-            -WorkingDirectory $RepoRoot
+            -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$script`" $arguments" `
+            -WorkingDirectory $workDir
         $atStartup = New-ScheduledTaskTrigger -AtStartup
         $atStartup.Delay = 'PT2M'
         $daily = New-ScheduledTaskTrigger -Daily -At 4am
@@ -912,9 +1021,14 @@ function Enable-AutoUpdate {
         return $false
     }
     Write-Host "Automatic updates enabled (scheduled task '$AutoUpdateTaskName')."
-    Write-Host "   The PC pulls and rebuilds the agent ~2 min after startup and daily at 4am."
-    Write-Host "   Requires Git and Go installed for all users (on the system PATH)."
-    Write-Host "   The task runs this checkout's code as SYSTEM: keep it where the child cannot write."
+    if ($fromCheckout) {
+        Write-Host "   ~2 min after startup and daily at 4am the PC pulls this checkout and rebuilds"
+        Write-Host "   the agent (Go and Git installed for all users), or downloads the latest"
+        Write-Host "   release when Go is missing."
+        Write-Host "   The task runs this checkout's code as SYSTEM: keep it where the child cannot write."
+    } else {
+        Write-Host "   ~2 min after startup and daily at 4am the PC installs the latest release."
+    }
     return $true
 }
 
@@ -926,12 +1040,10 @@ function Update-LegacyAutoUpdateTask {
     if (-not $task) { return }
     $runsPython = @($task.Actions | Where-Object { "$($_.Execute) $($_.Arguments)" -match 'install\.py' }).Count -gt 0
     if (-not $runsPython) { return }
-    Write-Host "`nThe automatic-update task '$AutoUpdateTaskName' still runs the Python installer."
-    if (Find-GoTool) {
-        if (Enable-AutoUpdate) { return }
-    }
+    Write-Host "`nThe automatic-update task '$AutoUpdateTaskName' still runs the Python installer; updating it."
+    if (Enable-AutoUpdate) { return }
     Unregister-ScheduledTask -TaskName $AutoUpdateTaskName -Confirm:$false
-    Write-Host "   Removed it. Re-enable automatic updates with -EnableAutoUpdate once Go is installed for all users."
+    Write-Host "   Removed it. Re-enable automatic updates with -EnableAutoUpdate."
 }
 
 function Disable-AutoUpdate {
