@@ -11,6 +11,12 @@ and checks that each side can load the settings/state files the other saved:
 
   C. Python AgentStateStore  <->  Go state.Store
 
+and, on Windows only, runs the real Go agent against the Python panel:
+
+  D. go/cmd/kid-pc-agent  <->  PanelReverseServer + a discovery endpoint
+     (secret store, discovery, reverse session, log format, reconnect; the
+     agent gets throwaway data directories and is never asked to lock)
+
 The golden vectors (``go test ./...`` plus ``tests/test_protocol_vectors.py``)
 check each function in isolation; this checks the whole session, framing and
 all.  Needs a Go toolchain.  Linux/macOS/Windows; no Windows session required.
@@ -424,6 +430,162 @@ def state_files_session(exe: Path) -> Checks:
     return checks
 
 
+# ---------------------------------------------------------------------------
+# D. The real Go agent (kid-pc-agent) <-> Python panel reverse server
+# ---------------------------------------------------------------------------
+def real_agent_session(_exe: Path, go: str, out_dir: Path) -> Checks:
+    """Discovery, secret store, reverse session, logging and reconnect.
+
+    Windows only. The agent runs against throwaway LOCALAPPDATA, ProgramData
+    and secrets directories with no limits set, and is only sent reads and a
+    daily_limit change, so it never locks, pops up or shuts down this PC.
+    """
+    import getpass
+    import os
+    import platform as pyplatform
+    import re
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    from kid_pc_monitor import secrets_store
+    from kid_pc_monitor.panel_reverse_server import PanelReverseServer
+
+    print("D. Real Go agent <-> Python panel reverse server")
+    checks = Checks("real-agent")
+    agent_exe = out_dir / "kid-pc-agent.exe"
+    subprocess.run(
+        [go, "build", "-o", str(agent_exe), "./cmd/kid-pc-agent"], cwd=ROOT / "go", check=True
+    )
+
+    work = Path(tempfile.mkdtemp(prefix="kpm-real-agent-"))
+    local_appdata = work / "local"
+    program_data = work / "programdata"
+    secrets_dir = work / "secrets"
+    for d in (local_appdata, program_data, secrets_dir):
+        d.mkdir()
+    saved_env = {k: os.environ.get(k) for k in ("KID_PC_MONITOR_SECRETS_DIR",)}
+    os.environ["KID_PC_MONITOR_SECRETS_DIR"] = str(secrets_dir)
+    secrets_store.save_secret("panel-agent-shared-secret", SECRET)
+
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    reverse_port = probe.getsockname()[1]
+    probe.close()
+    server = PanelReverseServer(host="127.0.0.1", port=reverse_port, status_refresh_sec=3600)
+    server.start()
+
+    class Discover(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - http.server API
+            body = json.dumps(
+                {"service": "kid-pc-monitor-panel", "version": 1, "reverse_port": reverse_port}
+            ).encode()
+            self.send_response(200 if self.path == "/agent/v1/discover" else 404)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args: Any) -> None:
+            pass
+
+    http = ThreadingHTTPServer(("127.0.0.1", 0), Discover)
+    threading.Thread(target=http.serve_forever, daemon=True).start()
+    panel_url = f"http://127.0.0.1:{http.server_address[1]}"
+
+    env = {
+        **os.environ,
+        "LOCALAPPDATA": str(local_appdata),
+        "ProgramData": str(program_data),
+        "KID_PC_MONITOR_PANEL_URL": panel_url,
+        "KID_PC_MONITOR_LOG_LEVEL": "DEBUG",
+    }
+    agent = subprocess.Popen(
+        [str(agent_exe)],
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    def wait_session(previous: Any = None, timeout: float = 20.0) -> Any:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            s = server.session_for_ip("127.0.0.1")
+            if s is not None and s is not previous:
+                return s
+            time.sleep(0.1)
+        return None
+
+    data_dir = local_appdata / "KidPCMonitor"
+    try:
+        session = wait_session()
+        checks.check("agent discovered the panel and connected", session is not None, True)
+        if session is None:
+            return checks
+        checks.check("hostname matches platform.node()", session.hostname, pyplatform.node())
+        checks.check(
+            "current_user matches getpass.getuser()",
+            session.pc_info.get("current_user"),
+            getpass.getuser(),
+        )
+        checks.check("fresh state: no daily limit", session.pc_info.get("daily_limit"), None)
+        checks.check("fresh state: not manually locked", session.pc_info.get("manual_lock"), False)
+        checks.check(
+            "panel URL cached",
+            (data_dir / "panel_url.txt").read_text(encoding="utf-8"),
+            panel_url + "\n",
+        )
+
+        r = session.submit(action="set", var="daily_limit", val=600)
+        checks.check("set daily_limit", r.ok, True)
+        r = session.submit(action="get", var="daily_limit")
+        checks.check("get daily_limit", r.result, 600)
+        daily = json.loads((data_dir / "daily_settings.json").read_text(encoding="utf-8"))
+        checks.check("daily_settings.json written", daily.get("allowance"), 600)
+
+        logs = server.get_logs("127.0.0.1", tail=200)
+        line_re = re.compile(
+            r"^\[\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\] (DEBUG|INFO|WARNING|ERROR|CRITICAL) \S+: "
+        )
+        checks.check(
+            "every log line is in Python's format",
+            [line for line in logs.lines if not line_re.match(line)],
+            [],
+        )
+        checks.check("log path", logs.path, str(data_dir / "pc_control.log"))
+        for needle in (
+            "INFO kid_pc_monitor: Agent process starting",
+            "INFO kid_pc_monitor: Connectivity check: pid=",
+            "INFO AgentReverseClient: Connected reverse session to panel 127.0.0.1:",
+            "INFO kid_pc_monitor: Agent running (enforcement + reverse TCP)",
+        ):
+            checks.check(f"log has {needle!r}", any(needle in line for line in logs.lines), True)
+
+        # The panel drops the session; the agent must come back on its own.
+        session.close()
+        again = wait_session(previous=session, timeout=20.0)
+        checks.check("agent reconnected after the panel hung up", again is not None, True)
+        if again is not None:
+            r = again.submit(action="get", var="daily_limit")
+            checks.check("state survives the reconnect", r.result, 600)
+            tail = server.get_logs("127.0.0.1", tail=50).lines
+            checks.check(
+                "hang-up logged",
+                any("AgentReverseClient: Panel closed reverse connection" in line for line in tail),
+                True,
+            )
+    finally:
+        agent.kill()
+        agent.wait(timeout=10)
+        server.stop()
+        http.shutdown()
+        for k, v in saved_env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+        shutil.rmtree(work, ignore_errors=True)
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", default=shutil.which("go"), help="path to the go tool")
@@ -442,6 +604,13 @@ def main() -> int:
         out_dir = Path(args.keep) if args.keep else Path(tmp)
         out_dir.mkdir(parents=True, exist_ok=True)
         exe = build_xcheck(args.go, out_dir)
+        if sys.platform == "win32":
+
+            def real_agent(exe: Path) -> Checks:
+                return real_agent_session(exe, args.go, out_dir)
+
+            real_agent.__name__ = "real_agent_session"
+            sessions.append(real_agent)
 
         results: list[Checks] = []
         for session in sessions:

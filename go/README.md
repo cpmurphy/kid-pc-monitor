@@ -10,14 +10,17 @@ toward a compiled Windows agent. Standard library only.
 | `state/` | `daily_settings.json` / `state.json` persistence, wake-time rollover, legacy migration, ProgramData bootstrap. |
 | `dispatcher/` | Executes validated requests against a `Control` interface (get/set/clear/extend/message/shutdown/lock/get_logs) and builds the response content; `dispatcher.Handler(control)` plugs into `protocol.HandleRequest`. |
 | `monitor/` | The monitoring loop (`pc_time_control.py`): usage accounting, low-time warnings, lock enforcement, periodic saves, and the parent actions. `monitor.Control` implements `dispatcher.Control` over a `Platform` interface. Safe for concurrent use. |
+| `agent/` | Agent process plumbing (`pc_control.py`, `agent_sync_client.py`): reverse client (discovery, panel URL cache, TLS fallback, reconnect), Python-format size-rotated `pc_control.log`, data dir and user name. |
+| `secrets/` | Reads the Fernet-encrypted secrets the Python installers store (`secrets_store.py`), including the shared secret. |
+| `netinfo/` | Primary IPv4 without contacting external hosts (`network.py`, Windows resolvers). |
+| `cmd/kid-pc-agent/` | The agent executable (`pc_control.py`'s `main`). Build with `go build -ldflags -H=windowsgui ./cmd/kid-pc-agent` so the scheduled task opens no console. |
 | `winplatform/` | Windows `monitor.Platform` (`platforms/windows.py`): WTS session lock state with LogonUI fallback, active-console check, `LockWorkStation`, timed popups, `shutdown.exe`. |
 | `cmd/wincheck/` | Manual check of `winplatform` on a real Windows host (status, lock, message, shutdown/cancel). |
 | `cmd/xcheck/` | Test fixture used by `scripts/cross_check_go.py`: a toy agent, a toy panel, and state-file helpers. Not a product. |
 | `../testdata/*/vectors.json` | Golden vectors generated from the Python implementation. |
 
-Not ported yet: the agent's `main` (including the connectivity diagnostics
-from `platforms/windows.py`), logging setup, the reverse-connection client,
-and the installers.
+Not ported yet: the installers (`scripts/install.py` still installs the
+Python agent) and writing secrets.
 
 ## The Python code is the reference
 

@@ -6,7 +6,7 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
-- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher and monitoring loop, plus the `xcheck` test fixture; see `go/README.md`.
+- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`.
 - `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
