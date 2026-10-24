@@ -51,29 +51,22 @@ You need:
 
 ### Before You Start
 
-**On every computer:** [Git](https://git-scm.com/install/) (on the kid's PC,
-choose the default "for all users" install so automatic updates can use it).
+**The kid's PC needs nothing installed first** — no Python, no Git. The agent is
+a single compiled program that the installer downloads.
 
-Test it:
-
-```powershell
-git --version
-```
-
-**On the parent computer only:** [Python](https://www.python.org/downloads/)
-3.11 or later, for the web panel. During installation on Windows:
+**On the parent computer:** [Python](https://www.python.org/downloads/) 3.11 or
+later and [Git](https://git-scm.com/install/), for the web panel. During the
+Python installation on Windows:
 
 - Check "Add Python to PATH"
 - Choose "Install for all users"
 
-Test it:
+Test them:
 
 ```powershell
 python --version
+git --version
 ```
-
-The kid's PC needs neither Python nor any other runtime: the agent is a single
-compiled program.
 
 ### On the Kid’s PC
 
@@ -81,10 +74,14 @@ Log in as an Admin user and open PowerShell with **Run as administrator**.
 
 Run:
 ```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
+[Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+Invoke-WebRequest https://github.com/cpmurphy/kid-pc-monitor/releases/latest/download/install_agent.ps1 -OutFile $env:TEMP\install_agent.ps1 -UseBasicParsing
+powershell -ExecutionPolicy Bypass -File $env:TEMP\install_agent.ps1
 ```
+
+(Or download `install_agent.ps1` from the
+[latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)
+in a browser and run the last line with its path.)
 
 The install script walks you through the installation.
 For this setup, you want to:
@@ -93,17 +90,33 @@ For this setup, you want to:
  2. Enter the kid's username when asked.
  3. Enter the regular bed time, wake-up time and daily time allowance.
  4. Enter the shared secret (use the same one when you install the web panel).
+ 5. Answer **Y** to install updates automatically (recommended).
 
-The installer downloads the agent, `kid-pc-agent.exe`, from the latest
-[GitHub release](https://github.com/cpmurphy/kid-pc-monitor/releases) and checks
-it against the release's `SHA256SUMS` before installing it. If
-[Go](https://go.dev/dl/) is installed it builds the agent from your checkout
-instead. The released program is not code-signed, so SmartScreen or antivirus
-may warn about it; building it yourself with Go avoids that.
+The installer downloads the agent, `kid-pc-agent.exe`, from the same release and
+checks it against the release's `SHA256SUMS` before installing it. The released
+program is not code-signed, so SmartScreen or antivirus may warn about it.
 
-Options: `-Download` (use the release even if Go is installed), `-Version v1.1.0`
-(a specific release), `-AgentExe <path>` (install a file you already have),
-`-Install` / `-Uninstall` (skip the menu).
+Everything ends up in `C:\ProgramData\KidPCMonitor`: the agent, a copy of the
+installer and `update.cmd`, so later updates and uninstalling need nothing
+else (see [Updating](#-updating-this-fork)).
+
+Options: `-Version v1.1.0` (a specific release), `-AgentExe <path>` (install a
+file you already have), `-Install` / `-Uninstall` (skip the menu).
+
+<details>
+<summary>Installing from a checkout (building with Go)</summary>
+
+From a clone of this repository, `scripts\install_agent.ps1` builds the agent
+with [Go](https://go.dev/dl/) when Go is installed (add `-Download` to use the
+release anyway), so a self-built program avoids the SmartScreen warning.
+`update.bat` in the checkout then pulls and rebuilds.
+
+```powershell
+git clone https://github.com/cpmurphy/kid-pc-monitor.git
+cd kid-pc-monitor
+powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
+```
+</details>
 
 <details>
 <summary>Moving from the Python agent</summary>
@@ -158,11 +171,11 @@ IPv4 Address . . . . . . . . . . : 192.168.x.x
 From an administrator PowerShell:
 
 ```powershell
-cd kid-pc-monitor
-powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1 -Uninstall
+powershell -ExecutionPolicy Bypass -File C:\ProgramData\KidPCMonitor\install_agent.ps1 -Uninstall
 ```
 
-(Or run it without `-Uninstall` and choose option 2, `Remove scheduled task`.)
+This removes the agent's scheduled task and the automatic-update task. (Or run
+it without `-Uninstall` and choose option 2, `Remove scheduled task`.)
 
 ### On the Parent’s PC
 
@@ -175,22 +188,27 @@ Choose option 2, `Remove scheduled task`
 
 ## 🔄 Updating (this fork)
 
-The agent runs from a **copy** in `C:\ProgramData\KidPCMonitor`, so it has to be
-redeployed to update. Each update installs the latest release (or, if Go is
-installed, a fresh build of your checkout) and restarts the agent. Pick
-whichever is easiest:
+Updates install the latest release from GitHub (checked against its
+`SHA256SUMS`) and restart the agent. When the newest release is already
+installed nothing happens, so the agent is not restarted needlessly. No Git or
+repository is needed.
 
-- **One-click (recommended):** double-click **`update.bat`** in the repo folder on
-  the kid's PC. It elevates, runs `git pull`, redeploys the agent, and restarts it.
-- **Fully automatic:** run **`update.bat auto`** once. It installs a scheduled task
-  that updates automatically — about 2 minutes after each startup and daily at
-  4am. Turn it off with `update.bat auto-off`. (Automatic updates need **Git
-  installed for all users** so the SYSTEM task can find it on the system PATH.)
+- **Automatic (recommended):** answer **Y** when the installer offers it, or
+  run `C:\ProgramData\KidPCMonitor\update.cmd auto` once. The PC then checks
+  for a new release about 2 minutes after each startup and daily at 4am. Turn
+  it off with `update.cmd auto-off`.
+- **One-click:** double-click **`C:\ProgramData\KidPCMonitor\update.cmd`**. It
+  asks for administrator rights, then updates.
 - **By hand:** from an administrator PowerShell,
-  `powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1 -Update -Pull`.
+  `powershell -ExecutionPolicy Bypass -File C:\ProgramData\KidPCMonitor\install_agent.ps1 -Update`.
 
-The agent logs its version when it starts (`version=v1.1.0` in
-`pc_control.log`), so you can check which release is running.
+Each update also refreshes the installer copy in `C:\ProgramData\KidPCMonitor`
+from the same release. The agent logs its version when it starts
+(`version=v1.1.0` in `pc_control.log`), so you can check which release is
+running.
+
+If you installed from a checkout, `update.bat` in the repository folder still
+pulls and rebuilds (`update.bat auto` / `auto-off` for automatic updates).
 
 The **parent web panel** runs from the checkout directly, so there you only need
 `git pull` and a restart of the panel. On Linux, re-running
@@ -258,11 +276,10 @@ a computer you control.
 Only Windows is supported currently.
 
 ```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-
-<# Run installer as administrator #>
-powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
+<# In PowerShell opened with "Run as administrator" #>
+[Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+Invoke-WebRequest https://github.com/cpmurphy/kid-pc-monitor/releases/latest/download/install_agent.ps1 -OutFile $env:TEMP\install_agent.ps1 -UseBasicParsing
+powershell -ExecutionPolicy Bypass -File $env:TEMP\install_agent.ps1
 ```
 
 Run the installer from an administrator account and, when prompted,

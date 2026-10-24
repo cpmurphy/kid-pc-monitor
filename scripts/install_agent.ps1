@@ -4,10 +4,11 @@ Kid PC Monitor agent installer for the Go agent (go/cmd/kid-pc-agent).
 
 .DESCRIPTION
 A PowerShell port of scripts/install.py that installs the compiled Go agent
-instead of the Python one, so the kid's PC needs no Python at all. Run it
-from an elevated Windows PowerShell 5.1 (or PowerShell 7) prompt:
+instead of the Python one, so the kid's PC needs neither Python nor Git. Run it
+from an elevated Windows PowerShell 5.1 (or PowerShell 7) prompt, either from
+a checkout or on its own (it is attached to every GitHub release):
 
-    powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
+    powershell -ExecutionPolicy Bypass -File install_agent.ps1
 
 With no switches it shows a menu (install / remove). It:
   - gets kid-pc-agent.exe: -AgentExe if given, else a build from go/ when Go
@@ -20,7 +21,13 @@ With no switches it shows a menu (install / remove). It:
   - stores the panel <-> agent shared secret (Fernet-encrypted, readable by
     the Python and Go agents and the web panel);
   - registers the KidPCMonitor logon task (replacing a Python agent's task)
-    and starts it.
+    and starts it;
+  - keeps version.txt, a copy of this installer and update.cmd next to the
+    agent, so updates need neither the repository nor Git, and offers to
+    turn on automatic updates.
+
+-Update with a released agent does nothing when version.txt already names
+the latest release, so the daily automatic update does not restart the agent.
 
 .PARAMETER AgentExe
 A prebuilt kid-pc-agent.exe to install instead of building one. Build it with
@@ -43,7 +50,9 @@ Run the install without showing the menu (it still asks its questions).
 Remove the scheduled task without showing the menu.
 
 .PARAMETER Update
-Re-deploy the agent for the previously installed account (non-interactive).
+Re-deploy the agent for the previously installed account (non-interactive):
+the latest release (skipped when already installed), or a fresh build from a
+checkout with Go.
 
 .PARAMETER Pull
 With -Update: run "git pull --ff-only" in the repo first.
@@ -304,71 +313,120 @@ function Invoke-Download([string]$Url, [string]$OutFile) {
     }
 }
 
-# Download this architecture's agent from a GitHub release (-Version, else the
-# latest) and check it against the release's SHA256SUMS.
-function Get-ReleasedAgent {
-    $asset = Get-AgentAssetName (Get-AgentArch)
-    $tag = $Version
-    $temp = [IO.Path]::GetTempPath()
-    if (-not $tag) {
-        $latest = Join-Path $temp ("kid-pc-monitor-latest-{0}.json" -f [guid]::NewGuid())
-        try {
-            Invoke-Download "$GitHubApi/repos/$Repository/releases/latest" $latest
-            $tag = Get-JsonValue (Read-JsonObject $latest) 'tag_name'
-        } finally {
-            Remove-Item -LiteralPath $latest -Force -ErrorAction SilentlyContinue
-        }
-        if (-not ($tag -is [string] -and $tag)) { throw "Could not find the latest release of $Repository." }
-    }
-    $base = "$GitHubWeb/$Repository/releases/download/$tag"
-    Write-Host "`nDownloading $asset from release $tag of $Repository ..."
-    $exe = Join-Path $temp ("kid-pc-agent-{0}.exe" -f [guid]::NewGuid())
-    $sumsFile = Join-Path $temp ("kid-pc-agent-{0}.sha256" -f [guid]::NewGuid())
+function New-TempPath([string]$Extension) {
+    return Join-Path ([IO.Path]::GetTempPath()) ("kid-pc-agent-{0}{1}" -f [guid]::NewGuid(), $Extension)
+}
+
+# The release to install: -Version, else the latest release's tag.
+function Get-ReleaseTag {
+    if ($Version) { return $Version }
+    $latest = New-TempPath '.json'
     try {
-        Invoke-Download "$base/$asset" $exe
-        Invoke-Download "$base/SHA256SUMS" $sumsFile
-        $expected = (Read-Checksums ([IO.File]::ReadAllText($sumsFile)))[$asset]
-        if (-not $expected) { throw "SHA256SUMS in release $tag has no entry for $asset." }
-        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $exe).Hash.ToLowerInvariant()
+        Invoke-Download "$GitHubApi/repos/$Repository/releases/latest" $latest
+        $tag = Get-JsonValue (Read-JsonObject $latest) 'tag_name'
+    } finally {
+        Remove-Item -LiteralPath $latest -Force -ErrorAction SilentlyContinue
+    }
+    if (-not ($tag -is [string] -and $tag)) { throw "Could not find the latest release of $Repository." }
+    return $tag
+}
+
+# Download one asset of a release into a temporary file and check it against
+# the release's SHA256SUMS (as a name -> hash table). Returns the file's path.
+function Get-VerifiedReleaseAsset([string]$Tag, [string]$Name, $Sums, [string]$Extension) {
+    $expected = $Sums[$Name]
+    if (-not $expected) { throw "SHA256SUMS in release $Tag has no entry for $Name." }
+    $path = New-TempPath $Extension
+    try {
+        Invoke-Download "$GitHubWeb/$Repository/releases/download/$Tag/$Name" $path
+        $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant()
         if ($actual -ne $expected) {
-            throw "The downloaded $asset does not match SHA256SUMS (got $actual, expected $expected)."
+            throw "The downloaded $Name does not match SHA256SUMS (got $actual, expected $expected)."
         }
     } catch {
-        Remove-Item -LiteralPath $exe -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
         throw
+    }
+    Write-Host "   $Name SHA-256 verified: $actual"
+    return $path
+}
+
+# This architecture's agent and the installer from a GitHub release, both
+# checked against the release's SHA256SUMS.
+function Get-ReleasedAgent([string]$Tag) {
+    if (-not $Tag) { $Tag = Get-ReleaseTag }
+    $asset = Get-AgentAssetName (Get-AgentArch)
+    Write-Host "`nDownloading release $Tag of $Repository ..."
+    $sumsFile = New-TempPath '.sha256'
+    try {
+        Invoke-Download "$GitHubWeb/$Repository/releases/download/$Tag/SHA256SUMS" $sumsFile
+        $sums = Read-Checksums ([IO.File]::ReadAllText($sumsFile))
     } finally {
         Remove-Item -LiteralPath $sumsFile -Force -ErrorAction SilentlyContinue
     }
-    Write-Host "   SHA-256 verified: $actual"
-    return @{ Path = $exe; Temporary = $true }
+    $exe = Get-VerifiedReleaseAsset $Tag $asset $sums '.exe'
+    $installer = $null
+    if ($sums.ContainsKey('install_agent.ps1')) {
+        try {
+            $installer = Get-VerifiedReleaseAsset $Tag 'install_agent.ps1' $sums '.ps1'
+        } catch {
+            Remove-Item -LiteralPath $exe -Force -ErrorAction SilentlyContinue
+            throw
+        }
+    }
+    return @{ Path = $exe; Temporary = $true; Version = $Tag; Installer = $installer }
+}
+
+# True when the agent will come from a release rather than -AgentExe or a build.
+function Test-ReleaseMode {
+    if ($AgentExe) { return $false }
+    if ($Download) { return $true }
+    return -not ((Find-GoTool) -and (Test-GoSources))
 }
 
 # The kid-pc-agent.exe to install: -AgentExe; else a build from go/ when Go and
 # the sources are here (and -Download was not given); else the released exe.
-# Returns @{ Path; Temporary } so a temporary file can be deleted after copying.
-function Resolve-AgentExe {
+# Returns @{ Path; Temporary; Version; Installer }: Temporary files are deleted
+# after copying, Version is recorded in version.txt, and Installer (when set)
+# is the install_agent.ps1 to keep next to the agent.
+function Resolve-AgentExe([string]$Tag) {
     if ($AgentExe) {
         if (-not (Test-Path -LiteralPath $AgentExe -PathType Leaf)) {
             throw "Agent executable not found: $AgentExe"
         }
-        return @{ Path = (Resolve-Path -LiteralPath $AgentExe).ProviderPath; Temporary = $false }
+        $path = (Resolve-Path -LiteralPath $AgentExe).ProviderPath
+        return @{ Path = $path; Temporary = $false; Version = 'custom'; Installer = $null }
     }
-    $go = if ($Download) { $null } else { Find-GoTool }
-    if (-not $go -or -not (Test-GoSources)) {
+    if (Test-ReleaseMode) {
         if (-not $Download) { Write-Host "`nGo or the agent sources are not here; using the released agent." }
-        return Get-ReleasedAgent
+        return Get-ReleasedAgent $Tag
     }
-    $goDir = Join-Path $RepoRoot 'go'
-    $out = Join-Path ([IO.Path]::GetTempPath()) ("kid-pc-agent-{0}.exe" -f [guid]::NewGuid())
+    $go = Find-GoTool
+    $out = New-TempPath '.exe'
     Write-Host "`nBuilding the Go agent with $go ..."
-    Push-Location $goDir
+    Push-Location (Join-Path $RepoRoot 'go')
     try {
         & $go build -trimpath -buildvcs=false -ldflags '-H=windowsgui -s -w' -o $out ./cmd/kid-pc-agent
         if ($LASTEXITCODE -ne 0) { throw "go build failed (exit code $LASTEXITCODE)." }
     } finally {
         Pop-Location
     }
-    return @{ Path = $out; Temporary = $true }
+    return @{ Path = $out; Temporary = $true; Version = 'local build'; Installer = $null }
+}
+
+function Remove-ResolvedAgent($Agent) {
+    if ($Agent.Temporary) { Remove-Item -LiteralPath $Agent.Path -Force -ErrorAction SilentlyContinue }
+    if ($Agent.Installer) { Remove-Item -LiteralPath $Agent.Installer -Force -ErrorAction SilentlyContinue }
+}
+
+# The version recorded by the last install ("v1.2.0", "local build", "custom"),
+# or $null.
+function Get-InstalledVersion {
+    $path = Join-Path $InstallDir 'version.txt'
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { return $null }
+    $text = ([IO.File]::ReadAllText($path)).Trim()
+    if ($text) { return $text }
+    return $null
 }
 
 function Stop-AgentTask {
@@ -403,15 +461,47 @@ function Set-InstallDirAcl([string]$User) {
     }
 }
 
-# Copy the agent into ProgramData, remove the Python agent's files there and
-# lock the folder down. Returns the installed path.
-function Install-AgentFiles([string]$User, [string]$SourceExe) {
+# update.cmd, kept next to the agent so the parent can update (or switch
+# automatic updates on and off) without the repository or Git.
+$UpdateCmd = @'
+@echo off
+setlocal
+rem Kid PC Monitor - update the agent to the latest release.
+rem   update.cmd            update now
+rem   update.cmd auto       turn ON automatic updates (startup + daily), then update
+rem   update.cmd auto-off   turn OFF automatic updates
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator privileges...
+    if "%~1"=="" (
+        powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
+    ) else (
+        powershell -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs -ArgumentList '%*'"
+    )
+    exit /b
+)
+set "INSTALLER=powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install_agent.ps1""
+if /i "%~1"=="auto-off" (
+    %INSTALLER% -DisableAutoUpdate
+    goto :done
+)
+if /i "%~1"=="auto" %INSTALLER% -EnableAutoUpdate
+%INSTALLER% -Update
+:done
+echo(
+pause
+'@
+
+# Copy the agent into ProgramData with its version, a copy of the installer and
+# update.cmd; remove the Python agent's files there and lock the folder down.
+# Agent is what Resolve-AgentExe returned. Returns the installed agent's path.
+function Install-AgentFiles([string]$User, $Agent) {
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
     Stop-AgentTask
     $dest = Join-Path $InstallDir $AgentExeName
     for ($attempt = 1; ; $attempt++) {
         try {
-            Copy-Item -LiteralPath $SourceExe -Destination $dest -Force
+            Copy-Item -LiteralPath $Agent.Path -Destination $dest -Force
             break
         } catch {
             if ($attempt -ge 10) {
@@ -427,6 +517,15 @@ function Install-AgentFiles([string]$User, [string]$SourceExe) {
             Write-Host "   Removed the Python agent's $legacy"
         }
     }
+    Write-FileAtomic (Join-Path $InstallDir 'version.txt') "$($Agent.Version)`r`n"
+    # Keep an installer next to the agent: the release's when we have it, else
+    # this one. (A running script is already parsed, so replacing it is safe.)
+    $installerSource = if ($Agent.Installer) { $Agent.Installer } else { $PSCommandPath }
+    $installerDest = Join-Path $InstallDir 'install_agent.ps1'
+    if ($installerSource -and $installerSource -ne $installerDest) {
+        Copy-Item -LiteralPath $installerSource -Destination $installerDest -Force
+    }
+    Write-FileAtomic (Join-Path $InstallDir 'update.cmd') ($UpdateCmd -replace "`r?`n", "`r`n")
     Set-InstallDirAcl $User
     return $dest
 }
@@ -864,6 +963,11 @@ function Remove-Agent {
     } else {
         Write-Host "Task not found or already removed."
     }
+    # Left behind, the update task would put the agent files back.
+    if (Get-ScheduledTask -TaskName $AutoUpdateTaskName -ErrorAction SilentlyContinue) {
+        Unregister-ScheduledTask -TaskName $AutoUpdateTaskName -Confirm:$false
+        Write-Host "Automatic-update task removed."
+    }
     Write-Host "`nRemoving Windows Firewall rule..."
     Remove-LegacyFirewallRule
 }
@@ -885,13 +989,13 @@ function Invoke-Install {
     }
     $isSelf = [bool]$currentUser -and $targetUser -eq $currentUser
 
-    $built = Resolve-AgentExe
+    $agent = Resolve-AgentExe
     try {
-        Write-Host "`nInstalling the agent to $InstallDir ..."
-        $exePath = Install-AgentFiles $targetUser $built.Path
+        Write-Host "`nInstalling the agent ($($agent.Version)) to $InstallDir ..."
+        $exePath = Install-AgentFiles $targetUser $agent
         Write-Host "   Granted $targetUser read+execute on the install directory."
     } finally {
-        if ($built.Temporary) { Remove-Item -LiteralPath $built.Path -Force -ErrorAction SilentlyContinue }
+        Remove-ResolvedAgent $agent
     }
 
     $stateDir = Get-AgentStateDir $targetUser $isSelf
@@ -928,6 +1032,14 @@ function Invoke-Install {
     }
     Start-AgentTask $targetUser
     Update-LegacyAutoUpdateTask
+    if (-not (Get-ScheduledTask -TaskName $AutoUpdateTaskName -ErrorAction SilentlyContinue)) {
+        $answer = (Read-Host "`nInstall agent updates automatically (after startup and daily at 4am)? (Y/n)").Trim().ToLower()
+        if ($answer -eq '' -or $answer -eq 'y' -or $answer -eq 'yes') {
+            [void](Enable-AutoUpdate)
+        } else {
+            Write-Host "To update later, run $(Join-Path $InstallDir 'update.cmd') (or 'update.cmd auto' to turn on automatic updates)."
+        }
+    }
     Write-Host "`nSetup complete! The agent runs at $targetUser's logon, even on battery."
     return $true
 }
@@ -956,17 +1068,33 @@ function Invoke-Update {
     $targetUser = Get-ProgramDataTargetUser
     if (-not $targetUser) {
         Write-Host "ERROR: No previous install found (no monitored user recorded in ProgramData)."
-        Write-Host "   Run a full install first:  scripts\install_agent.ps1"
+        Write-Host "   Run a full install first:  install_agent.ps1"
         return $false
     }
     if ($Pull) { Invoke-GitPull }
-    $built = Resolve-AgentExe
+    $tag = $null
+    if (Test-ReleaseMode) {
+        $tag = Get-ReleaseTag
+        $installed = Get-InstalledVersion
+        if ($installed -eq $tag) {
+            # Nothing to do, and no reason to restart the agent (the automatic
+            # update runs daily).
+            Write-Host "The agent is already up to date ($tag)."
+            if (-not (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue)) {
+                Write-Host "WARNING: The $TaskName task is missing; run a full install to recreate it."
+            }
+            return $true
+        }
+        $from = if ($installed) { $installed } else { 'unknown version' }
+        Write-Host "Updating from $from to $tag."
+    }
+    $agent = Resolve-AgentExe $tag
     try {
         Write-Host "Updating the agent in $InstallDir for '$targetUser' ..."
-        Install-AgentFiles $targetUser $built.Path | Out-Null
-        Write-Host "Agent updated."
+        Install-AgentFiles $targetUser $agent | Out-Null
+        Write-Host "Agent updated ($($agent.Version))."
     } finally {
-        if ($built.Temporary) { Remove-Item -LiteralPath $built.Path -Force -ErrorAction SilentlyContinue }
+        Remove-ResolvedAgent $agent
     }
     if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
         Start-AgentTask $targetUser

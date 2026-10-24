@@ -121,10 +121,15 @@ try {
     [IO.File]::WriteAllBytes($fakeExe, [byte[]](1..200))
     New-Item -ItemType Directory -Force -Path (Join-Path $InstallDir 'kid_pc_monitor') | Out-Null
     Set-Content -LiteralPath (Join-Path $InstallDir 'pc_control.py') -Value 'legacy'
-    $dest = Install-AgentFiles $env:USERNAME $fakeExe
+    $dest = Install-AgentFiles $env:USERNAME @{ Path = $fakeExe; Temporary = $false; Version = 'v0.0.1'; Installer = $null }
     Check 'agent copied' ((Get-FileHash $dest).Hash) ((Get-FileHash $fakeExe).Hash)
     Check 'legacy package removed' (Test-Path (Join-Path $InstallDir 'kid_pc_monitor')) $false
     Check 'legacy launcher removed' (Test-Path (Join-Path $InstallDir 'pc_control.py')) $false
+    Check 'version recorded' (Get-InstalledVersion) 'v0.0.1'
+    Check 'installer kept next to the agent' ((Get-FileHash (Join-Path $InstallDir 'install_agent.ps1')).Hash) ((Get-FileHash (Join-Path $repo 'scripts\install_agent.ps1')).Hash)
+    $cmd = [IO.File]::ReadAllText((Join-Path $InstallDir 'update.cmd'))
+    Check 'update.cmd runs the kept installer' ($cmd.Contains('%~dp0install_agent.ps1') -and $cmd.Contains('-Update')) $true
+    Check 'update.cmd has CRLF line endings' (($cmd -split "`r`n").Count -eq ($cmd -split "`n").Count) $true
     $acl = Get-Acl $InstallDir
     Check 'inheritance removed' $acl.AreAccessRulesProtected $true
     $ids = @($acl.Access | ForEach-Object { $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } | Sort-Object -Unique)
@@ -162,7 +167,10 @@ print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
         New-Item -ItemType Directory -Force -Path $dl, (Join-Path $root 'api\repos\owner\repo\releases') | Out-Null
         Copy-Item $fakeExe (Join-Path $dl $assetName)
         $hash = (Get-FileHash -Algorithm SHA256 $fakeExe).Hash.ToLowerInvariant()
-        [IO.File]::WriteAllText((Join-Path $dl 'SHA256SUMS'), "$hash  $assetName`n", $Utf8NoBom)
+        $releasedInstaller = Join-Path $dl 'install_agent.ps1'
+        [IO.File]::WriteAllText($releasedInstaller, "# the v9.9.9 installer`r`n", $Utf8NoBom)
+        $installerHash = (Get-FileHash -Algorithm SHA256 $releasedInstaller).Hash.ToLowerInvariant()
+        [IO.File]::WriteAllText((Join-Path $dl 'SHA256SUMS'), "$hash  $assetName`n$installerHash  install_agent.ps1`n", $Utf8NoBom)
         [IO.File]::WriteAllText((Join-Path $root 'api\repos\owner\repo\releases\latest'), '{"tag_name": "v9.9.9"}', $Utf8NoBom)
         $bad = Join-Path $root 'web\owner\repo\releases\download\v0.0.1'
         New-Item -ItemType Directory -Force -Path $bad | Out-Null
@@ -182,7 +190,10 @@ print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
             $script:Version = ''
             $got = Get-ReleasedAgent
             Check 'latest release downloaded and verified' ((Get-FileHash $got.Path).Hash) ((Get-FileHash $fakeExe).Hash)
-            Remove-Item $got.Path
+            Check 'release version reported' $got.Version 'v9.9.9'
+            Check 'release installer downloaded and verified' ((Get-FileHash $got.Installer).Hash) ((Get-FileHash $releasedInstaller).Hash)
+            Remove-ResolvedAgent $got
+            Check 'downloads cleaned up' ((Test-Path $got.Path) -or (Test-Path $got.Installer)) $false
             $script:Version = 'v0.0.1'
             $before = @(Get-ChildItem ([IO.Path]::GetTempPath()) -Filter 'kid-pc-agent-*').Count
             Check 'checksum mismatch refused' (Throws { Get-ReleasedAgent }) $true
@@ -194,7 +205,22 @@ print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
             $script:Download = $true
             $viaResolve = Resolve-AgentExe
             Check '-Download uses the release' ((Get-FileHash $viaResolve.Path).Hash) ((Get-FileHash $fakeExe).Hash)
-            Remove-Item $viaResolve.Path
+            Remove-ResolvedAgent $viaResolve
+
+            Write-Host "update from a release (no Git, no checkout)"
+            # A fresh install folder whose ACL this test does not tighten, so a
+            # non-elevated run can write to it again.
+            $script:InstallDir = Join-Path $work 'programdata2\KidPCMonitor'
+            function Set-InstallDirAcl([string]$User) { }
+            Write-ProgramDataDaily $env:USERNAME @{ WakeTime = '07:00'; BedTime = '21:00'; Allowance = $null } | Out-Null
+            Install-AgentFiles $env:USERNAME @{ Path = $fakeExe; Temporary = $false; Version = 'v0.0.1'; Installer = $null } | Out-Null
+            Check 'update to the latest release' (Invoke-Update) $true
+            Check 'new version recorded' (Get-InstalledVersion) 'v9.9.9'
+            Check 'kept installer replaced by the release one' ((Get-FileHash (Join-Path $InstallDir 'install_agent.ps1')).Hash) ((Get-FileHash $releasedInstaller).Hash)
+            $exeTime = (Get-Item (Join-Path $InstallDir $AgentExeName)).LastWriteTimeUtc
+            Start-Sleep -Milliseconds 50
+            Check 'second update succeeds' (Invoke-Update) $true
+            Check 'up-to-date agent left alone' ((Get-Item (Join-Path $InstallDir $AgentExeName)).LastWriteTimeUtc) $exeTime
         } finally {
             Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
         }
