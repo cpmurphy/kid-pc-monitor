@@ -173,9 +173,12 @@ The **parent web panel** runs from the checkout directly, so there you only need
 
 ## 📸 Screenshots
 
-![Main control panel](screenshots/main-control-panel.png)
-![View of an individual PC](screenshots/individual-pc.png)
-![Daily settings](screenshots/daily-settings.png)
+<p>
+  <img src="screenshots/main-control-panel.png" alt="Main control panel" width="260" valign="top">
+  <img src="screenshots/individual-pc.png" alt="View of an individual PC" width="260" valign="top">
+  <img src="screenshots/daily-settings.png" alt="Daily settings" width="260" valign="top">
+  <img src="screenshots/usage.png" alt="Usage history" width="260" valign="top">
+</p>
 
 ## Prerequisites
 
