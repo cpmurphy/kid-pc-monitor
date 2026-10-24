@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"unicode"
+
+	"kidpcmonitor/internal/pycompat"
 )
 
 // Value is a KDL scalar: nil, bool, int64 or string.
@@ -26,65 +27,15 @@ func normalize(v Value) Value {
 	return v
 }
 
-type intStatus int
+type intStatus = pycompat.Status
 
 const (
-	intOK intStatus = iota
-	intNotInt
-	intOverflow
+	intOK       = pycompat.OK
+	intNotInt   = pycompat.NotInt
+	intOverflow = pycompat.Overflow
 )
 
-func isPySpace(r rune) bool {
-	return unicode.IsSpace(r) || (r >= 0x1c && r <= 0x1f)
-}
-
-// pyInt mirrors the subset of Python's int(str) that matters on the wire:
-// surrounding whitespace, an optional sign, and ASCII digits with single
-// underscores between digits.
-func pyInt(s string) (int64, intStatus) {
-	s = strings.TrimFunc(s, isPySpace)
-	neg := false
-	if s != "" && (s[0] == '+' || s[0] == '-') {
-		neg = s[0] == '-'
-		s = s[1:]
-	}
-	if s == "" {
-		return 0, intNotInt
-	}
-	var n uint64
-	overflow := false
-	prevUnderscore := true // forbids a leading underscore
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c == '_' {
-			if prevUnderscore {
-				return 0, intNotInt
-			}
-			prevUnderscore = true
-			continue
-		}
-		if c < '0' || c > '9' {
-			return 0, intNotInt
-		}
-		prevUnderscore = false
-		d := uint64(c - '0')
-		if n > (1<<63)/10 || n*10 > (1<<63)-d {
-			overflow = true
-			continue
-		}
-		n = n*10 + d
-	}
-	if prevUnderscore {
-		return 0, intNotInt
-	}
-	if overflow || (!neg && n > 1<<63-1) {
-		return 0, intOverflow
-	}
-	if neg {
-		return -int64(n), intOK
-	}
-	return int64(n), intOK
-}
+func pyInt(s string) (int64, intStatus) { return pycompat.Int(s) }
 
 // pyStr renders v the way Python's str() would.
 func pyStr(v Value) string {
