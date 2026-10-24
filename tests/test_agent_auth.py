@@ -34,6 +34,12 @@ class SignatureTests(unittest.TestCase):
         self.assertNotIn("/", sig)
 
 
+class NonAsciiSignatureTests(unittest.TestCase):
+    def test_non_ascii_signature_does_not_verify(self) -> None:
+        key = agent_auth.derive_key("secret")
+        self.assertFalse(agent_auth.verify_signature(key, "v 3", "sig\u00e9"))
+
+
 class NonceTests(unittest.TestCase):
     def test_make_nonce_is_valid_and_unique(self) -> None:
         a, b = agent_auth.make_nonce(), agent_auth.make_nonce()
@@ -45,6 +51,12 @@ class NonceTests(unittest.TestCase):
         self.assertFalse(agent_auth.is_valid_nonce("abc"))
         self.assertFalse(agent_auth.is_valid_nonce("z" * 32))
         self.assertFalse(agent_auth.is_valid_nonce(12345))
+
+    def test_nonce_must_be_plain_hex(self) -> None:
+        # int(x, 16) would accept all of these.
+        self.assertFalse(agent_auth.is_valid_nonce("0x" + "a" * 30))
+        self.assertFalse(agent_auth.is_valid_nonce("a" * 16 + "_" + "a" * 15))
+        self.assertFalse(agent_auth.is_valid_nonce(" " + "a" * 31))
 
 
 class TimestampWindowTests(unittest.TestCase):

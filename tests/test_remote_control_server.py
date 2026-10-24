@@ -62,6 +62,19 @@ class HandleRequestTests(unittest.TestCase):
             self.assertFalse(resp.ok)
             self.assertEqual(resp.name, "kid-pc")
 
+    def test_unsupported_version_gets_signed_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = PCTimeControl(
+                platform=FakeHostPlatform(hostname="kid-pc"),
+                data_directory=Path(tmp),
+                start_background_threads=False,
+            )
+            for body in ("v 2\nid x\naction get", "v true\naction get", "a {" * 2000):
+                resp_body = handle_request(control, body, secret=SECRET)
+                resp = proto.parse_response(resp_body, secret=SECRET)
+                self.assertFalse(resp.ok, body[:20])
+                self.assertEqual(resp.version, proto.PROTOCOL_VERSION)
+
 
 if __name__ == "__main__":
     unittest.main()

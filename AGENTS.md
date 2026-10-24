@@ -6,6 +6,8 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
+- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`.
+- `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
 
@@ -76,17 +78,49 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 ## Agent Protocol (Custom)
 
 - KDL-subset over TCP with a **length-prefix** frame (see `docs/agent-protocol.md`).
-- **v2** adds HMAC-SHA256 mutual auth; signing key is `HMAC-SHA256(shared_secret)`.
+- **v2** adds HMAC-SHA256 mutual auth; the signing key is the UTF-8 bytes of the shared secret (`agent_auth.derive_key`).
 - **v3** is the only wire version. New capabilities (e.g. `get_logs`) are optional actions at v3; unsupported agents return `unknown_action`.
 - Write actions (`set`, `lock`, `unlock`, `extend`, `shutdown`, `message`) require `name` matching the agent's hostname.
 - Timestamp window: ±60 s.
 - Agents dial out to the panel reverse port (**9998**) and speak native v3; HTTP `/agent/v1/discover` on **5000** is bootstrap only (env/cache, then agent `/24` scan).
 - Web panel **Agent log** page (`/logs/<ip>`) uses `get_logs` over the reverse session; agents without that action show an upgrade message.
 
+## Go Port
+
+The Python code is the reference; Go packages under `go/` mirror it and are held to it by golden vectors in `testdata/` (generated, do not hand-edit):
+
+| Python module | Go package | Vectors | Generator |
+|---|---|---|---|
+| `agent_protocol.py`, `agent_auth.py` | `go/protocol` | `testdata/protocol/vectors.json` | `tests/protocol_vectors_gen.py` |
+| `lock_policy.py` | `go/policy` | `testdata/policy/vectors.json` | `tests/policy_vectors_gen.py` |
+| `agent_state.py` | `go/state` | `testdata/state/vectors.json` | `tests/state_vectors_gen.py` |
+| `request_dispatcher.py` | `go/dispatcher` | `testdata/dispatcher/vectors.json` | `tests/dispatcher_vectors_gen.py` |
+| `pc_time_control.py` | `go/monitor` | `testdata/monitor/vectors.json` | `tests/monitor_vectors_gen.py` |
+
+Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
+
+```bash
+python tests/<name>_vectors_gen.py       # rewrite the vectors
+(cd go && go test ./...)                 # Go must agree on every vector
+python scripts/cross_check_go.py         # live Go<->Python sessions and state-file interop
+```
+
+`tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.22+; the Python tests do not.
+
+### State file handling
+
+`agent_state.py` never silently discards a file: an unusable `daily_settings.json` / `state.json` is renamed to `<name>.corrupt-<timestamp>` and the last good `<name>.bak` (refreshed on every save) is restored; `AgentStateStore.problems` lists what happened. Values are validated strictly (see `go/state/doc.go`). A load that fails with an I/O error makes `PCTimeControl` skip saving, so defaults never overwrite real files.
+
+### Monitoring loop
+
+`PCTimeControl.monitor_step()` is one iteration of `run_monitor()` (which only adds the sleep); its phases (usage tick, warnings, lock enforcement, periodic save) run independently, so an error in one is logged once and never stops the others. Platform query errors fail toward enforcement: an unknown lock state counts as unlocked (so the lock is re-issued), an unknown session state as active (so time is counted). `PCTimeControl` takes `clock`, `current_user` and `program_data_dir` so tests and the monitor vectors can drive it deterministically.
+
 ## Windows Install Quirks
 
 - **Cross-user install**: admin runs installer, child runs agent. Requires **system-wide Python** (installer refuses per-user installs). Files go to `C:\ProgramData\KidPCMonitor`; child gets read+execute via `icacls`.
 - Same-user install: task runs as current user, elevated (`Highest`).
+- `scripts/install_agent.ps1` is the PowerShell installer for the **Go agent** (no Python on the kid's PC): builds `go/cmd/kid-pc-agent` (or takes `-AgentExe`), installs `kid-pc-agent.exe` to ProgramData, removes the Python agent's files there, and sets an explicit ACL (SYSTEM/Administrators full, child RX). Same task name, settings files and Fernet secret format as `install.py`, so either installer can replace the other. Keep it ASCII-only (Windows PowerShell 5.1 reads BOM-less scripts as ANSI) and write JSON as UTF-8 **without** a BOM (the agents treat a BOM as corrupt). Dot-sourcing it loads the functions without running; `tests/install_agent_test.ps1 [-Python <venv python>]` tests them without admin rights (run in CI's `go-windows` job).
+- Without Go (or with `-Download`), `install_agent.ps1` downloads `kid-pc-agent-windows-<amd64|arm64>.exe` from the GitHub release and verifies it against `SHA256SUMS`. Releases are published by `.github/workflows/release.yml` when a `v*` tag is pushed (it reuses `ci.yml` via `workflow_call`, then cross-compiles with `-X main.version=<tag>`).
 - `scripts/install_web_panel.py` is the Windows web-panel installer (also creates a scheduled task). Parent host needs inbound **5000** and **9998**.
 - `scripts/install_web_panel_linux.sh install` is self-contained on Linux: it creates/repairs `venv/` (system Python 3.11+, else uv-managed Python), runs `pip install -e .`, writes a systemd `--user` unit, then checks linger and firewall (`kid_pc_monitor.linux_firewall`) and only suggests changes that are needed.
 - Uninstall removes any leftover legacy inbound TCP 9999 firewall rule from older installs.

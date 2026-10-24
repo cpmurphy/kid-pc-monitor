@@ -7,7 +7,8 @@ rem  Kid PC Monitor - one-click updater (run on the kid's PC)
 rem
 rem  Double-click to update the agent to the latest code:
 rem    - pulls the newest code (git pull)
-rem    - redeploys it to C:\ProgramData\KidPCMonitor
+rem    - redeploys it to C:\ProgramData\KidPCMonitor (rebuilding the Go
+rem      agent when that is what is installed)
 rem    - restarts the agent
 rem
 rem  Optional:
@@ -36,6 +37,23 @@ echo ==================================================
 echo   Kid PC Monitor - Update
 echo ==================================================
 echo(
+
+rem --- The Go agent is updated by the PowerShell installer ---
+set "PSINSTALL=powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\install_agent.ps1""
+if exist "%ProgramData%\KidPCMonitor\kid-pc-agent.exe" (
+    if /i "%MODE%"=="auto-off" (
+        %PSINSTALL% -DisableAutoUpdate
+        goto :done
+    )
+    if /i "%MODE%"=="auto" (
+        %PSINSTALL% -EnableAutoUpdate
+        echo(
+        echo Running a one-time update now as well...
+        echo(
+    )
+    %PSINSTALL% -Update -Pull
+    goto :done
+)
 
 rem --- Find Python ---
 set "PYCMD="

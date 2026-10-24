@@ -43,6 +43,14 @@ class KdlSerializationTests(unittest.TestCase):
         self.assertEqual(proto.format_value("true"), '"true"')  # keyword must quote
         self.assertEqual(proto.format_value(""), '""')
 
+    def test_trailing_newline_is_quoted(self) -> None:
+        self.assertEqual(proto.format_value("hello\n"), '"hello\\n"')
+        body = proto.build_request(
+            "message", secret=SECRET, val="hello\n", name=HOSTNAME, timestamp=1000, nonce="a" * 32
+        )
+        req = proto.parse_request(body, secret=SECRET, hostname=HOSTNAME, now=1000)
+        self.assertEqual(req.val, "hello\n")
+
     def test_escape_round_trip(self) -> None:
         original = 'line1\nline2\t"quoted"\\end'
         body = proto.serialize([Node("msg", [original])])
@@ -53,6 +61,28 @@ class KdlSerializationTests(unittest.TestCase):
         body = proto.serialize([Node("status", ["failure"]), block])
         parsed = {n.name: n for n in proto.parse(body)}
         self.assertEqual(parsed["error"].child_map(), {"code": "invalid_value", "message": "nope"})
+
+    def test_parse_rejects_trailing_backslash_in_string(self) -> None:
+        with self.assertRaises(ProtocolError):
+            proto.parse('a "oops\\')
+        self.assertEqual(proto.peek_version('v 3\na "oops\\'), proto.CLIENT_DEFAULT_VERSION)
+
+    def test_parse_limits_nesting_depth(self) -> None:
+        depth = proto.MAX_NESTING_DEPTH
+
+        def nested(levels: int) -> str:
+            return "a {" * levels + "}" * levels
+
+        self.assertEqual(len(proto.parse(nested(depth))), 1)
+        with self.assertRaises(ProtocolError):
+            proto.parse(nested(depth + 1))
+        with self.assertRaises(ProtocolError):
+            proto.parse(nested(5000))
+
+    def test_peek_version_only_echoes_supported_versions(self) -> None:
+        self.assertEqual(proto.peek_version("v 3"), 3)
+        for body in ("v 2", "v 9", "v true", 'v "3"', "id x"):
+            self.assertEqual(proto.peek_version(body), proto.CLIENT_DEFAULT_VERSION, body)
 
     def test_parse_rejects_unbalanced_brace(self) -> None:
         with self.assertRaises(ProtocolError):

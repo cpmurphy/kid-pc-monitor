@@ -1,0 +1,4588 @@
+{
+ "_about": "Golden protocol vectors generated from kid_pc_monitor.agent_protocol by tests/protocol_vectors_gen.py. Do not edit by hand.",
+ "constants": {
+  "protocol_version": 3,
+  "max_frame_bytes": 65536,
+  "max_log_tail_lines": 5000,
+  "timestamp_window_seconds": 60,
+  "key_id": "kid-pc-monitor-shared-secret",
+  "algorithm": "hmac-sha256",
+  "actions": [
+   "get",
+   "set",
+   "clear",
+   "lock",
+   "unlock",
+   "extend",
+   "message",
+   "shutdown",
+   "list_capabilities",
+   "get_logs"
+  ],
+  "action_descriptions": {
+   "get": "get a single variable or \"settings\" to get all variables",
+   "set": "set a single variable to a new value",
+   "clear": "clear a single variable",
+   "lock": "immediately lock",
+   "unlock": "release a manual lock",
+   "extend": "add minutes of extra allowance for today (val=minutes)",
+   "message": "show a popup message on the PC (val=text)",
+   "shutdown": "shut down the PC after a warning (val=seconds, default 60)",
+   "list_capabilities": "describe supported actions and variables",
+   "get_logs": "read the agent log file (tail=N lines, default 500, max 5000)"
+  },
+  "variables": [
+   "name",
+   "status",
+   "current_user",
+   "daily_limit",
+   "bed_time",
+   "manual_lock",
+   "wake_time",
+   "cumulative_extension",
+   "accumulated_seconds",
+   "time_remaining",
+   "enforcement_active",
+   "enforcement_reason",
+   "access_status"
+  ],
+  "variable_descriptions": {
+   "name": "read-only, name of computer",
+   "status": "read-only, the lock status (LOCKED/UNLOCKED)",
+   "current_user": "read-only, the username of the currently logged-in user",
+   "daily_limit": "current daily limit in minutes",
+   "bed_time": "bed time, at which the computer will be locked",
+   "manual_lock": "boolean, whether a manual lock is in effect",
+   "wake_time": "time, at which the computer can be used the following morning",
+   "cumulative_extension": "read-only, a running total of extension seconds today",
+   "accumulated_seconds": "read-only, a running total of active seconds used today",
+   "time_remaining": "read-only, minutes remaining today (or null)",
+   "enforcement_active": "read-only, whether schedule/limit enforcement is active",
+   "enforcement_reason": "read-only, brief reason when enforcement is active (or null)",
+   "access_status": "read-only, brief overall access status for the parent panel"
+  },
+  "write_actions": [
+   "clear",
+   "extend",
+   "lock",
+   "message",
+   "set",
+   "shutdown",
+   "unlock"
+  ]
+ },
+ "format_value": [
+  {
+   "value": "LOCKED",
+   "text": "LOCKED"
+  },
+  {
+   "value": "21:00",
+   "text": "\"21:00\""
+  },
+  {
+   "value": "Tommy's Laptop",
+   "text": "\"Tommy's Laptop\""
+  },
+  {
+   "value": "true",
+   "text": "\"true\""
+  },
+  {
+   "value": "false",
+   "text": "\"false\""
+  },
+  {
+   "value": "null",
+   "text": "\"null\""
+  },
+  {
+   "value": "True",
+   "text": "True"
+  },
+  {
+   "value": "",
+   "text": "\"\""
+  },
+  {
+   "value": "hello\n",
+   "text": "\"hello\\n\""
+  },
+  {
+   "value": "a\nb",
+   "text": "\"a\\nb\""
+  },
+  {
+   "value": "a\"b",
+   "text": "\"a\\\"b\""
+  },
+  {
+   "value": "back\\slash",
+   "text": "\"back\\\\slash\""
+  },
+  {
+   "value": "tab\there",
+   "text": "\"tab\\there\""
+  },
+  {
+   "value": "cr\rhere",
+   "text": "\"cr\\rhere\""
+  },
+  {
+   "value": "ünï 🔑",
+   "text": "\"ünï 🔑\""
+  },
+  {
+   "value": "x y",
+   "text": "\"x y\""
+  },
+  {
+   "value": "_x",
+   "text": "_x"
+  },
+  {
+   "value": "a.b:c+d-e",
+   "text": "a.b:c+d-e"
+  },
+  {
+   "value": "a/b",
+   "text": "\"a/b\""
+  },
+  {
+   "value": "123",
+   "text": "\"123\""
+  },
+  {
+   "value": "-",
+   "text": "\"-\""
+  },
+  {
+   "value": "1e5",
+   "text": "\"1e5\""
+  },
+  {
+   "value": "a;b",
+   "text": "\"a;b\""
+  },
+  {
+   "value": "a{b",
+   "text": "\"a{b\""
+  },
+  {
+   "value": "a\u0000b",
+   "text": "\"a\u0000b\""
+  },
+  {
+   "value": 0,
+   "text": "0"
+  },
+  {
+   "value": -5,
+   "text": "-5"
+  },
+  {
+   "value": 120,
+   "text": "120"
+  },
+  {
+   "value": 9007199254740992,
+   "text": "9007199254740992"
+  },
+  {
+   "value": true,
+   "text": "true"
+  },
+  {
+   "value": false,
+   "text": "false"
+  },
+  {
+   "value": null,
+   "text": "null"
+  }
+ ],
+ "serialize": [
+  {
+   "name": "empty",
+   "nodes": [],
+   "text": ""
+  },
+  {
+   "name": "scalars",
+   "nodes": [
+    {
+     "name": "v",
+     "args": [
+      3
+     ]
+    },
+    {
+     "name": "id",
+     "args": [
+      "b9e7c0"
+     ]
+    },
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      120
+     ]
+    }
+   ],
+   "text": "v 3\nid b9e7c0\nstatus ok\nresult 120"
+  },
+  {
+   "name": "bool_null",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      true
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      false
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      null
+     ]
+    }
+   ],
+   "text": "a true\nb false\nc null"
+  },
+  {
+   "name": "no_args",
+   "nodes": [
+    {
+     "name": "lines",
+     "args": []
+    }
+   ],
+   "text": "lines"
+  },
+  {
+   "name": "many_args",
+   "nodes": [
+    {
+     "name": "lines",
+     "args": [
+      "a b",
+      "c",
+      3,
+      true,
+      null
+     ]
+    }
+   ],
+   "text": "lines \"a b\" c 3 true null"
+  },
+  {
+   "name": "block",
+   "nodes": [
+    {
+     "name": "status",
+     "args": [
+      "failure"
+     ]
+    },
+    {
+     "name": "error",
+     "args": [],
+     "children": [
+      {
+       "name": "code",
+       "args": [
+        "invalid_value"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "nope: 1..1440"
+       ]
+      }
+     ]
+    }
+   ],
+   "text": "status failure\nerror {\n  code invalid_value\n  message \"nope: 1..1440\"\n}"
+  },
+  {
+   "name": "nested_block",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [],
+     "children": [
+      {
+       "name": "b",
+       "args": [
+        1
+       ],
+       "children": [
+        {
+         "name": "c",
+         "args": [
+          "x y"
+         ]
+        }
+       ]
+      },
+      {
+       "name": "d",
+       "args": []
+      }
+     ]
+    }
+   ],
+   "text": "a {\n  b 1 {\n    c \"x y\"\n  }\n  d\n}"
+  },
+  {
+   "name": "block_with_args",
+   "nodes": [
+    {
+     "name": "logs",
+     "args": [
+      "x"
+     ],
+     "children": [
+      {
+       "name": "path",
+       "args": [
+        "C:\\a\\b.log"
+       ]
+      }
+     ]
+    }
+   ],
+   "text": "logs x {\n  path \"C:\\\\a\\\\b.log\"\n}"
+  },
+  {
+   "name": "multiline_string",
+   "nodes": [
+    {
+     "name": "message",
+     "args": [
+      "line1\nline2\ttabbed \"quoted\" \\ end"
+     ]
+    }
+   ],
+   "text": "message \"line1\\nline2\\ttabbed \\\"quoted\\\" \\\\ end\""
+  },
+  {
+   "name": "unicode",
+   "nodes": [
+    {
+     "name": "message",
+     "args": [
+      "ünï 🔑 日本語"
+     ]
+    }
+   ],
+   "text": "message \"ünï 🔑 日本語\""
+  }
+ ],
+ "parse": [
+  {
+   "name": "empty",
+   "text": "",
+   "nodes": []
+  },
+  {
+   "name": "blank_lines",
+   "text": "\n\n  \n",
+   "nodes": []
+  },
+  {
+   "name": "scalars",
+   "text": "v 3\nid b9e7c0\nstatus ok\nresult 120",
+   "nodes": [
+    {
+     "name": "v",
+     "args": [
+      3
+     ]
+    },
+    {
+     "name": "id",
+     "args": [
+      "b9e7c0"
+     ]
+    },
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      120
+     ]
+    }
+   ]
+  },
+  {
+   "name": "trailing_newline",
+   "text": "a 1\n",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "crlf",
+   "text": "a 1\r\nb 2\r\n",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      1
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "semicolons",
+   "text": "a 1; b 2;c 3",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      1
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      2
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      3
+     ]
+    }
+   ]
+  },
+  {
+   "name": "keywords",
+   "text": "a true\nb false\nc null",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      true
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      false
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "quoted_keywords_are_strings",
+   "text": "a \"true\"\nb \"null\"\nc \"123\"",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "true"
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      "null"
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      "123"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "numbers",
+   "text": "a 0\nb -7\nc +5\nd 007\ne 1_000",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      0
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      -7
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      5
+     ]
+    },
+    {
+     "name": "d",
+     "args": [
+      7
+     ]
+    },
+    {
+     "name": "e",
+     "args": [
+      "1_000"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "not_numbers",
+   "text": "a 1.5\nb 0x10\nc 1e5\nd 12abc\ne -",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "1.5"
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      "0x10"
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      "1e5"
+     ]
+    },
+    {
+     "name": "d",
+     "args": [
+      "12abc"
+     ]
+    },
+    {
+     "name": "e",
+     "args": [
+      "-"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "not_ascii_numbers",
+   "text": "a ٣\nb １２\nc 1_0\nd 5_\ne _5\nf ++5\ng +-5",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "٣"
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      "１２"
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      "1_0"
+     ]
+    },
+    {
+     "name": "d",
+     "args": [
+      "5_"
+     ]
+    },
+    {
+     "name": "e",
+     "args": [
+      "_5"
+     ]
+    },
+    {
+     "name": "f",
+     "args": [
+      "++5"
+     ]
+    },
+    {
+     "name": "g",
+     "args": [
+      "+-5"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "int64_limits",
+   "text": "a 9223372036854775807\nb -9223372036854775808",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      9223372036854775807
+     ]
+    },
+    {
+     "name": "b",
+     "args": [
+      -9223372036854775808
+     ]
+    }
+   ]
+  },
+  {
+   "name": "int_over_int64",
+   "text": "a 9223372036854775808",
+   "error": "invalid_request"
+  },
+  {
+   "name": "int_below_int64",
+   "text": "a -9223372036854775809",
+   "error": "invalid_request"
+  },
+  {
+   "name": "int_way_over",
+   "text": "a 99999999999999999999999",
+   "error": "invalid_request"
+  },
+  {
+   "name": "multiple_args",
+   "text": "lines \"a b\" c 3 true null",
+   "nodes": [
+    {
+     "name": "lines",
+     "args": [
+      "a b",
+      "c",
+      3,
+      true,
+      null
+     ]
+    }
+   ]
+  },
+  {
+   "name": "string_escapes",
+   "text": "a \"q\\\"uote\\\\ \\n \\t \\r \\/ end\"",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "q\"uote\\ \n \t \r / end"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "unicode_escape",
+   "text": "a \"\\u{41}\\u{1F600}\\u{e9}\"",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "A😀é"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "raw_newline_in_string",
+   "text": "a \"line1\nline2\"",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "line1\nline2"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "adjacent_string_and_word",
+   "text": "a \"x\"y",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "x",
+      "y"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "block",
+   "text": "error {\n  code invalid_value\n  message \"nope\"\n}",
+   "nodes": [
+    {
+     "name": "error",
+     "args": [],
+     "children": [
+      {
+       "name": "code",
+       "args": [
+        "invalid_value"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "nope"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "empty_block",
+   "text": "a {}\nb { }",
+   "nodes": [
+    {
+     "name": "a",
+     "args": []
+    },
+    {
+     "name": "b",
+     "args": []
+    }
+   ]
+  },
+  {
+   "name": "nested_block",
+   "text": "a {\n  b {\n    c 1\n  }\n  d\n}",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [],
+     "children": [
+      {
+       "name": "b",
+       "args": [],
+       "children": [
+        {
+         "name": "c",
+         "args": [
+          1
+         ]
+        }
+       ]
+      },
+      {
+       "name": "d",
+       "args": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "node_after_close_on_same_line",
+   "text": "a { b 1 } c 2",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [],
+     "children": [
+      {
+       "name": "b",
+       "args": [
+        1
+       ]
+      }
+     ]
+    },
+    {
+     "name": "c",
+     "args": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "block_with_args",
+   "text": "logs x {\n  path y\n}",
+   "nodes": [
+    {
+     "name": "logs",
+     "args": [
+      "x"
+     ],
+     "children": [
+      {
+       "name": "path",
+       "args": [
+        "y"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "quoted_node_name",
+   "text": "\"my node\" 1",
+   "nodes": [
+    {
+     "name": "my node",
+     "args": [
+      1
+     ]
+    }
+   ]
+  },
+  {
+   "name": "bare_with_punct",
+   "text": "a b.c:d+e-f_g",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [
+      "b.c:d+e-f_g"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "unterminated_string",
+   "text": "a \"oops",
+   "error": "invalid_request"
+  },
+  {
+   "name": "unterminated_escape",
+   "text": "a \"oops\\",
+   "error": "invalid_request"
+  },
+  {
+   "name": "bad_escape",
+   "text": "a \"\\x41\"",
+   "error": "invalid_request"
+  },
+  {
+   "name": "bad_unicode_escape",
+   "text": "a \"\\u{zz}\"",
+   "error": "invalid_request"
+  },
+  {
+   "name": "unterminated_unicode_escape",
+   "text": "a \"\\u{41\"",
+   "error": "invalid_request"
+  },
+  {
+   "name": "unicode_escape_out_of_range",
+   "text": "a \"\\u{110000}\"",
+   "error": "invalid_request"
+  },
+  {
+   "name": "unicode_escape_without_brace",
+   "text": "a \"\\u0041\"",
+   "error": "invalid_request"
+  },
+  {
+   "name": "stray_close",
+   "text": "a 1\n}",
+   "error": "invalid_request"
+  },
+  {
+   "name": "stray_open",
+   "text": "{ a 1 }",
+   "error": "invalid_request"
+  },
+  {
+   "name": "missing_close",
+   "text": "foo {\n  bar 1",
+   "error": "invalid_request"
+  },
+  {
+   "name": "keyword_node_name",
+   "text": "true 1",
+   "error": "invalid_request"
+  },
+  {
+   "name": "numeric_node_name",
+   "text": "5 1",
+   "error": "invalid_request"
+  },
+  {
+   "name": "null_node_name",
+   "text": "null",
+   "error": "invalid_request"
+  },
+  {
+   "name": "nesting_at_limit",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+   "nodes": [
+    {
+     "name": "a",
+     "args": [],
+     "children": [
+      {
+       "name": "a",
+       "args": [],
+       "children": [
+        {
+         "name": "a",
+         "args": [],
+         "children": [
+          {
+           "name": "a",
+           "args": [],
+           "children": [
+            {
+             "name": "a",
+             "args": [],
+             "children": [
+              {
+               "name": "a",
+               "args": [],
+               "children": [
+                {
+                 "name": "a",
+                 "args": [],
+                 "children": [
+                  {
+                   "name": "a",
+                   "args": [],
+                   "children": [
+                    {
+                     "name": "a",
+                     "args": [],
+                     "children": [
+                      {
+                       "name": "a",
+                       "args": [],
+                       "children": [
+                        {
+                         "name": "a",
+                         "args": [],
+                         "children": [
+                          {
+                           "name": "a",
+                           "args": [],
+                           "children": [
+                            {
+                             "name": "a",
+                             "args": [],
+                             "children": [
+                              {
+                               "name": "a",
+                               "args": [],
+                               "children": [
+                                {
+                                 "name": "a",
+                                 "args": [],
+                                 "children": [
+                                  {
+                                   "name": "a",
+                                   "args": [],
+                                   "children": [
+                                    {
+                                     "name": "a",
+                                     "args": [],
+                                     "children": [
+                                      {
+                                       "name": "a",
+                                       "args": [],
+                                       "children": [
+                                        {
+                                         "name": "a",
+                                         "args": [],
+                                         "children": [
+                                          {
+                                           "name": "a",
+                                           "args": [],
+                                           "children": [
+                                            {
+                                             "name": "a",
+                                             "args": [],
+                                             "children": [
+                                              {
+                                               "name": "a",
+                                               "args": [],
+                                               "children": [
+                                                {
+                                                 "name": "a",
+                                                 "args": [],
+                                                 "children": [
+                                                  {
+                                                   "name": "a",
+                                                   "args": [],
+                                                   "children": [
+                                                    {
+                                                     "name": "a",
+                                                     "args": [],
+                                                     "children": [
+                                                      {
+                                                       "name": "a",
+                                                       "args": [],
+                                                       "children": [
+                                                        {
+                                                         "name": "a",
+                                                         "args": [],
+                                                         "children": [
+                                                          {
+                                                           "name": "a",
+                                                           "args": [],
+                                                           "children": [
+                                                            {
+                                                             "name": "a",
+                                                             "args": [],
+                                                             "children": [
+                                                              {
+                                                               "name": "a",
+                                                               "args": [],
+                                                               "children": [
+                                                                {
+                                                                 "name": "a",
+                                                                 "args": [],
+                                                                 "children": [
+                                                                  {
+                                                                   "name": "a",
+                                                                   "args": []
+                                                                  }
+                                                                 ]
+                                                                }
+                                                               ]
+                                                              }
+                                                             ]
+                                                            }
+                                                           ]
+                                                          }
+                                                         ]
+                                                        }
+                                                       ]
+                                                      }
+                                                     ]
+                                                    }
+                                                   ]
+                                                  }
+                                                 ]
+                                                }
+                                               ]
+                                              }
+                                             ]
+                                            }
+                                           ]
+                                          }
+                                         ]
+                                        }
+                                       ]
+                                      }
+                                     ]
+                                    }
+                                   ]
+                                  }
+                                 ]
+                                }
+                               ]
+                              }
+                             ]
+                            }
+                           ]
+                          }
+                         ]
+                        }
+                       ]
+                      }
+                     ]
+                    }
+                   ]
+                  }
+                 ]
+                }
+               ]
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "nesting_over_limit",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+   "error": "invalid_request"
+  },
+  {
+   "name": "nesting_hostile",
+   "text": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {",
+   "error": "invalid_request"
+  }
+ ],
+ "frame_encode": [
+  {
+   "body": "",
+   "frame_hex": "300a",
+   "length": 0
+  },
+  {
+   "body": "v 3",
+   "frame_hex": "330a762033",
+   "length": 3
+  },
+  {
+   "body": "multi\nline\nbody",
+   "frame_hex": "31350a6d756c74690a6c696e650a626f6479",
+   "length": 15
+  },
+  {
+   "body": "ünï 🔑",
+   "frame_hex": "31300ac3bc6ec3af20f09f9491",
+   "length": 10
+  },
+  {
+   "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "frame_hex": "313030300a78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+   "length": 1000
+  }
+ ],
+ "frame_inspect": [
+  {
+   "name": "complete_exact",
+   "input_hex": "350a68656c6c6f",
+   "status": "complete",
+   "body": "hello",
+   "rest_hex": ""
+  },
+  {
+   "name": "complete_with_rest",
+   "input_hex": "350a68656c6c6f6578747261",
+   "status": "complete",
+   "body": "hello",
+   "rest_hex": "6578747261"
+  },
+  {
+   "name": "complete_two_frames",
+   "input_hex": "320a6162330a636465",
+   "status": "complete",
+   "body": "ab",
+   "rest_hex": "330a636465"
+  },
+  {
+   "name": "complete_empty_body",
+   "input_hex": "300a",
+   "status": "complete",
+   "body": "",
+   "rest_hex": ""
+  },
+  {
+   "name": "complete_leading_zero",
+   "input_hex": "30350a68656c6c6f",
+   "status": "complete",
+   "body": "hello",
+   "rest_hex": ""
+  },
+  {
+   "name": "complete_multibyte",
+   "input_hex": "330ac3bc61",
+   "status": "complete",
+   "body": "üa",
+   "rest_hex": ""
+  },
+  {
+   "name": "incomplete_body",
+   "input_hex": "31300a68656c6c6f",
+   "status": "incomplete",
+   "body": null,
+   "rest_hex": "31300a68656c6c6f"
+  },
+  {
+   "name": "incomplete_no_body",
+   "input_hex": "350a",
+   "status": "incomplete",
+   "body": null,
+   "rest_hex": "350a"
+  },
+  {
+   "name": "incomplete_digits_only",
+   "input_hex": "3132",
+   "status": "incomplete",
+   "body": null,
+   "rest_hex": "3132"
+  },
+  {
+   "name": "incomplete_at_max",
+   "input_hex": "36353533360a616263",
+   "status": "incomplete",
+   "body": null,
+   "rest_hex": "36353533360a616263"
+  },
+  {
+   "name": "not_frame_empty",
+   "input_hex": "",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": ""
+  },
+  {
+   "name": "not_frame_newline",
+   "input_hex": "0a",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "0a"
+  },
+  {
+   "name": "not_frame_text",
+   "input_hex": "6162630a78797a",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "6162630a78797a"
+  },
+  {
+   "name": "not_frame_text_no_newline",
+   "input_hex": "616263",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "616263"
+  },
+  {
+   "name": "not_frame_negative",
+   "input_hex": "2d310a6162",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "2d310a6162"
+  },
+  {
+   "name": "not_frame_space",
+   "input_hex": "20350a68656c6c6f",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "20350a68656c6c6f"
+  },
+  {
+   "name": "not_frame_plus",
+   "input_hex": "2b350a68656c6c6f",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "2b350a68656c6c6f"
+  },
+  {
+   "name": "not_frame_mixed",
+   "input_hex": "35610a68656c6c6f",
+   "status": "not_frame",
+   "body": null,
+   "rest_hex": "35610a68656c6c6f"
+  },
+  {
+   "name": "too_large",
+   "input_hex": "36353533370a616263",
+   "error": "invalid_request"
+  },
+  {
+   "name": "too_large_no_body",
+   "input_hex": "3939393939390a",
+   "error": "invalid_request"
+  }
+ ],
+ "signature": [
+  {
+   "name": "simple",
+   "secret": "test-shared-secret",
+   "canonical": "v 3\nname kid-pc\ntimestamp 1710000000",
+   "signature": "rAguTAfLKQpIb1DeeZYFy6Kn-_5jTI-FP7nMbz1vOIo="
+  },
+  {
+   "name": "empty_canonical",
+   "secret": "test-shared-secret",
+   "canonical": "",
+   "signature": "f9ED34J4OAhCvKm5nU9PDjEKyBnER-2OjNnNV2HZQhQ="
+  },
+  {
+   "name": "unicode_secret",
+   "secret": "pässwörd 🔑 with spaces",
+   "canonical": "v 3\naction get\nvar settings",
+   "signature": "wTK3k6Vbo1C20_-fhy6QFZ2LuIqAWMrDV2fZN4fQ0W0="
+  },
+  {
+   "name": "unicode_canonical",
+   "secret": "test-shared-secret",
+   "canonical": "v 3\nval \"ünï 🔑\"",
+   "signature": "OFWQ79RgZgAoO2lsoFectfYFTQcIHKJc1FFnJAAqOZM="
+  },
+  {
+   "name": "empty_secret",
+   "secret": "",
+   "canonical": "v 3",
+   "signature": "J5g-qY6fOVeaZQ-SJy8ViMoikEZw2GYzhEN1CXWJAaQ="
+  },
+  {
+   "name": "long_secret",
+   "secret": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+   "canonical": "v 3\nval 1",
+   "signature": "b5MYxf4N4IjKXx3sUyD2k0aChRiKSdPtzw6Vu6zWL0Q="
+  }
+ ],
+ "nonce": [
+  {
+   "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+   "valid": true
+  },
+  {
+   "nonce": "00000000000000000000000000000000",
+   "valid": true
+  },
+  {
+   "nonce": "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+   "valid": true
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": false
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": true
+  },
+  {
+   "nonce": "",
+   "valid": false
+  },
+  {
+   "nonce": "gggggggggggggggggggggggggggggggg",
+   "valid": false
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaz",
+   "valid": false
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ",
+   "valid": false
+  },
+  {
+   "nonce": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": false
+  },
+  {
+   "nonce": "aaaaaaaaaaaaaaaa_aaaaaaaaaaaaaaa",
+   "valid": false
+  },
+  {
+   "nonce": " aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "valid": false
+  }
+ ],
+ "timestamp_window": [
+  {
+   "timestamp": 1710000000,
+   "now": 1710000000,
+   "in_window": true
+  },
+  {
+   "timestamp": 1709999940,
+   "now": 1710000000,
+   "in_window": true
+  },
+  {
+   "timestamp": 1710000060,
+   "now": 1710000000,
+   "in_window": true
+  },
+  {
+   "timestamp": 1709999939,
+   "now": 1710000000,
+   "in_window": false
+  },
+  {
+   "timestamp": 1710000061,
+   "now": 1710000000,
+   "in_window": false
+  },
+  {
+   "timestamp": 0,
+   "now": 1710000000,
+   "in_window": false
+  },
+  {
+   "timestamp": -5,
+   "now": 10,
+   "in_window": true
+  }
+ ],
+ "build_request": [
+  {
+   "name": "get_settings_discovery",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "get",
+    "var": "settings",
+    "req_id": "r1"
+   },
+   "body": "v 3\nid r1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar settings\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"WYtHg8wB4NwG8uThl-wFT87_xtuCQ41rmtqb9FHyrgE=\"\n}"
+  },
+  {
+   "name": "get_name_no_id",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "get",
+    "var": "name"
+   },
+   "body": "v 3\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar name\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"_d2HuE8XiHnGrJ_f8VjbpOWII6ATu2X3Bqzpyh_1HjA=\"\n}"
+  },
+  {
+   "name": "get_named",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "get",
+    "var": "status",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar status\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"zBmKQRs2eqDWH8xz0JJV7R0zX4KDhZLBO-VaAoi3e-k=\"\n}"
+  },
+  {
+   "name": "list_capabilities",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "list_capabilities",
+    "req_id": "caps"
+   },
+   "body": "v 3\nid caps\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction list_capabilities\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"WvsZJ-StXCqHPYgsySBO5-bBDAvfuJtA-CJ99fkUlak=\"\n}"
+  },
+  {
+   "name": "lock",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "lock",
+    "name": "kid-pc",
+    "req_id": "r2"
+   },
+   "body": "v 3\nid r2\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"IBtm9McHmhUyrCx_O2gbp1P608DOT4nUQ7CrYXK32R8=\"\n}"
+  },
+  {
+   "name": "unlock",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "unlock",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"h0GTrn6m4YE3FTJEmbkTZeTouXV-KNy_GLR10JUAQX8=\"\n}"
+  },
+  {
+   "name": "set_daily_limit",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "set",
+    "var": "daily_limit",
+    "val": 120,
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar daily_limit\nval 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"s6cuADXoDLqkXouQRaTDvV9TzVIChtgy646qtEoc1bY=\"\n}"
+  },
+  {
+   "name": "set_bed_time_quoted",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "set",
+    "var": "bed_time",
+    "val": "21:30",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar bed_time\nval \"21:30\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"t5fb2kA8VefqeVIfr22xuXaFOw6bmoB4WejOl98u_4k=\"\n}"
+  },
+  {
+   "name": "set_manual_lock_bool",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "set",
+    "var": "manual_lock",
+    "val": true,
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar manual_lock\nval true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"dBqPhSS30b1rv-Ik43t6Umv8i9JTc4sMFp4WLwFjfK4=\"\n}"
+  },
+  {
+   "name": "clear",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "clear",
+    "var": "daily_limit",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction clear\nvar daily_limit\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Xftgf4b4zMaaXiRG1kmYxk4IOodh3GfkQuyRJmT0VTU=\"\n}"
+  },
+  {
+   "name": "extend",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "extend",
+    "val": 15,
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction extend\nval 15\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"qarg5-0zMzAiEV-Hu5CNOouUXrGfaOWhyiEFCRfeacE=\"\n}"
+  },
+  {
+   "name": "shutdown_default",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "shutdown",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction shutdown\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"2V3QY1kmjykgZ0AyOEihiYdzYqBrZ-5DAXJgORfMl_k=\"\n}"
+  },
+  {
+   "name": "shutdown_seconds",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "shutdown",
+    "val": 30,
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction shutdown\nval 30\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"BJYBkBRoccfO40tK1CqqwyTuMOUzTyG9lySQKw7MX6U=\"\n}"
+  },
+  {
+   "name": "message_plain",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "message",
+    "val": "Dinner time!",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"Dinner time!\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"749nMPvybzEhifYHNpadxFOv_n72j1I8mqOY9hKi43g=\"\n}"
+  },
+  {
+   "name": "message_unicode_multiline",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "message",
+    "val": "Dinner 🍝\nsay \"hi\"\tnow\\",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"Dinner 🍝\\nsay \\\"hi\\\"\\tnow\\\\\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"E7T8kPgLiK9-YpnamaZs1h2xSF4QIOB0B9HnufKrypU=\"\n}"
+  },
+  {
+   "name": "message_trailing_newline",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "message",
+    "val": "hello\n",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"hello\\n\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"0n_zjM5H7Gqo4UqEl1MQY7Ao5LlFk0Bj1pOTk1PFUGE=\"\n}"
+  },
+  {
+   "name": "get_logs_default",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "get_logs"
+   },
+   "body": "v 3\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"7EOadEpauRThFF6gfhYupbgfVCGRN7t-OWOiqpuMagc=\"\n}"
+  },
+  {
+   "name": "get_logs_tail",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "get_logs",
+    "tail": 100,
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 100\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"UvKulDzmPYVlKbJ_3xxAzCK37LRPds46QiU-TKKcGEE=\"\n}"
+  },
+  {
+   "name": "unicode_secret",
+   "args": {
+    "secret": "pässwörd 🔑 with spaces",
+    "timestamp": 1710000000,
+    "nonce": "0123456789abcdef0123456789abcdef",
+    "action": "unlock",
+    "name": "kid-pc"
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"0123456789abcdef0123456789abcdef\"\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"yBq3ONo_DcPADBsOLQs-Iy4MvUo5whu5iqSUYKTt8-o=\"\n}"
+  },
+  {
+   "name": "unicode_hostname",
+   "args": {
+    "secret": "test-shared-secret",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "action": "lock",
+    "name": "Kinder-PC ü"
+   },
+   "body": "v 3\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Bct9KMsUgws5_dy7QQ14hZsiqZCdrHeFQTX4lVo4L_M=\"\n}"
+  }
+ ],
+ "peek_version": [
+  {
+   "body": "v 3",
+   "version": 3
+  },
+  {
+   "body": "v 3\naction get",
+   "version": 3
+  },
+  {
+   "body": "id x\nv 3",
+   "version": 3
+  },
+  {
+   "body": "v 2",
+   "version": 3
+  },
+  {
+   "body": "v 9\nid x",
+   "version": 3
+  },
+  {
+   "body": "v true",
+   "version": 3
+  },
+  {
+   "body": "v \"3\"",
+   "version": 3
+  },
+  {
+   "body": "id x",
+   "version": 3
+  },
+  {
+   "body": "",
+   "version": 3
+  },
+  {
+   "body": "v 3\na \"oops",
+   "version": 3
+  },
+  {
+   "body": "a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {a {",
+   "version": 3
+  },
+  {
+   "body": "v\nv 3",
+   "version": 3
+  },
+  {
+   "body": "v 2\nv 3",
+   "version": 3
+  }
+ ],
+ "parse_request": [
+  {
+   "name": "built_get_settings_discovery",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid r1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar settings\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"WYtHg8wB4NwG8uThl-wFT87_xtuCQ41rmtqb9FHyrgE=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "r1",
+    "action": "get",
+    "var": "settings",
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_get_name_no_id",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar name\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"_d2HuE8XiHnGrJ_f8VjbpOWII6ATu2X3Bqzpyh_1HjA=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "get",
+    "var": "name",
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_get_named",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar status\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"zBmKQRs2eqDWH8xz0JJV7R0zX4KDhZLBO-VaAoi3e-k=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "get",
+    "var": "status",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_list_capabilities",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid caps\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction list_capabilities\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"WvsZJ-StXCqHPYgsySBO5-bBDAvfuJtA-CJ99fkUlak=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "caps",
+    "action": "list_capabilities",
+    "var": null,
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_lock",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid r2\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"IBtm9McHmhUyrCx_O2gbp1P608DOT4nUQ7CrYXK32R8=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "r2",
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_unlock",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"h0GTrn6m4YE3FTJEmbkTZeTouXV-KNy_GLR10JUAQX8=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_set_daily_limit",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar daily_limit\nval 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"s6cuADXoDLqkXouQRaTDvV9TzVIChtgy646qtEoc1bY=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "set",
+    "var": "daily_limit",
+    "val": 120,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_set_bed_time_quoted",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar bed_time\nval \"21:30\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"t5fb2kA8VefqeVIfr22xuXaFOw6bmoB4WejOl98u_4k=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "set",
+    "var": "bed_time",
+    "val": "21:30",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_set_manual_lock_bool",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar manual_lock\nval true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"dBqPhSS30b1rv-Ik43t6Umv8i9JTc4sMFp4WLwFjfK4=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "set",
+    "var": "manual_lock",
+    "val": true,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_clear",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction clear\nvar daily_limit\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Xftgf4b4zMaaXiRG1kmYxk4IOodh3GfkQuyRJmT0VTU=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_extend",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction extend\nval 15\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"qarg5-0zMzAiEV-Hu5CNOouUXrGfaOWhyiEFCRfeacE=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "extend",
+    "var": null,
+    "val": 15,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_shutdown_default",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction shutdown\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"2V3QY1kmjykgZ0AyOEihiYdzYqBrZ-5DAXJgORfMl_k=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "shutdown",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_shutdown_seconds",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction shutdown\nval 30\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"BJYBkBRoccfO40tK1CqqwyTuMOUzTyG9lySQKw7MX6U=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "shutdown",
+    "var": null,
+    "val": 30,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_message_plain",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"Dinner time!\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"749nMPvybzEhifYHNpadxFOv_n72j1I8mqOY9hKi43g=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "message",
+    "var": null,
+    "val": "Dinner time!",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_message_unicode_multiline",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"Dinner 🍝\\nsay \\\"hi\\\"\\tnow\\\\\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"E7T8kPgLiK9-YpnamaZs1h2xSF4QIOB0B9HnufKrypU=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "message",
+    "var": null,
+    "val": "Dinner 🍝\nsay \"hi\"\tnow\\",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_message_trailing_newline",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"hello\\n\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"0n_zjM5H7Gqo4UqEl1MQY7Ao5LlFk0Bj1pOTk1PFUGE=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "message",
+    "var": null,
+    "val": "hello\n",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_get_logs_default",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"7EOadEpauRThFF6gfhYupbgfVCGRN7t-OWOiqpuMagc=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_get_logs_tail",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 100\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"UvKulDzmPYVlKbJ_3xxAzCK37LRPds46QiU-TKKcGEE=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 100
+   }
+  },
+  {
+   "name": "built_unicode_secret",
+   "secret": "pässwörd 🔑 with spaces",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"0123456789abcdef0123456789abcdef\"\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"yBq3ONo_DcPADBsOLQs-Iy4MvUo5whu5iqSUYKTt8-o=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "0123456789abcdef0123456789abcdef",
+    "tail": null
+   }
+  },
+  {
+   "name": "built_unicode_hostname",
+   "secret": "test-shared-secret",
+   "hostname": "Kinder-PC ü",
+   "now": 1710000000,
+   "body": "v 3\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Bct9KMsUgws5_dy7QQ14hZsiqZCdrHeFQTX4lVo4L_M=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "name": "Kinder-PC ü",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "window_exact_now",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "window_plus_60",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000060,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "window_minus_60",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1709999940,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "window_plus_61_stale",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000061,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "error": {
+    "code": "stale_timestamp",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "window_minus_61_stale",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1709999939,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "error": {
+    "code": "stale_timestamp",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "wrong_secret",
+   "secret": "not-the-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "wrong_hostname",
+   "secret": "test-shared-secret",
+   "hostname": "other-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "unnamed_read_any_host",
+   "secret": "test-shared-secret",
+   "hostname": "other-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar name\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"wVn8eFC0_j6mlUC0zk5L9cmQMGv5mEU4RbWzRPU7K14=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get",
+    "var": "name",
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "unnamed_write_requires_name",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"18p0PuSUYiViN5ypIgBawqQNn_YoYxPxJ9ckjPBzIIQ=\"\n}",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "unnamed_write_requires_name_set",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar daily_limit\nval 60\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"nIuViFRiPKr3D-YMf6KlV1ox7bJFeCSPYVpRlrLtnik=\"\n}",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tampered_val",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"stMEP5xATMSrP8kb_oVZHNL8tYvbxE84hy-2kY7e0Pc=\"\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "not_a_frame",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "this is not kdl {",
+   "error": {
+    "code": "invalid_request",
+    "req_id": null
+   }
+  },
+  {
+   "name": "empty_body",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "",
+   "error": {
+    "code": "invalid_request",
+    "req_id": null
+   }
+  },
+  {
+   "name": "unterminated_string_body",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname \"oops",
+   "error": {
+    "code": "invalid_request",
+    "req_id": null
+   }
+  },
+  {
+   "name": "missing_auth",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "missing_signature",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n}",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "garbage_signature",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  signature AAAA\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "non_ascii_signature",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  signature \"sigé\"\n}",
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "missing_timestamp",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"p9brrK-Wr_DLQ2qrGKBrA6B3n42Yb1Y-sQzo4vS3KJ0=\"\n}",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "missing_nonce",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"oXEnaeywoXzBitDKBCqq_NsRpocRfTwQk1l4F3_fg-4=\"\n}",
+   "error": {
+    "code": "authentication_required",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "timestamp_is_string",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp \"1710000000\"\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"2tLI8c19WiiAA8qWB8qYiADyqGf-1EVijjEQL2DtYXo=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "timestamp_is_bool",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp true\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"X6BODG_8FWvC9r-ANmDAYdp1u_QZOytqrMJ6DzoiQUY=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "nonce_too_short",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce abcdef\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"eJ9Dh8zw6GyPt-AEL9rQeJl8zU8Sh9KuBULQrow65ew=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "nonce_not_hex",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"1I3l0dZA_EufOHajK7zyVGQJpoHP2vKhqX4wJ2brZAY=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "nonce_is_int",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce 123456\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"fv2WMKiNxa9jUXdYaiBMT3_pWjfscBZq6PUdaBsCGpE=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "missing_version",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "id q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"sUwwD3_2D4t1bOAAwX2JwrkIEoAdUHotJnpkfKm0PgY=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "version_is_string",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v \"3\"\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"4mLEainTjX9viZPdMVGq1GLiEnQqhbeV19wAKUVLHjg=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "version_is_bool",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v true\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"K3zmOgnx9nHQLbyjU98LpvaUreVsvtqMdzlBIqU3lHU=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "version_2_unsupported",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 2\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"vvcjDIpc0s-e74A6FmDPZYuDEyJgZKEkBg2t_YOmI18=\"\n}",
+   "error": {
+    "code": "unsupported_version",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "version_4_unsupported",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 4\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"-gcgOdW7XEYSQNoGZEPO8O4gG6gCCm-Ywr-qr9C39nc=\"\n}",
+   "error": {
+    "code": "unsupported_version",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "unsupported_version_keeps_id",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 9\nid keep\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"og3EamfCQ_7kNjgSy_qUY01qW-2Y0oVG5OcWyW8I0gQ=\"\n}",
+   "error": {
+    "code": "unsupported_version",
+    "req_id": "keep"
+   }
+  },
+  {
+   "name": "unknown_action",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction reboot\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"1oyitUQ67_hP19QAaOCWhnsHktvrymT9c5cW0RynwQY=\"\n}",
+   "error": {
+    "code": "unknown_action",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "action_is_int",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction 5\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"49iE7yWdoDhX7yFrK8UjjagnS6so5oSQPDpGHQO_VRQ=\"\n}",
+   "error": {
+    "code": "unknown_action",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "missing_action",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"6pEB1xXE8gTVB6i10XVyl3XDJZULyfC3XvjcDCntsIk=\"\n}",
+   "error": {
+    "code": "unknown_action",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "numeric_id_is_stringified",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid 1234\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"c0Jd0YbebXLlA4Bt440bnKeNNnf48-2QAIL2QT1jkvw=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "1234",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "no_id",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"h0GTrn6m4YE3FTJEmbkTZeTouXV-KNy_GLR10JUAQX8=\"\n}",
+   "request": {
+    "version": 3,
+    "id": null,
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "get_settings",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar settings\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"2ZShc66RJkSursB5c_dXz4lkcIRrPeeStj464nM4cZk=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get",
+    "var": "settings",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "get_every_variable",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar accumulated_seconds\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"O6DDDsfpPTkr1Ioy2eX7mEzpHrZq3rj5YYqq51TCJC0=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get",
+    "var": "accumulated_seconds",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "get_missing_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"F1A1O-AoONVXyWPsOXY7X4SPvAMlSYUToZXve4Ly34c=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "get_unknown_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar nope\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"yO9X2NtZDGp2V8aMBUNoHCYDD_hafXh-IR2k-F3Ls5I=\"\n}",
+   "error": {
+    "code": "unknown_variable",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "get_var_is_int",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar 5\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tQEC8GI2GZa5Onk-uvGapFw47spjpinvm2yDV_OBmrY=\"\n}",
+   "error": {
+    "code": "unknown_variable",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "set_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar daily_limit\nval 90\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"a37oA5CLYwUbr78y5UVbkhCZnTdyRDcIqsBnEsSs_II=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "set",
+    "var": "daily_limit",
+    "val": 90,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "set_missing_val",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar daily_limit\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"PAG6-nlfEeYwHDybDFS582Qc0a_Iezcimb9pIpQVtqk=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "set_unknown_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar nope\nval 1\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"wbLWj3ZXULwBCSkhqMFQ9jUgBXd6X9YEptYeo4l5imA=\"\n}",
+   "error": {
+    "code": "unknown_variable",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "set_missing_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nval 1\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"IqIhuQGAvbCgr3a6uho1JRvZ7sFORTrWYeT5H-yWBKM=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "set_read_only_var_passes_parse",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction set\nvar status\nval LOCKED\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"KHm5eaBySIKAU9kGUHlVYk35Xg1r6TMGPs-6ffAMF-s=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "set",
+    "var": "status",
+    "val": "LOCKED",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "clear_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction clear\nvar daily_limit\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"X5YJ3LOjr6AYH2NSvsW0XVwZg9fK7ARCKm2FKOnIKD4=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "clear_missing_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction clear\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"C_SNDEZSxu8HXa8dXOyH0_PP6Ak1FV5T_eLxm60q3mc=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "clear_unknown_var",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction clear\nvar nope\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"rZCQ0cs0-xPyIhEw4Y3IMDBYIrLuTOpGUBvuSkgawAs=\"\n}",
+   "error": {
+    "code": "unknown_variable",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "extend_missing_val",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction extend\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"WqO2p8Jt-Zoz8TNcOlNCfSfD5AKsW-JDXkCYsKGs0UY=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "extend_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction extend\nval 10\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"ACiXpC9Q0zmfi0sRgyObRQyvZXvMVl8HoXqmX0kdYlg=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "extend",
+    "var": null,
+    "val": 10,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "message_missing_val",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"YmPxog4heXjlgEIqAbpD2xUqb4Clu5yp5Dp7yJSu6E4=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "message_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction message\nval \"hi\\n\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"4m1Dcmm1gWMZ7Uq_PY5fOvcc-YcmOnpNLkQCm7iyvjw=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "message",
+    "var": null,
+    "val": "hi\n",
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "shutdown_no_val_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction shutdown\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"wT88zIs4PpPIpdwr_S1ylZHkxWWTfdk4scOHHlzrYaM=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "shutdown",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "val_null_counts_as_missing",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction extend\nval null\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"PwpY4nKNLWtfxG5bOaWtSZ9ZboVDYPxinY3quPuk19k=\"\n}",
+   "error": {
+    "code": "invalid_request",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_1",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 1\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"hzeoZWMU9CTY6r4G92bkln0DjY_j7lVhQu68huRYWeQ=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 1
+   }
+  },
+  {
+   "name": "tail_5000",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 5000\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"aSMwHtgQloXFL-mdV-OLEzwB81mWDHhVUTvQBwBmzNA=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 5000
+   }
+  },
+  {
+   "name": "tail_0",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 0\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"QhudooLI506aeK5OAps4z-KYQLHhBAXSmVDibRT86JY=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_negative",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail -3\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"d-FpQy_ZrWFjuRoQ4muogEubZ6L8ERyqv_p_1-GWr28=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_5001",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 5001\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"TRIqxPX-znGJ96D1EKKBUBIWQfgtb6KlMtxRElO9aAI=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_numeric_string",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"12\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"aQTFLxlHaWr6V3akmk62-K9MFYcfvlW8cySuo47GB0s=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 12
+   }
+  },
+  {
+   "name": "tail_string_with_spaces",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \" 12 \"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"YbpjDjzm2gqI1wA6uFI2yPCJjJwQyCwVOWWckz8FPz8=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 12
+   }
+  },
+  {
+   "name": "tail_string_signed",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"+12\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"laI7chNbzqjVsrv8Ew4EzexYWmi8FLisncCO3yZrRxo=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": 12
+   }
+  },
+  {
+   "name": "tail_string_underscore",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"1_2\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"SOuA4BCn_2waVGB917I0g1rfFvyELb3PEK3-QjarmJM=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_string_unicode_digits",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"١٢\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"fJeO-aSpS7hN4iwPzAg6m2w2RCkxLTX8mzpFEYVnT8w=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_string_huge",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"999999999999999999999999999999\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Xs0s9o73PELfWKTasr5K6JrvfkTid-XpV5aJzCWUBk8=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_string_fraction",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail \"12.0\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"KQe0yVbdsOqsWbC3A2VbKcEqMLxUqqOdcs41PjJcbrI=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_int_beyond_2_53",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail 9007199254740993\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"O4JDdLlq3Vwjt9Mxk1PNMA2zf-rCsuUuFE0kUHk9Ewc=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_text",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail abc\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"oHvtTjZESAUiRdufzdnQ9yQ_9BlVeXeXSNLsZWdrHB8=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_bool",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"poAVIx2nhydCWCW7JoP4ZpbT_mwUmMrLPoUqUAbfJB8=\"\n}",
+   "error": {
+    "code": "invalid_value",
+    "req_id": "q1"
+   }
+  },
+  {
+   "name": "tail_null_ignored",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\ntail null\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"c8Vm8BqPDwOnTpvm_wLYBXjsm-z4zgMLapF78YaOJEM=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "get_logs_unnamed_ok",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get_logs\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"yEOxKulRHqXoV6Y-i1AKYmKJy6iLYmrWo3FXY1bw9LA=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "duplicate_fields_last_wins",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction get\nvar name\nvar settings\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"7KwzuC_WuCh1isrluDelJcbrgaebLakJzaJ06Bl99Ms=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "get",
+    "var": "settings",
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "unknown_extra_fields_ignored",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nfuture thing\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"pmfQdnmUXm7Q2Ew9a8xYY0kkryLHhzTrnrw9jhGJHzw=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "extra_block_field_is_signed",
+   "secret": "test-shared-secret",
+   "hostname": "kid-pc",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction unlock\nmeta {\n  x 1\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"-YA1pZ6wwQR1GJbfNFDzvHG4q2sNKHwHf9BT_659jh0=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "unlock",
+    "var": null,
+    "val": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "unicode_hostname_match",
+   "secret": "test-shared-secret",
+   "hostname": "Kinder-PC ü",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"pssS22ynMRlag2K3-b_vFDEWbI-lhTU-ksovWV8iZI4=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "name": "Kinder-PC ü",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  },
+  {
+   "name": "numeric_name_stringified",
+   "secret": "test-shared-secret",
+   "hostname": "42",
+   "now": 1710000000,
+   "body": "v 3\nid q1\nname 42\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\naction lock\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"1zakTTs1G-MHOdTCyQEw0bu8Qk5aJgs_mSVfNz_JMY8=\"\n}",
+   "request": {
+    "version": 3,
+    "id": "q1",
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "name": "42",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "tail": null
+   }
+  }
+ ],
+ "build_response": [
+  {
+   "name": "ok_int",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      120
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "r1",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}"
+  },
+  {
+   "name": "ok_string_bare",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "locked"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "r2",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid r2\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult locked\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"6sHWeprmmFD_n8BdjJEjoVkcxsvo0-_MxKQ3YQqMZ7Y=\"\n}"
+  },
+  {
+   "name": "ok_string_quoted",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "Locked — past bedtime"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult \"Locked — past bedtime\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"5BaUhYNd2z_W0U9ryXjf8Ij2Ko8zUVoSw-OLb52Bn1M=\"\n}"
+  },
+  {
+   "name": "ok_bool",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      true
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"VOE7U3HjnGLk4BdOxqShCG8k3x0ZdhyQZ9kWS_CKNSg=\"\n}"
+  },
+  {
+   "name": "ok_null",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      null
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult null\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Vxqgq2Jrx2STCm7W3Lhaj7uTiAFYpEzIdehq8FnoB3w=\"\n}"
+  },
+  {
+   "name": "ok_trailing_newline",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "done\n"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "nl",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid nl\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult \"done\\n\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"SgN21W1KYs_XS_fWdff4ty000YQfy2HNzBLaWfbHdmU=\"\n}"
+  },
+  {
+   "name": "ok_hostname_result",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "kid-pc"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "n",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid n\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult kid-pc\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"iODzY4XREgv8PTr2MpUk89nN0BkKm905tE5qqdD6qZc=\"\n}"
+  },
+  {
+   "name": "settings",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "settings",
+     "args": [],
+     "children": [
+      {
+       "name": "name",
+       "args": [
+        "kid-pc"
+       ]
+      },
+      {
+       "name": "status",
+       "args": [
+        "UNLOCKED"
+       ]
+      },
+      {
+       "name": "current_user",
+       "args": [
+        "kid"
+       ]
+      },
+      {
+       "name": "daily_limit",
+       "args": [
+        120
+       ]
+      },
+      {
+       "name": "bed_time",
+       "args": [
+        "21:00"
+       ]
+      },
+      {
+       "name": "manual_lock",
+       "args": [
+        false
+       ]
+      },
+      {
+       "name": "wake_time",
+       "args": [
+        "07:00"
+       ]
+      },
+      {
+       "name": "cumulative_extension",
+       "args": [
+        0
+       ]
+      },
+      {
+       "name": "accumulated_seconds",
+       "args": [
+        1234
+       ]
+      },
+      {
+       "name": "time_remaining",
+       "args": [
+        null
+       ]
+      },
+      {
+       "name": "enforcement_active",
+       "args": [
+        false
+       ]
+      },
+      {
+       "name": "enforcement_reason",
+       "args": [
+        null
+       ]
+      },
+      {
+       "name": "access_status",
+       "args": [
+        "Unlocked"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "s1",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid s1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nsettings {\n  name kid-pc\n  status UNLOCKED\n  current_user kid\n  daily_limit 120\n  bed_time \"21:00\"\n  manual_lock false\n  wake_time \"07:00\"\n  cumulative_extension 0\n  accumulated_seconds 1234\n  time_remaining null\n  enforcement_active false\n  enforcement_reason null\n  access_status Unlocked\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"aU5KlLS3fyFskGv89pHoaviNmvqM1AvxokF4hD1XQck=\"\n}"
+  },
+  {
+   "name": "capabilities",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "actions",
+     "args": [],
+     "children": [
+      {
+       "name": "get",
+       "args": [
+        "get a single variable or \"settings\" to get all variables"
+       ]
+      },
+      {
+       "name": "set",
+       "args": [
+        "set a single variable to a new value"
+       ]
+      },
+      {
+       "name": "clear",
+       "args": [
+        "clear a single variable"
+       ]
+      },
+      {
+       "name": "lock",
+       "args": [
+        "immediately lock"
+       ]
+      },
+      {
+       "name": "unlock",
+       "args": [
+        "release a manual lock"
+       ]
+      },
+      {
+       "name": "extend",
+       "args": [
+        "add minutes of extra allowance for today (val=minutes)"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "show a popup message on the PC (val=text)"
+       ]
+      },
+      {
+       "name": "shutdown",
+       "args": [
+        "shut down the PC after a warning (val=seconds, default 60)"
+       ]
+      },
+      {
+       "name": "list_capabilities",
+       "args": [
+        "describe supported actions and variables"
+       ]
+      },
+      {
+       "name": "get_logs",
+       "args": [
+        "read the agent log file (tail=N lines, default 500, max 5000)"
+       ]
+      }
+     ]
+    },
+    {
+     "name": "values",
+     "args": [],
+     "children": [
+      {
+       "name": "name",
+       "args": [
+        "read-only, name of computer"
+       ]
+      },
+      {
+       "name": "status",
+       "args": [
+        "read-only, the lock status (LOCKED/UNLOCKED)"
+       ]
+      },
+      {
+       "name": "current_user",
+       "args": [
+        "read-only, the username of the currently logged-in user"
+       ]
+      },
+      {
+       "name": "daily_limit",
+       "args": [
+        "current daily limit in minutes"
+       ]
+      },
+      {
+       "name": "bed_time",
+       "args": [
+        "bed time, at which the computer will be locked"
+       ]
+      },
+      {
+       "name": "manual_lock",
+       "args": [
+        "boolean, whether a manual lock is in effect"
+       ]
+      },
+      {
+       "name": "wake_time",
+       "args": [
+        "time, at which the computer can be used the following morning"
+       ]
+      },
+      {
+       "name": "cumulative_extension",
+       "args": [
+        "read-only, a running total of extension seconds today"
+       ]
+      },
+      {
+       "name": "accumulated_seconds",
+       "args": [
+        "read-only, a running total of active seconds used today"
+       ]
+      },
+      {
+       "name": "time_remaining",
+       "args": [
+        "read-only, minutes remaining today (or null)"
+       ]
+      },
+      {
+       "name": "enforcement_active",
+       "args": [
+        "read-only, whether schedule/limit enforcement is active"
+       ]
+      },
+      {
+       "name": "enforcement_reason",
+       "args": [
+        "read-only, brief reason when enforcement is active (or null)"
+       ]
+      },
+      {
+       "name": "access_status",
+       "args": [
+        "read-only, brief overall access status for the parent panel"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "caps",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid caps\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nactions {\n  get \"get a single variable or \\\"settings\\\" to get all variables\"\n  set \"set a single variable to a new value\"\n  clear \"clear a single variable\"\n  lock \"immediately lock\"\n  unlock \"release a manual lock\"\n  extend \"add minutes of extra allowance for today (val=minutes)\"\n  message \"show a popup message on the PC (val=text)\"\n  shutdown \"shut down the PC after a warning (val=seconds, default 60)\"\n  list_capabilities \"describe supported actions and variables\"\n  get_logs \"read the agent log file (tail=N lines, default 500, max 5000)\"\n}\nvalues {\n  name \"read-only, name of computer\"\n  status \"read-only, the lock status (LOCKED/UNLOCKED)\"\n  current_user \"read-only, the username of the currently logged-in user\"\n  daily_limit \"current daily limit in minutes\"\n  bed_time \"bed time, at which the computer will be locked\"\n  manual_lock \"boolean, whether a manual lock is in effect\"\n  wake_time \"time, at which the computer can be used the following morning\"\n  cumulative_extension \"read-only, a running total of extension seconds today\"\n  accumulated_seconds \"read-only, a running total of active seconds used today\"\n  time_remaining \"read-only, minutes remaining today (or null)\"\n  enforcement_active \"read-only, whether schedule/limit enforcement is active\"\n  enforcement_reason \"read-only, brief reason when enforcement is active (or null)\"\n  access_status \"read-only, brief overall access status for the parent panel\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"-3lGESjF35jdqrCYXEG8Nq761Oll4KLFlVUzPXGVHYY=\"\n}"
+  },
+  {
+   "name": "error_invalid_value",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "failure"
+     ]
+    },
+    {
+     "name": "error",
+     "args": [],
+     "children": [
+      {
+       "name": "code",
+       "args": [
+        "invalid_value"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "minutes must be between 1 and 1440"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "e1",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid e1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code invalid_value\n  message \"minutes must be between 1 and 1440\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"KLzh9axguN26FiI3ZM7PqVtFdoBh2fyfiQb1sez3plk=\"\n}"
+  },
+  {
+   "name": "error_auth_failed_trailing_newline",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "failure"
+     ]
+    },
+    {
+     "name": "error",
+     "args": [],
+     "children": [
+      {
+       "name": "code",
+       "args": [
+        "authentication_failed"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "signature did not verify.\n"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code authentication_failed\n  message \"signature did not verify.\\n\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"OQo8_FrajZL5lUqyOo7L5NyM7XVvzqtdiBgWMsPe5Eg=\"\n}"
+  },
+  {
+   "name": "error_no_id",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "failure"
+     ]
+    },
+    {
+     "name": "error",
+     "args": [],
+     "children": [
+      {
+       "name": "code",
+       "args": [
+        "invalid_request"
+       ]
+      },
+      {
+       "name": "message",
+       "args": [
+        "could not parse request"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code invalid_request\n  message \"could not parse request\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Q9v6d0Lg2x_iN3yja-P0QpeaDoJ6bq9S3st4bJ8tZPo=\"\n}"
+  },
+  {
+   "name": "logs",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "logs",
+     "args": [],
+     "children": [
+      {
+       "name": "path",
+       "args": [
+        "C:\\Users\\kid\\AppData\\Local\\KidPCMonitor\\pc_control.log"
+       ]
+      },
+      {
+       "name": "truncated",
+       "args": [
+        true
+       ]
+      },
+      {
+       "name": "lines",
+       "args": [
+        "[2026-05-31 12:00:00] INFO kid_pc_monitor: started",
+        "quote \" and \\ backslash",
+        "ünï 🔑",
+        "plain"
+       ]
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "lg",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid lg\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  path \"C:\\\\Users\\\\kid\\\\AppData\\\\Local\\\\KidPCMonitor\\\\pc_control.log\"\n  truncated true\n  lines \"[2026-05-31 12:00:00] INFO kid_pc_monitor: started\" \"quote \\\" and \\\\ backslash\" \"ünï 🔑\" plain\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"8HQLMd37zqCD87VsnJG7ae7_LKFDBgpW7R9QUDX7M8I=\"\n}"
+  },
+  {
+   "name": "logs_empty",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "logs",
+     "args": [],
+     "children": [
+      {
+       "name": "path",
+       "args": [
+        "C:\\Users\\kid\\AppData\\Local\\KidPCMonitor\\pc_control.log"
+       ]
+      },
+      {
+       "name": "truncated",
+       "args": [
+        false
+       ]
+      },
+      {
+       "name": "lines",
+       "args": []
+      }
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "kid-pc",
+    "req_id": "lg0",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nid lg0\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  path \"C:\\\\Users\\\\kid\\\\AppData\\\\Local\\\\KidPCMonitor\\\\pc_control.log\"\n  truncated false\n  lines\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"B2pqBJk1e73G4c7-WG1yZtnpQ8J9RskqyjF7X1J7d8I=\"\n}"
+  },
+  {
+   "name": "unicode_secret",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "ok"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "pässwörd 🔑 with spaces",
+    "hostname": "kid-pc",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "0123456789abcdef0123456789abcdef",
+    "version": 3
+   },
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"0123456789abcdef0123456789abcdef\"\nstatus ok\nresult ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"vkNOKPuk5WNWweoQVMOoQqs0fXxIC2PfK3Dit4wYYFc=\"\n}"
+  },
+  {
+   "name": "unicode_hostname",
+   "content": [
+    {
+     "name": "status",
+     "args": [
+      "ok"
+     ]
+    },
+    {
+     "name": "result",
+     "args": [
+      "ok"
+     ]
+    }
+   ],
+   "args": {
+    "secret": "test-shared-secret",
+    "hostname": "Kinder-PC ü",
+    "req_id": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "version": 3
+   },
+   "body": "v 3\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"cK8lEqjE1z_mGjuRXsvoJ1Xvf40QFBxs4rfRi8gRBNM=\"\n}"
+  }
+ ],
+ "parse_response": [
+  {
+   "name": "built_ok_int",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "r1",
+    "status": "ok",
+    "result": 120,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_string_bare",
+   "body": "v 3\nid r2\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult locked\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"6sHWeprmmFD_n8BdjJEjoVkcxsvo0-_MxKQ3YQqMZ7Y=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "r2",
+    "status": "ok",
+    "result": "locked",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_string_quoted",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult \"Locked — past bedtime\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"5BaUhYNd2z_W0U9ryXjf8Ij2Ko8zUVoSw-OLb52Bn1M=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "ok",
+    "result": "Locked — past bedtime",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_bool",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"VOE7U3HjnGLk4BdOxqShCG8k3x0ZdhyQZ9kWS_CKNSg=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "ok",
+    "result": true,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_null",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult null\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Vxqgq2Jrx2STCm7W3Lhaj7uTiAFYpEzIdehq8FnoB3w=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_trailing_newline",
+   "body": "v 3\nid nl\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult \"done\\n\"\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"SgN21W1KYs_XS_fWdff4ty000YQfy2HNzBLaWfbHdmU=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "nl",
+    "status": "ok",
+    "result": "done\n",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_ok_hostname_result",
+   "body": "v 3\nid n\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult kid-pc\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"iODzY4XREgv8PTr2MpUk89nN0BkKm905tE5qqdD6qZc=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "n",
+    "status": "ok",
+    "result": "kid-pc",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_settings",
+   "body": "v 3\nid s1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nsettings {\n  name kid-pc\n  status UNLOCKED\n  current_user kid\n  daily_limit 120\n  bed_time \"21:00\"\n  manual_lock false\n  wake_time \"07:00\"\n  cumulative_extension 0\n  accumulated_seconds 1234\n  time_remaining null\n  enforcement_active false\n  enforcement_reason null\n  access_status Unlocked\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"aU5KlLS3fyFskGv89pHoaviNmvqM1AvxokF4hD1XQck=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "s1",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": {
+     "name": "kid-pc",
+     "status": "UNLOCKED",
+     "current_user": "kid",
+     "daily_limit": 120,
+     "bed_time": "21:00",
+     "manual_lock": false,
+     "wake_time": "07:00",
+     "cumulative_extension": 0,
+     "accumulated_seconds": 1234,
+     "time_remaining": null,
+     "enforcement_active": false,
+     "enforcement_reason": null,
+     "access_status": "Unlocked"
+    },
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_capabilities",
+   "body": "v 3\nid caps\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nactions {\n  get \"get a single variable or \\\"settings\\\" to get all variables\"\n  set \"set a single variable to a new value\"\n  clear \"clear a single variable\"\n  lock \"immediately lock\"\n  unlock \"release a manual lock\"\n  extend \"add minutes of extra allowance for today (val=minutes)\"\n  message \"show a popup message on the PC (val=text)\"\n  shutdown \"shut down the PC after a warning (val=seconds, default 60)\"\n  list_capabilities \"describe supported actions and variables\"\n  get_logs \"read the agent log file (tail=N lines, default 500, max 5000)\"\n}\nvalues {\n  name \"read-only, name of computer\"\n  status \"read-only, the lock status (LOCKED/UNLOCKED)\"\n  current_user \"read-only, the username of the currently logged-in user\"\n  daily_limit \"current daily limit in minutes\"\n  bed_time \"bed time, at which the computer will be locked\"\n  manual_lock \"boolean, whether a manual lock is in effect\"\n  wake_time \"time, at which the computer can be used the following morning\"\n  cumulative_extension \"read-only, a running total of extension seconds today\"\n  accumulated_seconds \"read-only, a running total of active seconds used today\"\n  time_remaining \"read-only, minutes remaining today (or null)\"\n  enforcement_active \"read-only, whether schedule/limit enforcement is active\"\n  enforcement_reason \"read-only, brief reason when enforcement is active (or null)\"\n  access_status \"read-only, brief overall access status for the parent panel\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"-3lGESjF35jdqrCYXEG8Nq761Oll4KLFlVUzPXGVHYY=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "caps",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_error_invalid_value",
+   "body": "v 3\nid e1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code invalid_value\n  message \"minutes must be between 1 and 1440\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"KLzh9axguN26FiI3ZM7PqVtFdoBh2fyfiQb1sez3plk=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "e1",
+    "status": "failure",
+    "result": null,
+    "error_code": "invalid_value",
+    "error_message": "minutes must be between 1 and 1440",
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_error_auth_failed_trailing_newline",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code authentication_failed\n  message \"signature did not verify.\\n\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"OQo8_FrajZL5lUqyOo7L5NyM7XVvzqtdiBgWMsPe5Eg=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "failure",
+    "result": null,
+    "error_code": "authentication_failed",
+    "error_message": "signature did not verify.\n",
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_error_no_id",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code invalid_request\n  message \"could not parse request\"\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"Q9v6d0Lg2x_iN3yja-P0QpeaDoJ6bq9S3st4bJ8tZPo=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "failure",
+    "result": null,
+    "error_code": "invalid_request",
+    "error_message": "could not parse request",
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_logs",
+   "body": "v 3\nid lg\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  path \"C:\\\\Users\\\\kid\\\\AppData\\\\Local\\\\KidPCMonitor\\\\pc_control.log\"\n  truncated true\n  lines \"[2026-05-31 12:00:00] INFO kid_pc_monitor: started\" \"quote \\\" and \\\\ backslash\" \"ünï 🔑\" plain\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"8HQLMd37zqCD87VsnJG7ae7_LKFDBgpW7R9QUDX7M8I=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "lg",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": {
+     "path": "C:\\Users\\kid\\AppData\\Local\\KidPCMonitor\\pc_control.log",
+     "truncated": true,
+     "lines": [
+      "[2026-05-31 12:00:00] INFO kid_pc_monitor: started",
+      "quote \" and \\ backslash",
+      "ünï 🔑",
+      "plain"
+     ]
+    },
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_logs_empty",
+   "body": "v 3\nid lg0\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  path \"C:\\\\Users\\\\kid\\\\AppData\\\\Local\\\\KidPCMonitor\\\\pc_control.log\"\n  truncated false\n  lines\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"B2pqBJk1e73G4c7-WG1yZtnpQ8J9RskqyjF7X1J7d8I=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "lg0",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": {
+     "path": "C:\\Users\\kid\\AppData\\Local\\KidPCMonitor\\pc_control.log",
+     "truncated": false,
+     "lines": []
+    },
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "built_unicode_secret",
+   "body": "v 3\nname kid-pc\ntimestamp 1710000000\nnonce \"0123456789abcdef0123456789abcdef\"\nstatus ok\nresult ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"vkNOKPuk5WNWweoQVMOoQqs0fXxIC2PfK3Dit4wYYFc=\"\n}",
+   "secret": "pässwörd 🔑 with spaces",
+   "expected_name": "kid-pc",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "ok",
+    "result": "ok",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "0123456789abcdef0123456789abcdef"
+   }
+  },
+  {
+   "name": "built_unicode_hostname",
+   "body": "v 3\nname \"Kinder-PC ü\"\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"cK8lEqjE1z_mGjuRXsvoJ1Xvf40QFBxs4rfRi8gRBNM=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "Kinder-PC ü",
+   "expected_version": 3,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": null,
+    "status": "ok",
+    "result": "ok",
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "Kinder-PC ü",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "no_expected_name",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "r1",
+    "status": "ok",
+    "result": 120,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "wrong_expected_name",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "other-pc",
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "wrong_secret",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "nope",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "stale_plus_61",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000061,
+   "error": {
+    "code": "stale_timestamp",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "stale_minus_61",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1709999939,
+   "error": {
+    "code": "stale_timestamp",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "edge_plus_60",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000060,
+   "response": {
+    "version": 3,
+    "id": "r1",
+    "status": "ok",
+    "result": 120,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "expected_version_mismatch",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 120\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": 4,
+   "now": 1710000000,
+   "error": {
+    "code": "unsupported_version",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "tampered",
+   "body": "v 3\nid r1\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 121\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"tHnP4I-4oYXxHdRTMfN0Ixk3A5mR9UYSL9Rm7CDiRH8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "r1"
+   }
+  },
+  {
+   "name": "unparseable_raises_invalid_request",
+   "body": "v 3\nname \"oops",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "invalid_request",
+    "req_id": null
+   }
+  },
+  {
+   "name": "unsupported_version",
+   "body": "v 2\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"_bp7d8TzrVyFC6M1dizo3X9FehFzLwtZzNnQe9qjhcc=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "unsupported_version",
+    "req_id": "x"
+   }
+  },
+  {
+   "name": "missing_version",
+   "body": "name kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"VM2zXK5YN86Lv-btfu7o9v1gedpYv2dIBYx6uRJOyZU=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "unsupported_version",
+    "req_id": null
+   }
+  },
+  {
+   "name": "missing_name_no_expectation",
+   "body": "v 3\nid x\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"pTvSg-eDeHNdpjn9YqBvxPWArytjbCeBX71FVdPW9Q4=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": null,
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "missing_name_with_expectation",
+   "body": "v 3\nid x\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"pTvSg-eDeHNdpjn9YqBvxPWArytjbCeBX71FVdPW9Q4=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "kid-pc",
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "authentication_failed",
+    "req_id": "x"
+   }
+  },
+  {
+   "name": "missing_status_defaults_to_failure",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nresult 1\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"iZHAXUiVw-nS_PbTNE0O14soevdMOsvOavbVS_7CA3A=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "failure",
+    "result": 1,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "status_is_bool",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus true\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"nLBpVHHwYLJuD-ObYEAzaY24vPVBQBfa8WFe-SbhfRA=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "True",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "no_auth",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "error": {
+    "code": "authentication_required",
+    "req_id": "x"
+   }
+  },
+  {
+   "name": "error_block_partial",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code forbidden\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"zUadnFOvlrfhog2oVjDanM4AaOcL2N7lSn21THTJ1P8=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "failure",
+    "result": null,
+    "error_code": "forbidden",
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "error_code_is_int",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus failure\nerror {\n  code 7\n  message null\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"pLwUOyr0bk51MQ2FmlXHu0uFNqbCCbvsMtZMVCqziBw=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "failure",
+    "result": null,
+    "error_code": 7,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "logs_truthy_variants",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  path 5\n  truncated yes\n  lines 1 true null s\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"2tNTR3slACuJfquUspx1wj4KdS4ZDd4GZaXyJz-dgMk=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": {
+     "path": "5",
+     "truncated": true,
+     "lines": [
+      "1",
+      "True",
+      "None",
+      "s"
+     ]
+    },
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "logs_without_lines",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nlogs {\n  truncated 0\n}\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"ozS_hqHfn8W3GWpPSGxQ4VdSwKTtS3qRjRYi2G3upLI=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": {
+     "path": "",
+     "truncated": false,
+     "lines": []
+    },
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "duplicate_result_last_wins",
+   "body": "v 3\nid x\nname kid-pc\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nresult 1\nresult 2\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"CXVx-2ypl7Bsya8BHxYuKCDG9Qh4mRwbKnyvEw83fPQ=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": null,
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "ok",
+    "result": 2,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "kid-pc",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  },
+  {
+   "name": "hostname_numeric_stringified",
+   "body": "v 3\nid x\nname 42\ntimestamp 1710000000\nnonce a1b2c3d4e5f60718293a4b5c6d7e8f90\nstatus ok\nauth {\n  algorithm hmac-sha256\n  key_id kid-pc-monitor-shared-secret\n  signature \"LSE_V-AnkxcD2BmiYEL0roGCFdZrGxYXUd7-eqjhkOM=\"\n}",
+   "secret": "test-shared-secret",
+   "expected_name": "42",
+   "expected_version": null,
+   "now": 1710000000,
+   "response": {
+    "version": 3,
+    "id": "x",
+    "status": "ok",
+    "result": null,
+    "error_code": null,
+    "error_message": null,
+    "settings": null,
+    "logs": null,
+    "name": "42",
+    "timestamp": 1710000000,
+    "nonce": "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+   }
+  }
+ ]
+}

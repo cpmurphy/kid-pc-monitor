@@ -33,6 +33,10 @@ MAX_LOG_TAIL_LINES = 5000
 # Reject absurd length prefixes outright; real frames are well under 1 KiB.
 MAX_FRAME_BYTES = 64 * 1024
 
+# Real frames nest blocks two levels deep; refuse hostile nesting before it
+# exhausts the parser's recursion limit.
+MAX_NESTING_DEPTH = 32
+
 # ---------------------------------------------------------------------------
 # Error codes (see docs/agent-protocol.md)
 # ---------------------------------------------------------------------------
@@ -142,13 +146,17 @@ class Node:
         return {child.name: child.arg for child in self.children}
 
 
-_BARE_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_.:+\-]*$")
+# A bare word is an integer only in plain ASCII decimal form (no "1_0", no
+# Unicode digits) and only within 64 bits, so every implementation agrees.
+_INT_WORD_RE = re.compile(r"[+-]?[0-9]+")
+_BARE_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.:+\-]*")
 _KEYWORDS = {"true", "false", "null"}
 
 
 def _is_bare(text: str) -> bool:
     """True when ``text`` can be emitted as an unquoted identifier."""
-    return bool(_BARE_RE.match(text)) and text not in _KEYWORDS
+    # fullmatch, not ``$``: ``$`` also matches before a trailing newline.
+    return bool(_BARE_RE.fullmatch(text)) and text not in _KEYWORDS
 
 
 def _escape(text: str) -> str:
@@ -195,6 +203,8 @@ def _serialize_into(nodes: list[Node], indent: int, lines: list[str]) -> None:
 def _unescape(text: str, start: int) -> tuple[str, int]:
     """Decode one escape sequence after the backslash at ``start - 1``."""
     simple = {"n": "\n", "t": "\t", "r": "\r", '"': '"', "\\": "\\", "/": "/"}
+    if start >= len(text):
+        raise ProtocolError(INVALID_REQUEST, "unterminated string")
     ch = text[start]
     if ch in simple:
         return simple[ch], start + 1
@@ -216,10 +226,12 @@ def _parse_bare(word: str) -> Any:
         return False
     if word == "null":
         return None
-    try:
-        return int(word)
-    except ValueError:
-        return word
+    if _INT_WORD_RE.fullmatch(word):
+        number = int(word)
+        if not -(2**63) <= number < 2**63:
+            raise ProtocolError(INVALID_REQUEST, "integer out of range")
+        return number
+    return word
 
 
 _DELIMS = set(' \t\n\r{};"')
@@ -267,12 +279,17 @@ def _tokenize(text: str) -> list[tuple[str, Any]]:
 
 
 def peek_version(body: str) -> int:
-    """Best-effort read of ``v`` for error responses when full parse fails."""
+    """Best-effort read of ``v`` for error responses when full parse fails.
+
+    Only a supported version is echoed: responses can only be signed at a
+    supported version, so anything else (an old panel's ``v 2``, a bogus
+    ``v true``) is answered at the default version.
+    """
     try:
         for node in parse(body):
             if node.name == "v" and node.args:
                 version = node.args[0]
-                if isinstance(version, int):
+                if isinstance(version, int) and version in SUPPORTED_VERSIONS:
                     return version
     except ProtocolError:
         pass
@@ -284,8 +301,9 @@ def parse(text: str) -> list[Node]:
     tokens = _tokenize(text)
     pos = 0
 
-    def parse_nodes(in_block: bool) -> list[Node]:
+    def parse_nodes(depth: int) -> list[Node]:
         nonlocal pos
+        in_block = depth > 0
         nodes: list[Node] = []
         while pos < len(tokens):
             kind, value = tokens[pos]
@@ -309,14 +327,16 @@ def parse(text: str) -> list[Node]:
                 pos += 1
             children: list[Node] = []
             if pos < len(tokens) and tokens[pos][0] == "LB":
+                if depth >= MAX_NESTING_DEPTH:
+                    raise ProtocolError(INVALID_REQUEST, "blocks nested too deeply")
                 pos += 1
-                children = parse_nodes(in_block=True)
+                children = parse_nodes(depth + 1)
             nodes.append(Node(value, args, children))
         if in_block:
             raise ProtocolError(INVALID_REQUEST, "missing '}'")
         return nodes
 
-    return parse_nodes(in_block=False)
+    return parse_nodes(0)
 
 
 # ===========================================================================
@@ -532,15 +552,21 @@ def build_request(
     return serialize(nodes)
 
 
+_MAX_PARSED_INT = 2**53
+
+
 def _parse_int(raw: Any, req_id: str | None) -> int:
-    if isinstance(raw, bool):  # bool is an int subclass; reject it explicitly
+    """A whole number: an int, or a decimal string such as ``"15"`` or ``" -3 "``."""
+    number: int | None = None
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        number = raw
+    elif isinstance(raw, str) and _INT_WORD_RE.fullmatch(raw.strip()):
+        number = int(raw.strip())
+    if number is None:
         raise ProtocolError(INVALID_VALUE, "expected a number", req_id)
-    if isinstance(raw, int):
-        return raw
-    try:
-        return int(str(raw))
-    except ValueError:
-        raise ProtocolError(INVALID_VALUE, "expected a number", req_id) from None
+    if abs(number) > _MAX_PARSED_INT:
+        raise ProtocolError(INVALID_VALUE, "number out of range", req_id)
+    return number
 
 
 def parse_request(
