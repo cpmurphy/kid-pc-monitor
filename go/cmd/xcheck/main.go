@@ -8,6 +8,10 @@
 //	xcheck panel -listen 127.0.0.1:0 -secret S
 //	    a toy panel that waits for an agent and runs a scripted conversation,
 //	    printing one JSON line per step
+//	xcheck state-write -dir D -now ISO
+//	    save a fixed sample of settings and runtime state into D
+//	xcheck state-dump -dir D -now ISO -user U
+//	    load D with the state package and print what it found as JSON
 //
 // It is a test fixture, not a deliverable: the toy agent keeps its settings in
 // memory and does not touch the host.
@@ -23,7 +27,9 @@ import (
 	"strings"
 	"time"
 
+	"kidpcmonitor/policy"
 	"kidpcmonitor/protocol"
+	"kidpcmonitor/state"
 )
 
 func main() {
@@ -35,7 +41,18 @@ func main() {
 	connect := fs.String("connect", "", "agent: panel address to dial")
 	hostname := fs.String("hostname", "go-kid-pc", "agent: hostname to claim")
 	listen := fs.String("listen", "127.0.0.1:0", "panel: address to listen on")
+	dir := fs.String("dir", "", "state-*: agent data directory")
+	nowFlag := fs.String("now", "", "state-*: fake wall-clock time (ISO 8601)")
+	user := fs.String("user", "kid", "state-dump: account the agent runs as")
 	_ = fs.Parse(os.Args[2:])
+	switch os.Args[1] {
+	case "state-write":
+		runStateWrite(*dir, *nowFlag)
+		return
+	case "state-dump":
+		runStateDump(*dir, *nowFlag, *user)
+		return
+	}
 	if *secret == "" {
 		fatalf("-secret is required")
 	}
@@ -400,4 +417,56 @@ func mustBuild(p protocol.RequestParams) string {
 		fatalf("%v", err)
 	}
 	return body
+}
+
+// ---------------------------------------------------------------------------
+// State files
+// ---------------------------------------------------------------------------
+
+func stateStore(dir, nowText, user string) *state.Store {
+	now, err := state.ParseISODatetime(nowText)
+	if err != nil || dir == "" {
+		fatalf("state modes need -dir and a valid -now: %v", err)
+	}
+	return &state.Store{
+		DataDir: dir, CurrentUser: user,
+		Clock: func() time.Time { return now },
+	}
+}
+
+func runStateWrite(dir, nowText string) {
+	store := stateStore(dir, nowText, "kid")
+	allowance := int64(100)
+	daily := state.DailySettings{
+		BedTime: policy.At(21, 15), WakeTime: policy.TimeOfDay{Hour: 6, Minute: 30}, Allowance: &allowance,
+	}
+	runtimeState := state.RuntimeState{
+		AccumulatedSeconds: 1234.56789, ManualLockActive: true, CumulativeExtensionSeconds: 300,
+	}
+	if err := store.Save(daily, &runtimeState); err != nil {
+		fatalf("save: %v", err)
+	}
+}
+
+func runStateDump(dir, nowText, user string) {
+	daily, runtimeState, err := stateStore(dir, nowText, user).Load()
+	if err != nil {
+		fatalf("load: %v", err)
+	}
+	out := map[string]any{
+		"wake_time":                    daily.WakeTime.String(),
+		"bed_time":                     nil,
+		"allowance":                    nil,
+		"timestamp":                    state.FormatISO(runtimeState.Timestamp),
+		"accumulated_seconds":          runtimeState.AccumulatedSeconds,
+		"manual_lock_active":           runtimeState.ManualLockActive,
+		"cumulative_extension_seconds": runtimeState.CumulativeExtensionSeconds,
+	}
+	if daily.BedTime != nil {
+		out["bed_time"] = daily.BedTime.String()
+	}
+	if daily.Allowance != nil {
+		out["allowance"] = *daily.Allowance
+	}
+	_ = json.NewEncoder(os.Stdout).Encode(out)
 }

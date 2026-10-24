@@ -113,8 +113,8 @@ func isPySpace(r rune) bool {
 		r == 0x2028 || r == 0x2029 || r == 0x202f || r == 0x205f || r == 0x3000)
 }
 
-// wall strips the location from t, keeping its wall-clock fields.
-func wall(t time.Time) time.Time {
+// Wall strips the location from t, keeping its wall-clock fields.
+func Wall(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
 		t.Nanosecond(), time.UTC)
 }
@@ -125,7 +125,7 @@ func (t TimeOfDay) beforeOrAt(now time.Time) bool { return t.minutes() <= now.Ho
 // wakeTime each day (not midnight), so early-morning use before wake still
 // counts toward the previous day's allowance.
 func UsagePeriodDate(now time.Time, wakeTime TimeOfDay) Date {
-	day := wall(now)
+	day := Wall(now)
 	if now.Hour()*60+now.Minute() < wakeTime.minutes() {
 		day = day.AddDate(0, 0, -1)
 	}
@@ -219,7 +219,7 @@ func MinutesUntilLock(in Inputs) (minutes float64, ok bool) {
 		return 0, true
 	}
 	if in.BedTime != nil {
-		now := wall(in.Now)
+		now := Wall(in.Now)
 		bed := time.Date(now.Year(), now.Month(), now.Day(), in.BedTime.Hour, in.BedTime.Minute, 0, 0, time.UTC)
 		if !bed.After(now) {
 			bed = bed.AddDate(0, 0, 1)

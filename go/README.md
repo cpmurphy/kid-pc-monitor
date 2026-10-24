@@ -5,9 +5,15 @@ toward a compiled Windows agent. Standard library only.
 
 | Path | What |
 |---|---|
-| `protocol/` | The package: KDL-subset parser/serializer, framing, HMAC auth, request/response build and parse, and `HandleRequest` (the agent's authenticate → dispatch → sign entry point). |
-| `cmd/xcheck/` | Test fixture used by `scripts/cross_check_go.py`: a toy agent and a toy panel. Not a product. |
-| `../testdata/protocol/vectors.json` | Golden vectors generated from the Python implementation. |
+| `protocol/` | Wire protocol: KDL-subset parser/serializer, framing, HMAC auth, request/response build and parse, and `HandleRequest` (the agent's authenticate → dispatch → sign entry point). |
+| `policy/` | Lock policy: bedtime curfew, allowance, minutes until lock, access status. Pure functions. |
+| `state/` | `daily_settings.json` / `state.json` persistence, wake-time rollover, legacy migration, ProgramData bootstrap. |
+| `internal/pycompat/` | The few Python builtins (`int(str)`) whose exact behavior the formats depend on. |
+| `cmd/xcheck/` | Test fixture used by `scripts/cross_check_go.py`: a toy agent, a toy panel, and state-file helpers. Not a product. |
+| `../testdata/*/vectors.json` | Golden vectors generated from the Python implementation. |
+
+Not ported yet: the monitoring loop and parent actions (`pc_time_control.py`),
+the request dispatcher, and the Windows platform layer.
 
 ## The Python code is the reference
 
@@ -15,14 +21,14 @@ toward a compiled Windows agent. Standard library only.
 protocol. The vectors are a snapshot of what they do:
 
 ```bash
-python tests/protocol_vectors_gen.py   # regenerate after an intentional Python change
+python tests/protocol_vectors_gen.py   # (or policy_ / state_) regenerate after an intentional Python change
 cd go && go test ./...                 # every vector must pass in Go
-python scripts/cross_check_go.py       # live TCP sessions in both directions
+python scripts/cross_check_go.py       # live TCP sessions and state-file interop
 ```
 
-`go/protocol/doc.go` lists the few places where Go is deliberately stricter
-than Python (integer range, Unicode digits, invalid UTF-8). None can occur in
-frames either side produces.
+Each package's `doc.go` lists the few places where Go is deliberately stricter
+than Python (integer range, Unicode digits, non-finite floats, exotic ISO
+formats). None can occur in data either implementation writes.
 
 ## Using the package
 
