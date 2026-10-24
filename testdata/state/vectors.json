@@ -1249,13 +1249,13 @@
   },
   {
    "in": {
-    "wake_time": "6:5",
+    "wake_time": "6:30",
     "bed_time": "9:00",
     "allowance": 1
    },
    "ok": {
     "bed_time": "09:00",
-    "wake_time": "06:05",
+    "wake_time": "06:30",
     "allowance": 1
    }
   },
@@ -1313,22 +1313,22 @@
   },
   {
    "in": {
-    "allowance": 90.7
+    "allowance": "+7"
+   },
+   "ok": {
+    "bed_time": null,
+    "wake_time": "07:00",
+    "allowance": 7
+   }
+  },
+  {
+   "in": {
+    "allowance": 90.0
    },
    "ok": {
     "bed_time": null,
     "wake_time": "07:00",
     "allowance": 90
-   }
-  },
-  {
-   "in": {
-    "allowance": -5.9
-   },
-   "ok": {
-    "bed_time": null,
-    "wake_time": "07:00",
-    "allowance": -5
    }
   },
   {
@@ -1343,33 +1343,59 @@
   },
   {
    "in": {
-    "allowance": true
+    "allowance": 0
    },
    "ok": {
     "bed_time": null,
     "wake_time": "07:00",
-    "allowance": 1
+    "allowance": 0
    }
+  },
+  {
+   "in": {
+    "allowance": 9007199254740992
+   },
+   "ok": {
+    "bed_time": null,
+    "wake_time": "07:00",
+    "allowance": 9007199254740992
+   }
+  },
+  {
+   "in": {
+    "allowance": 90.7
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": -5.9
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": -1
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": "-1"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": true
+   },
+   "error": "ValueError"
   },
   {
    "in": {
     "allowance": false
    },
-   "ok": {
-    "bed_time": null,
-    "wake_time": "07:00",
-    "allowance": 0
-   }
-  },
-  {
-   "in": {
-    "allowance": 0
-   },
-   "ok": {
-    "bed_time": null,
-    "wake_time": "07:00",
-    "allowance": 0
-   }
+   "error": "ValueError"
   },
   {
    "in": {
@@ -1385,6 +1411,18 @@
   },
   {
    "in": {
+    "allowance": "1_0"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": "٣"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
     "allowance": ""
    },
    "error": "ValueError"
@@ -1393,13 +1431,25 @@
    "in": {
     "allowance": []
    },
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
     "allowance": {}
    },
-   "error": "TypeError"
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": 9007199254740993
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "allowance": 1e+300
+   },
+   "error": "ValueError"
   },
   {
    "in": {
@@ -1450,6 +1500,22 @@
     "wake_time": "7"
    },
    "error": "ValueError"
+  },
+  {
+   "in": {
+    "wake_time": "7:5"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "wake_time": " 07:00 "
+   },
+   "ok": {
+    "bed_time": null,
+    "wake_time": "07:00",
+    "allowance": null
+   }
   },
   {
    "in": {
@@ -1510,7 +1576,7 @@
   },
   {
    "in": {
-    "wake_time": "6:5",
+    "wake_time": "6:30",
     "bed_time": "9:00",
     "allowance": 1
    },
@@ -1550,6 +1616,36 @@
   },
   {
    "in": {
+    "allowance": "+7"
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 90.0
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 1000.0
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 0
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 9007199254740992
+   },
+   "result": false
+  },
+  {
+   "in": {
     "allowance": 90.7
    },
    "result": false
@@ -1562,7 +1658,13 @@
   },
   {
    "in": {
-    "allowance": 1000.0
+    "allowance": -1
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": "-1"
    },
    "result": false
   },
@@ -1580,12 +1682,6 @@
   },
   {
    "in": {
-    "allowance": 0
-   },
-   "result": false
-  },
-  {
-   "in": {
     "allowance": "abc"
    },
    "result": false
@@ -1593,6 +1689,18 @@
   {
    "in": {
     "allowance": "1.5"
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": "1_0"
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": "٣"
    },
    "result": false
   },
@@ -1611,6 +1719,18 @@
   {
    "in": {
     "allowance": {}
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 9007199254740993
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "allowance": 1e+300
    },
    "result": false
   },
@@ -1661,6 +1781,18 @@
   {
    "in": {
     "wake_time": "7"
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "wake_time": "7:5"
+   },
+   "result": false
+  },
+  {
+   "in": {
+    "wake_time": " 07:00 "
    },
    "result": false
   },
@@ -1776,7 +1908,7 @@
     "bed_time": "21:00",
     "allowance": true
    },
-   "result": true
+   "result": false
   },
   {
    "in": {
@@ -2002,6 +2134,17 @@
   },
   {
    "in": {
+    "timestamp": "2026-05-17T10:00:00+02"
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
     "timestamp": "2026-05-17T10:00:00Z"
    },
    "ok": {
@@ -2021,6 +2164,53 @@
     "manual_lock_active": false,
     "cumulative_extension_seconds": 0
    }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00Z"
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00+02:00:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17Z"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17+02:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "20260517T100000"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-W20-7"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17x10:00:00"
+   },
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2047,6 +2237,12 @@
   },
   {
    "in": {
+    "timestamp": "2026-05-17T24:00:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
     "timestamp": "2026-05-17T10:60:00"
    },
    "error": "ValueError"
@@ -2065,7 +2261,25 @@
   },
   {
    "in": {
+    "timestamp": " 2026-05-17T10:00:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
     "timestamp": "26-05-17T10:00:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "0000-01-01T00:00:00"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "２０２６-05-17T10:00:00"
    },
    "error": "ValueError"
   },
@@ -2089,6 +2303,18 @@
    "ok": {
     "timestamp": "2026-05-17T10:00:00",
     "accumulated_seconds": 7.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
     "manual_lock_active": false,
     "cumulative_extension_seconds": 0
    }
@@ -2120,11 +2346,11 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": true
+    "accumulated_seconds": ".5"
    },
    "ok": {
     "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 1.0,
+    "accumulated_seconds": 0.5,
     "manual_lock_active": false,
     "cumulative_extension_seconds": 0
    }
@@ -2132,7 +2358,92 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "5."
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 5.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "1e3"
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 1000.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 1e-09
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 1e-09,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": true
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": -1
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": -0.5
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
     "accumulated_seconds": "abc"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "1_0"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "nan"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "inf"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": "0x10"
    },
    "error": "ValueError"
   },
@@ -2148,14 +2459,21 @@
     "timestamp": "2026-05-17T10:00:00",
     "accumulated_seconds": null
    },
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "accumulated_seconds": []
    },
-   "error": "TypeError"
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 9007199254740993
+   },
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2172,19 +2490,7 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": "yes"
-   },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": true,
-    "cumulative_extension_seconds": 0
-   }
-  },
-  {
-   "in": {
-    "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": ""
+    "manual_lock_active": false
    },
    "ok": {
     "timestamp": "2026-05-17T10:00:00",
@@ -2196,7 +2502,43 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": "false"
+    "manual_lock_active": "true"
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": true,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": " TRUE "
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": true,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": "False"
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": 1
    },
    "ok": {
     "timestamp": "2026-05-17T10:00:00",
@@ -2220,90 +2562,65 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": 2
+    "manual_lock_active": "yes"
    },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": true,
-    "cumulative_extension_seconds": 0
-   }
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": 0.0
+    "manual_lock_active": ""
    },
-   "ok": {
+   "error": "ValueError"
+  },
+  {
+   "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
-    "cumulative_extension_seconds": 0
-   }
+    "manual_lock_active": "1"
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": 2
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": 1.0
+   },
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "manual_lock_active": 0.5
+   },
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "manual_lock_active": null
    },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
-    "cumulative_extension_seconds": 0
-   }
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "manual_lock_active": []
    },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
-    "cumulative_extension_seconds": 0
-   }
-  },
-  {
-   "in": {
-    "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": [
-     0
-    ]
-   },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": true,
-    "cumulative_extension_seconds": 0
-   }
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "manual_lock_active": {}
    },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
-    "cumulative_extension_seconds": 0
-   }
-  },
-  {
-   "in": {
-    "timestamp": "2026-05-17T10:00:00",
-    "manual_lock_active": {
-     "a": 1
-    }
-   },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": true,
-    "cumulative_extension_seconds": 0
-   }
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2315,6 +2632,18 @@
     "accumulated_seconds": 0.0,
     "manual_lock_active": false,
     "cumulative_extension_seconds": 900
+   }
+  },
+  {
+   "in": {
+    "timestamp": "2026-05-17T10:00:00",
+    "cumulative_extension_seconds": 0
+   },
+   "ok": {
+    "timestamp": "2026-05-17T10:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
    }
   },
   {
@@ -2332,7 +2661,7 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "cumulative_extension_seconds": 30.9
+    "cumulative_extension_seconds": 30.0
    },
    "ok": {
     "timestamp": "2026-05-17T10:00:00",
@@ -2344,26 +2673,23 @@
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "cumulative_extension_seconds": -30.9
+    "cumulative_extension_seconds": 30.9
    },
-   "ok": {
+   "error": "ValueError"
+  },
+  {
+   "in": {
     "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
     "cumulative_extension_seconds": -30
-   }
+   },
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "cumulative_extension_seconds": true
    },
-   "ok": {
-    "timestamp": "2026-05-17T10:00:00",
-    "accumulated_seconds": 0.0,
-    "manual_lock_active": false,
-    "cumulative_extension_seconds": 1
-   }
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2384,14 +2710,14 @@
     "timestamp": "2026-05-17T10:00:00",
     "cumulative_extension_seconds": null
    },
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
     "timestamp": "2026-05-17T10:00:00",
     "cumulative_extension_seconds": {}
    },
-   "error": "TypeError"
+   "error": "ValueError"
   }
  ],
  "legacy_to_state": [
@@ -2561,14 +2887,14 @@
     "accumulated_date": 5
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
     "accumulated_date": null
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2597,6 +2923,28 @@
    "ok": {
     "daily": {
      "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "in": {
+    "lock_times": [
+     "21:30",
+     "bad"
+    ]
+   },
+   "now": "2026-05-17T10:00:00",
+   "ok": {
+    "daily": {
+     "bed_time": "21:30",
      "wake_time": "07:00",
      "allowance": null
     },
@@ -2729,19 +3077,7 @@
     "lock_times": "21:30"
    },
    "now": "2026-05-17T10:00:00",
-   "ok": {
-    "daily": {
-     "bed_time": null,
-     "wake_time": "07:00",
-     "allowance": null
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   }
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2755,33 +3091,37 @@
     "lock_times": 5
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
     "lock_times": 0
    },
    "now": "2026-05-17T10:00:00",
-   "ok": {
-    "daily": {
-     "bed_time": null,
-     "wake_time": "07:00",
-     "allowance": null
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   }
+   "error": "ValueError"
   },
   {
    "in": {
     "lock_times": true
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "lock_times": {}
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "lock_times": {
+     "0": "21:00"
+    }
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2890,26 +3230,14 @@
     "usage_allowance": 45.9
    },
    "now": "2026-05-17T10:00:00",
-   "ok": {
-    "daily": {
-     "bed_time": null,
-     "wake_time": "07:00",
-     "allowance": 45
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   }
+   "error": "ValueError"
   },
   {
    "in": {
     "usage_allowance": []
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2942,7 +3270,7 @@
     "accumulated_seconds": null
    },
    "now": "2026-05-17T10:00:00",
-   "error": "TypeError"
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2956,19 +3284,7 @@
     "manual_lock_active": "no"
    },
    "now": "2026-05-17T10:00:00",
-   "ok": {
-    "daily": {
-     "bed_time": null,
-     "wake_time": "07:00",
-     "allowance": null
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": true,
-     "cumulative_extension_seconds": 0
-    }
-   }
+   "error": "ValueError"
   },
   {
    "in": {
@@ -2988,6 +3304,68 @@
      "cumulative_extension_seconds": 0
     }
    }
+  },
+  {
+   "in": {
+    "manual_lock_active": "true",
+    "accumulated_seconds": 60
+   },
+   "now": "2026-05-17T10:00:00",
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 60.0,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "in": {
+    "usage_allowance": -5
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "usage_allowance": true
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "usage_allowance": 45.5
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "accumulated_seconds": -1
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "accumulated_date": "2026-05-16T00:00:00"
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
+  },
+  {
+   "in": {
+    "accumulated_date": "20260516"
+   },
+   "now": "2026-05-17T10:00:00",
+   "error": "ValueError"
   }
  ],
  "store": [
@@ -3011,6 +3389,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3048,6 +3427,7 @@
      "cumulative_extension_seconds": 900
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3085,6 +3465,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3122,6 +3503,7 @@
      "cumulative_extension_seconds": 600
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3158,6 +3540,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3167,284 +3550,7 @@
    }
   },
   {
-   "name": "state_without_timestamp_starts_fresh",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "{\"accumulated_seconds\": 5}"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": "21:00",
-     "wake_time": "07:00",
-     "allowance": 120
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "accumulated_seconds": 5
-    }
-   }
-  },
-  {
-   "name": "state_with_bad_timestamp_starts_fresh",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "{\"timestamp\": \"garbage\"}"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": "21:00",
-     "wake_time": "07:00",
-     "allowance": 120
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "timestamp": "garbage"
-    }
-   }
-  },
-  {
-   "name": "state_with_bad_number_is_a_value_error_so_starts_fresh",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": \"x\"}"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": "21:00",
-     "wake_time": "07:00",
-     "allowance": 120
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "timestamp": "2026-05-17T09:00:00",
-     "accumulated_seconds": "x"
-    }
-   }
-  },
-  {
-   "name": "state_with_null_number_is_a_type_error_and_aborts",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"cumulative_extension_seconds\": null}"
-   },
-   "program_data": {},
-   "error": "TypeError",
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "timestamp": "2026-05-17T09:00:00",
-     "cumulative_extension_seconds": null
-    }
-   }
-  },
-  {
-   "name": "state_not_json_is_treated_as_missing",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "{not json"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": "21:00",
-     "wake_time": "07:00",
-     "allowance": 120
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "_raw": "{not json"
-    }
-   }
-  },
-  {
-   "name": "state_utf8_bom_is_treated_as_missing",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
-    "state.json": "﻿{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": "21:00",
-     "wake_time": "07:00",
-     "allowance": 120
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": 120,
-     "bed_time": "21:00"
-    },
-    "state.json": {
-     "_raw": "﻿{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
-    }
-   }
-  },
-  {
-   "name": "daily_not_json_is_overwritten_with_defaults",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{oops",
-    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
-   },
-   "program_data": {},
-   "ok": {
-    "daily": {
-     "bed_time": null,
-     "wake_time": "07:00",
-     "allowance": null
-    },
-    "runtime": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   },
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "07:00",
-     "allowance": null,
-     "bed_time": null
-    },
-    "state.json": {
-     "timestamp": "2026-05-17T10:00:00",
-     "accumulated_seconds": 0.0,
-     "manual_lock_active": false,
-     "cumulative_extension_seconds": 0
-    }
-   }
-  },
-  {
-   "name": "daily_with_bad_time_aborts",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"wake_time\": \"25:00\"}",
-    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
-   },
-   "program_data": {},
-   "error": "ValueError",
-   "files_after": {
-    "daily_settings.json": {
-     "wake_time": "25:00"
-    },
-    "state.json": {
-     "timestamp": "2026-05-17T09:00:00",
-     "accumulated_seconds": 600.5,
-     "manual_lock_active": true,
-     "cumulative_extension_seconds": 900
-    }
-   }
-  },
-  {
-   "name": "daily_with_list_allowance_aborts_with_type_error",
-   "op": "load",
-   "user": "kid",
-   "now": "2026-05-17T10:00:00",
-   "files": {
-    "daily_settings.json": "{\"allowance\": []}",
-    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
-   },
-   "program_data": {},
-   "error": "TypeError",
-   "files_after": {
-    "daily_settings.json": {
-     "allowance": []
-    },
-    "state.json": {
-     "timestamp": "2026-05-17T09:00:00",
-     "accumulated_seconds": 600.5,
-     "manual_lock_active": true,
-     "cumulative_extension_seconds": 900
-    }
-   }
-  },
-  {
-   "name": "daily_partial_uses_defaults",
+   "name": "settings_partial_uses_defaults",
    "op": "load",
    "user": "kid",
    "now": "2026-05-17T10:00:00",
@@ -3466,6 +3572,7 @@
      "cumulative_extension_seconds": 900
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "allowance": "75"
@@ -3475,6 +3582,1058 @@
      "accumulated_seconds": 600.5,
      "manual_lock_active": true,
      "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "utf8_byte_order_mark_is_accepted",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "﻿{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "﻿{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "_raw": "﻿{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}"
+    },
+    "state.json": {
+     "_raw": "﻿{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+    }
+   }
+  },
+  {
+   "name": "state_not_json_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{not json"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "_raw": "{not json"
+    }
+   }
+  },
+  {
+   "name": "state_not_an_object_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "[1, 2]"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": [
+     1,
+     2
+    ]
+   }
+  },
+  {
+   "name": "state_without_timestamp_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"accumulated_seconds\": 5}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "accumulated_seconds": 5
+    }
+   }
+  },
+  {
+   "name": "state_with_bad_number_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": \"x\"}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": "x"
+    }
+   }
+  },
+  {
+   "name": "state_with_null_number_is_quarantined_not_fatal",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"cumulative_extension_seconds\": null}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "timestamp": "2026-05-17T09:00:00",
+     "cumulative_extension_seconds": null
+    }
+   }
+  },
+  {
+   "name": "state_with_string_flag_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"manual_lock_active\": \"yes\"}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "timestamp": "2026-05-17T09:00:00",
+     "manual_lock_active": "yes"
+    }
+   }
+  },
+  {
+   "name": "state_with_nan_is_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": NaN}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": NaN
+    }
+   }
+  },
+  {
+   "name": "corrupt_state_is_restored_from_backup",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{broken",
+    "state.json.bak": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    },
+    {
+     "file": "state.json",
+     "action": "restored_from_backup"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    },
+    "state.json.bak": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    },
+    "state.json.corrupt-20260517T100000": {
+     "_raw": "{broken"
+    }
+   }
+  },
+  {
+   "name": "deleted_state_is_restored_from_backup",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json.bak": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "restored_from_backup"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    },
+    "state.json.bak": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "corrupt_state_and_corrupt_backup_start_fresh",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{broken",
+    "state.json.bak": "also broken"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    },
+    {
+     "file": "state.json.bak",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json.bak.corrupt-20260517T100000": {
+     "_raw": "also broken"
+    },
+    "state.json.corrupt-20260517T100000": {
+     "_raw": "{broken"
+    }
+   }
+  },
+  {
+   "name": "stale_backup_is_reset_in_memory",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json.bak": "{\"timestamp\": \"2026-05-16T20:00:00\", \"accumulated_seconds\": 3000.0, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 600}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "state.json",
+     "action": "restored_from_backup"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-16T20:00:00",
+     "accumulated_seconds": 3000.0,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 600
+    },
+    "state.json.bak": {
+     "timestamp": "2026-05-16T20:00:00",
+     "accumulated_seconds": 3000.0,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 600
+    }
+   }
+  },
+  {
+   "name": "corrupt_settings_are_restored_from_backup",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{broken",
+    "daily_settings.json.bak": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    },
+    {
+     "file": "daily_settings.json",
+     "action": "restored_from_backup"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "daily_settings.json.bak": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{broken"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "deleted_settings_are_restored_from_backup",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json.bak": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "restored_from_backup"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "daily_settings.json.bak": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "backup_with_bad_values_is_quarantined_too",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{broken",
+    "daily_settings.json.bak": "{\"allowance\": -1}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    },
+    {
+     "file": "daily_settings.json.bak",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.bak.corrupt-20260517T100000": {
+     "allowance": -1
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{broken"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_not_json_are_quarantined_and_defaults_written",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{oops",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{oops"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_with_bad_time_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"25:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "wake_time": "25:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_with_list_allowance_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"allowance\": []}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "allowance": []
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_with_boolean_allowance_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"allowance\": true}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "allowance": true
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_with_negative_allowance_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"allowance\": -30}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "allowance": -30
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_with_fractional_allowance_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"allowance\": 90.5}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "allowance": 90.5
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "settings_not_an_object_are_quarantined",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "null",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": null,
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "both_files_corrupt",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{",
+    "state.json": "}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    },
+    {
+     "file": "state.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    },
+    "state.json.corrupt-20260517T100000": {
+     "_raw": "}"
     }
    }
   },
@@ -3500,6 +4659,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "06:30",
@@ -3546,6 +4706,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3567,7 +4728,7 @@
    }
   },
   {
-   "name": "legacy_invalid_aborts",
+   "name": "legacy_with_bad_values_is_ignored",
    "op": "load",
    "user": "kid",
    "now": "2026-05-17T10:00:00",
@@ -3575,10 +4736,84 @@
     "pc_control_state.json": "{\"wake_time\": \"bad\"}"
    },
    "program_data": {},
-   "error": "ValueError",
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "pc_control_state.json",
+     "action": "ignored"
+    }
+   ],
    "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
     "pc_control_state.json": {
      "wake_time": "bad"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "name": "legacy_with_string_flag_is_ignored",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "pc_control_state.json": "{\"manual_lock_active\": \"no\"}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [
+    {
+     "file": "pc_control_state.json",
+     "action": "ignored"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "pc_control_state.json": {
+     "manual_lock_active": "no"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
     }
    }
   },
@@ -3604,6 +4839,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3622,7 +4858,7 @@
    }
   },
   {
-   "name": "legacy_overwrites_daily_when_only_state_is_missing",
+   "name": "legacy_never_overwrites_existing_settings",
    "op": "load",
    "user": "kid",
    "now": "2026-05-17T10:00:00",
@@ -3639,16 +4875,67 @@
     },
     "runtime": {
      "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "pc_control_state.json": {
+     "wake_time": "06:30",
+     "lock_times": [
+      "21:15"
+     ],
+     "usage_allowance": 90,
+     "accumulated_seconds": 300,
+     "manual_lock_active": true,
+     "accumulated_date": "2026-05-17"
+    }
+   }
+  },
+  {
+   "name": "legacy_runtime_is_used_when_settings_were_lost",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{",
+    "pc_control_state.json": "{\"wake_time\": \"06:30\", \"lock_times\": [\"21:15\"], \"usage_allowance\": 90, \"accumulated_seconds\": 300, \"manual_lock_active\": true, \"accumulated_date\": \"2026-05-17\"}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:15",
+     "wake_time": "06:30",
+     "allowance": 90
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
      "accumulated_seconds": 300.0,
      "manual_lock_active": true,
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "06:30",
      "allowance": 90,
      "bed_time": "21:15"
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{"
     },
     "pc_control_state.json": {
      "wake_time": "06:30",
@@ -3665,6 +4952,63 @@
      "accumulated_seconds": 300.0,
      "manual_lock_active": true,
      "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "name": "legacy_does_not_replace_a_good_state_file",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}",
+    "pc_control_state.json": "{\"wake_time\": \"06:30\", \"lock_times\": [\"21:15\"], \"usage_allowance\": 90, \"accumulated_seconds\": 300, \"manual_lock_active\": true, \"accumulated_date\": \"2026-05-17\"}"
+   },
+   "program_data": {},
+   "ok": {
+    "daily": {
+     "bed_time": "21:15",
+     "wake_time": "06:30",
+     "allowance": 90
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   },
+   "problems": [
+    {
+     "file": "daily_settings.json",
+     "action": "quarantined"
+    }
+   ],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "06:30",
+     "allowance": 90,
+     "bed_time": "21:15"
+    },
+    "daily_settings.json.corrupt-20260517T100000": {
+     "_raw": "{"
+    },
+    "pc_control_state.json": {
+     "wake_time": "06:30",
+     "lock_times": [
+      "21:15"
+     ],
+     "usage_allowance": 90,
+     "accumulated_seconds": 300,
+     "manual_lock_active": true,
+     "accumulated_date": "2026-05-17"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
     }
    }
   },
@@ -3692,6 +5036,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "06:30",
@@ -3738,6 +5083,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "08:30",
@@ -3774,6 +5120,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "08:30",
@@ -3810,6 +5157,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3846,6 +5194,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "08:30",
@@ -3882,6 +5231,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3897,7 +5247,7 @@
    }
   },
   {
-   "name": "program_data_type_error_aborts",
+   "name": "program_data_wrong_type_falls_through",
    "op": "load",
    "user": "kid",
    "now": "2026-05-17T10:00:00",
@@ -3905,8 +5255,33 @@
    "program_data": {
     "daily_settings.json": "{\"allowance\": {}}"
    },
-   "error": "TypeError",
-   "files_after": {}
+   "ok": {
+    "daily": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": null,
+     "bed_time": null
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   }
   },
   {
    "name": "program_data_not_json_falls_through",
@@ -3930,6 +5305,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -3966,6 +5342,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "06:45",
@@ -4002,6 +5379,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -4038,6 +5416,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -4075,6 +5454,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "08:30",
@@ -4109,6 +5489,7 @@
      "cumulative_extension_seconds": 0
     }
    },
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
@@ -4120,6 +5501,39 @@
      "accumulated_seconds": 0.0,
      "manual_lock_active": false,
      "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "name": "program_data_is_ignored_when_settings_exist",
+   "op": "load",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}"
+   },
+   "program_data": {
+    "daily_settings.json": "{\"wake_time\": \"08:30\", \"allowance\": 5}"
+   },
+   "ok": {
+    "daily": {
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "allowance": 120
+    },
+    "runtime": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   },
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
     }
    }
   },
@@ -4142,6 +5556,7 @@
     "cumulative_extension_seconds": 300
    },
    "ok": {},
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "06:30",
@@ -4157,12 +5572,13 @@
    }
   },
   {
-   "name": "save_without_bed_time_or_allowance",
+   "name": "save_keeps_the_previous_good_files_as_backups",
    "op": "save",
    "user": "kid",
    "now": "2026-05-17T10:00:00",
    "files": {
-    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}"
+    "daily_settings.json": "{\"wake_time\": \"07:00\", \"allowance\": 120, \"bed_time\": \"21:00\"}",
+    "state.json": "{\"timestamp\": \"2026-05-17T09:00:00\", \"accumulated_seconds\": 600.5, \"manual_lock_active\": true, \"cumulative_extension_seconds\": 900}"
    },
    "program_data": {},
    "save_daily": {
@@ -4177,10 +5593,95 @@
     "cumulative_extension_seconds": 0
    },
    "ok": {},
+   "problems": [],
    "files_after": {
     "daily_settings.json": {
      "wake_time": "07:00",
      "allowance": null,
+     "bed_time": null
+    },
+    "daily_settings.json.bak": {
+     "wake_time": "07:00",
+     "allowance": 120,
+     "bed_time": "21:00"
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    },
+    "state.json.bak": {
+     "timestamp": "2026-05-17T09:00:00",
+     "accumulated_seconds": 600.5,
+     "manual_lock_active": true,
+     "cumulative_extension_seconds": 900
+    }
+   }
+  },
+  {
+   "name": "save_does_not_back_up_a_corrupt_file",
+   "op": "save",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{broken",
+    "state.json": "{\"timestamp\": \"x\"}"
+   },
+   "program_data": {},
+   "save_daily": {
+    "bed_time": null,
+    "wake_time": "07:00",
+    "allowance": 60
+   },
+   "save_runtime": {
+    "timestamp": "2000-01-01T00:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   },
+   "ok": {},
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 60,
+     "bed_time": null
+    },
+    "state.json": {
+     "timestamp": "2026-05-17T10:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "cumulative_extension_seconds": 0
+    }
+   }
+  },
+  {
+   "name": "save_does_not_back_up_a_file_with_bad_values",
+   "op": "save",
+   "user": "kid",
+   "now": "2026-05-17T10:00:00",
+   "files": {
+    "daily_settings.json": "{\"allowance\": -5}"
+   },
+   "program_data": {},
+   "save_daily": {
+    "bed_time": null,
+    "wake_time": "07:00",
+    "allowance": 60
+   },
+   "save_runtime": {
+    "timestamp": "2000-01-01T00:00:00",
+    "accumulated_seconds": 0.0,
+    "manual_lock_active": false,
+    "cumulative_extension_seconds": 0
+   },
+   "ok": {},
+   "problems": [],
+   "files_after": {
+    "daily_settings.json": {
+     "wake_time": "07:00",
+     "allowance": 60,
      "bed_time": null
     },
     "state.json": {

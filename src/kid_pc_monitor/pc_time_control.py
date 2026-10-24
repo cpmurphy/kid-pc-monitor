@@ -109,6 +109,10 @@ class PCTimeControl:
                 f"[{datetime.now():%H:%M:%S}] User {self.current_user} is EXEMPT - no restrictions will apply"
             )
 
+        # Set when the state files could not be read at all (an I/O error, not bad
+        # content).  Saving is then skipped so defaults never replace the real files.
+        self.state_load_failed = False
+
         # Load previous state if exists
         self.load_state()
         self.warnings_date = usage_period_date(datetime.now(), self.daily.wake_time)
@@ -127,6 +131,14 @@ class PCTimeControl:
         """Load saved daily settings and runtime state from JSON files."""
         try:
             self.daily, self.runtime = self.state_store.load()
+            self.state_load_failed = False
+            for problem in self.state_store.problems:
+                self.logger.error(
+                    "State file problem: %s %s (%s)",
+                    problem.file,
+                    problem.action.replace("_", " "),
+                    problem.reason,
+                )
             bed_label = (
                 f"{self.daily.bed_time.hour:02d}:{self.daily.bed_time.minute:02d}"
                 if self.daily.bed_time is not None
@@ -151,11 +163,19 @@ class PCTimeControl:
                 f"{self.state_store.data_directory}"
             )
         except Exception as e:
+            self.state_load_failed = True
             self.logger.error("Error loading state: %s", e, exc_info=True)
             print(f"[{datetime.now():%H:%M:%S}] Could not load previous state: {e}")
 
     def save_state(self):
         """Save daily settings and runtime state to JSON files."""
+        if self.state_load_failed:
+            # Retry the load: until it works, the in-memory defaults must not
+            # overwrite whatever is on disk.
+            self.load_state()
+            if self.state_load_failed:
+                self.logger.error("State files unreadable; not saving over them")
+                return
         try:
             self.state_store.save(self.daily, self.runtime)
             self.logger.debug("State saved")

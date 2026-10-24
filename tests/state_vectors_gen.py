@@ -7,9 +7,8 @@ case; ``tests/test_state_vectors.py`` fails when the file is stale.
     python tests/state_vectors_gen.py          # rewrite the vectors file
     python tests/state_vectors_gen.py --check  # exit 1 if the file is stale
 
-Inputs that Python rejects with an exception record the exception's class name
-(``ValueError`` and ``TypeError`` are distinguished because the store reacts to
-them differently).  Datetimes are naive wall-clock ISO strings.
+Inputs that are rejected record ``"error": "ValueError"``: every invalid value,
+whatever its type, is a ValueError.  Datetimes are naive wall-clock ISO strings.
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ from kid_pc_monitor import agent_state as st  # noqa: E402
 from kid_pc_monitor.lock_policy import parse_time_hhmm  # noqa: E402
 
 VECTORS_PATH = ROOT / "testdata" / "state" / "vectors.json"
-ALLOWED_ERRORS = {"ValueError", "TypeError"}
+ALLOWED_ERRORS = {"ValueError"}
 
 NOW = "2026-05-17T10:00:00"
 
@@ -175,23 +174,32 @@ def to_dict_cases() -> dict[str, list[dict[str, Any]]]:
 DAILY_DICTS: list[dict[str, Any]] = [
     {},
     {"wake_time": "06:30", "bed_time": "21:00", "allowance": 120},
-    {"wake_time": "6:5", "bed_time": "9:00", "allowance": 1},
+    {"wake_time": "6:30", "bed_time": "9:00", "allowance": 1},
     {"bed_time": ""},
     {"bed_time": None},
     {"bed_time": None, "allowance": None, "wake_time": "07:00"},
     {"allowance": "90"},
     {"allowance": " 12 "},
+    {"allowance": "+7"},
+    {"allowance": 90.0},
+    {"allowance": 1e3},
+    {"allowance": 0},
+    {"allowance": 2**53},
     {"allowance": 90.7},
     {"allowance": -5.9},
-    {"allowance": 1e3},
+    {"allowance": -1},
+    {"allowance": "-1"},
     {"allowance": True},
     {"allowance": False},
-    {"allowance": 0},
     {"allowance": "abc"},
     {"allowance": "1.5"},
+    {"allowance": "1_0"},
+    {"allowance": "٣"},
     {"allowance": ""},
     {"allowance": []},
     {"allowance": {}},
+    {"allowance": 2**53 + 1},
+    {"allowance": 1e300},
     {"wake_time": None},
     {"wake_time": 7},
     {"wake_time": 7.5},
@@ -200,6 +208,8 @@ DAILY_DICTS: list[dict[str, Any]] = [
     {"wake_time": ""},
     {"wake_time": "25:00"},
     {"wake_time": "7"},
+    {"wake_time": "7:5"},
+    {"wake_time": " 07:00 "},
     {"bed_time": 0},
     {"bed_time": False},
     {"bed_time": "nope"},
@@ -261,40 +271,70 @@ RUNTIME_DICTS: list[dict[str, Any]] = [
     {"timestamp": "2026-05-17T10:00:00.1234567"},
     {"timestamp": "2026-05-17T10:00:00+02:00"},
     {"timestamp": "2026-05-17T10:00:00-0530"},
+    {"timestamp": "2026-05-17T10:00:00+02"},
     {"timestamp": "2026-05-17T10:00:00Z"},
     {"timestamp": "2026-05-17T10:00:00.25+00:00"},
+    {"timestamp": "2026-05-17T10:00Z"},
+    {"timestamp": "2026-05-17T10:00:00+02:00:00"},
+    {"timestamp": "2026-05-17Z"},
+    {"timestamp": "2026-05-17+02:00"},
+    {"timestamp": "20260517T100000"},
+    {"timestamp": "2026-W20-7"},
+    {"timestamp": "2026-05-17x10:00:00"},
     {"timestamp": "2026-13-01T00:00:00"},
     {"timestamp": "2026-02-30T00:00:00"},
     {"timestamp": "2024-02-29T23:59:59"},
+    {"timestamp": "2026-05-17T24:00:00"},
     {"timestamp": "2026-05-17T10:60:00"},
     {"timestamp": "2026-05-17T10:00:60"},
     {"timestamp": "2026-05-17T10:00:00 "},
+    {"timestamp": " 2026-05-17T10:00:00"},
     {"timestamp": "26-05-17T10:00:00"},
+    {"timestamp": "0000-01-01T00:00:00"},
+    {"timestamp": "２０２６-05-17T10:00:00"},
     {"timestamp": NOW, "accumulated_seconds": 12.5},
     {"timestamp": NOW, "accumulated_seconds": 7},
+    {"timestamp": NOW, "accumulated_seconds": 0},
     {"timestamp": NOW, "accumulated_seconds": "12.5"},
     {"timestamp": NOW, "accumulated_seconds": " 3 "},
+    {"timestamp": NOW, "accumulated_seconds": ".5"},
+    {"timestamp": NOW, "accumulated_seconds": "5."},
+    {"timestamp": NOW, "accumulated_seconds": "1e3"},
+    {"timestamp": NOW, "accumulated_seconds": 1e-9},
     {"timestamp": NOW, "accumulated_seconds": True},
+    {"timestamp": NOW, "accumulated_seconds": -1},
+    {"timestamp": NOW, "accumulated_seconds": -0.5},
     {"timestamp": NOW, "accumulated_seconds": "abc"},
+    {"timestamp": NOW, "accumulated_seconds": "1_0"},
+    {"timestamp": NOW, "accumulated_seconds": "nan"},
+    {"timestamp": NOW, "accumulated_seconds": "inf"},
+    {"timestamp": NOW, "accumulated_seconds": "0x10"},
     {"timestamp": NOW, "accumulated_seconds": ""},
     {"timestamp": NOW, "accumulated_seconds": None},
     {"timestamp": NOW, "accumulated_seconds": []},
+    {"timestamp": NOW, "accumulated_seconds": 2**53 + 1},
     {"timestamp": NOW, "manual_lock_active": True},
+    {"timestamp": NOW, "manual_lock_active": False},
+    {"timestamp": NOW, "manual_lock_active": "true"},
+    {"timestamp": NOW, "manual_lock_active": " TRUE "},
+    {"timestamp": NOW, "manual_lock_active": "False"},
+    {"timestamp": NOW, "manual_lock_active": 1},
+    {"timestamp": NOW, "manual_lock_active": 0},
     {"timestamp": NOW, "manual_lock_active": "yes"},
     {"timestamp": NOW, "manual_lock_active": ""},
-    {"timestamp": NOW, "manual_lock_active": "false"},
-    {"timestamp": NOW, "manual_lock_active": 0},
+    {"timestamp": NOW, "manual_lock_active": "1"},
     {"timestamp": NOW, "manual_lock_active": 2},
-    {"timestamp": NOW, "manual_lock_active": 0.0},
+    {"timestamp": NOW, "manual_lock_active": 1.0},
+    {"timestamp": NOW, "manual_lock_active": 0.5},
     {"timestamp": NOW, "manual_lock_active": None},
     {"timestamp": NOW, "manual_lock_active": []},
-    {"timestamp": NOW, "manual_lock_active": [0]},
     {"timestamp": NOW, "manual_lock_active": {}},
-    {"timestamp": NOW, "manual_lock_active": {"a": 1}},
     {"timestamp": NOW, "cumulative_extension_seconds": 900},
+    {"timestamp": NOW, "cumulative_extension_seconds": 0},
     {"timestamp": NOW, "cumulative_extension_seconds": "30"},
+    {"timestamp": NOW, "cumulative_extension_seconds": 30.0},
     {"timestamp": NOW, "cumulative_extension_seconds": 30.9},
-    {"timestamp": NOW, "cumulative_extension_seconds": -30.9},
+    {"timestamp": NOW, "cumulative_extension_seconds": -30},
     {"timestamp": NOW, "cumulative_extension_seconds": True},
     {"timestamp": NOW, "cumulative_extension_seconds": "x"},
     {"timestamp": NOW, "cumulative_extension_seconds": "1.5"},
@@ -335,6 +375,7 @@ LEGACY_DICTS: list[dict[str, Any]] = [
     {"accumulated_date": None},
     {"lock_times": []},
     {"lock_times": None},
+    {"lock_times": ["21:30", "bad"]},
     {"lock_times": ["21:30", "22:00"]},
     {"lock_times": ["nope"]},
     {"lock_times": [5]},
@@ -346,6 +387,8 @@ LEGACY_DICTS: list[dict[str, Any]] = [
     {"lock_times": 5},
     {"lock_times": 0},
     {"lock_times": True},
+    {"lock_times": {}},
+    {"lock_times": {"0": "21:00"}},
     {"wake_time": 7},
     {"wake_time": None},
     {"wake_time": "bad"},
@@ -360,6 +403,13 @@ LEGACY_DICTS: list[dict[str, Any]] = [
     {"accumulated_seconds": "abc"},
     {"manual_lock_active": "no"},
     {"manual_lock_active": 0},
+    {"manual_lock_active": "true", "accumulated_seconds": 60},
+    {"usage_allowance": -5},
+    {"usage_allowance": True},
+    {"usage_allowance": 45.5},
+    {"accumulated_seconds": -1},
+    {"accumulated_date": "2026-05-16T00:00:00"},
+    {"accumulated_date": "20260516"},
 ]
 
 
@@ -411,6 +461,7 @@ LEGACY = dumps(
 )
 
 SCENARIOS: list[dict[str, Any]] = [
+    # --- the plain cases ----------------------------------------------------
     {"name": "empty_dir_writes_defaults", "files": {}},
     {
         "name": "settings_and_state_load_as_is",
@@ -427,22 +478,35 @@ SCENARIOS: list[dict[str, Any]] = [
     },
     {"name": "state_missing_gives_fresh_runtime", "files": {"daily_settings.json": DAILY_OK}},
     {
-        "name": "state_without_timestamp_starts_fresh",
+        "name": "settings_partial_uses_defaults",
+        "files": {"daily_settings.json": dumps({"allowance": "75"}), "state.json": STATE_NOW},
+    },
+    {
+        "name": "utf8_byte_order_mark_is_accepted",
+        "files": {"daily_settings.json": "\ufeff" + DAILY_OK, "state.json": "\ufeff" + STATE_NOW},
+    },
+    # --- unusable state.json: set aside, never overwritten ---------------------
+    {
+        "name": "state_not_json_is_quarantined",
+        "files": {"daily_settings.json": DAILY_OK, "state.json": "{not json"},
+    },
+    {
+        "name": "state_not_an_object_is_quarantined",
+        "files": {"daily_settings.json": DAILY_OK, "state.json": "[1, 2]"},
+    },
+    {
+        "name": "state_without_timestamp_is_quarantined",
         "files": {"daily_settings.json": DAILY_OK, "state.json": dumps({"accumulated_seconds": 5})},
     },
     {
-        "name": "state_with_bad_timestamp_starts_fresh",
-        "files": {"daily_settings.json": DAILY_OK, "state.json": dumps({"timestamp": "garbage"})},
-    },
-    {
-        "name": "state_with_bad_number_is_a_value_error_so_starts_fresh",
+        "name": "state_with_bad_number_is_quarantined",
         "files": {
             "daily_settings.json": DAILY_OK,
             "state.json": dumps({"timestamp": "2026-05-17T09:00:00", "accumulated_seconds": "x"}),
         },
     },
     {
-        "name": "state_with_null_number_is_a_type_error_and_aborts",
+        "name": "state_with_null_number_is_quarantined_not_fatal",
         "files": {
             "daily_settings.json": DAILY_OK,
             "state.json": dumps(
@@ -451,29 +515,101 @@ SCENARIOS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "state_not_json_is_treated_as_missing",
-        "files": {"daily_settings.json": DAILY_OK, "state.json": "{not json"},
+        "name": "state_with_string_flag_is_quarantined",
+        "files": {
+            "daily_settings.json": DAILY_OK,
+            "state.json": dumps({"timestamp": "2026-05-17T09:00:00", "manual_lock_active": "yes"}),
+        },
     },
     {
-        "name": "state_utf8_bom_is_treated_as_missing",
-        "files": {"daily_settings.json": DAILY_OK, "state.json": "﻿" + STATE_NOW},
+        "name": "state_with_nan_is_quarantined",
+        "files": {
+            "daily_settings.json": DAILY_OK,
+            "state.json": '{"timestamp": "2026-05-17T09:00:00", "accumulated_seconds": NaN}',
+        },
+    },
+    # --- backups -----------------------------------------------------------------
+    {
+        "name": "corrupt_state_is_restored_from_backup",
+        "files": {
+            "daily_settings.json": DAILY_OK,
+            "state.json": "{broken",
+            "state.json.bak": STATE_NOW,
+        },
     },
     {
-        "name": "daily_not_json_is_overwritten_with_defaults",
+        "name": "deleted_state_is_restored_from_backup",
+        "files": {"daily_settings.json": DAILY_OK, "state.json.bak": STATE_NOW},
+    },
+    {
+        "name": "corrupt_state_and_corrupt_backup_start_fresh",
+        "files": {
+            "daily_settings.json": DAILY_OK,
+            "state.json": "{broken",
+            "state.json.bak": "also broken",
+        },
+    },
+    {
+        "name": "stale_backup_is_reset_in_memory",
+        "files": {
+            "daily_settings.json": DAILY_OK,
+            "state.json.bak": STATE_YESTERDAY,
+        },
+    },
+    {
+        "name": "corrupt_settings_are_restored_from_backup",
+        "files": {
+            "daily_settings.json": "{broken",
+            "daily_settings.json.bak": DAILY_OK,
+            "state.json": STATE_NOW,
+        },
+    },
+    {
+        "name": "deleted_settings_are_restored_from_backup",
+        "files": {"daily_settings.json.bak": DAILY_OK, "state.json": STATE_NOW},
+    },
+    {
+        "name": "backup_with_bad_values_is_quarantined_too",
+        "files": {
+            "daily_settings.json": "{broken",
+            "daily_settings.json.bak": dumps({"allowance": -1}),
+            "state.json": STATE_NOW,
+        },
+    },
+    # --- unusable daily_settings.json: set aside; good runtime kept -------------
+    {
+        "name": "settings_not_json_are_quarantined_and_defaults_written",
         "files": {"daily_settings.json": "{oops", "state.json": STATE_NOW},
     },
     {
-        "name": "daily_with_bad_time_aborts",
+        "name": "settings_with_bad_time_are_quarantined",
         "files": {"daily_settings.json": dumps({"wake_time": "25:00"}), "state.json": STATE_NOW},
     },
     {
-        "name": "daily_with_list_allowance_aborts_with_type_error",
+        "name": "settings_with_list_allowance_are_quarantined",
         "files": {"daily_settings.json": dumps({"allowance": []}), "state.json": STATE_NOW},
     },
     {
-        "name": "daily_partial_uses_defaults",
-        "files": {"daily_settings.json": dumps({"allowance": "75"}), "state.json": STATE_NOW},
+        "name": "settings_with_boolean_allowance_are_quarantined",
+        "files": {"daily_settings.json": dumps({"allowance": True}), "state.json": STATE_NOW},
     },
+    {
+        "name": "settings_with_negative_allowance_are_quarantined",
+        "files": {"daily_settings.json": dumps({"allowance": -30}), "state.json": STATE_NOW},
+    },
+    {
+        "name": "settings_with_fractional_allowance_are_quarantined",
+        "files": {"daily_settings.json": dumps({"allowance": 90.5}), "state.json": STATE_NOW},
+    },
+    {
+        "name": "settings_not_an_object_are_quarantined",
+        "files": {"daily_settings.json": "null", "state.json": STATE_NOW},
+    },
+    {
+        "name": "both_files_corrupt",
+        "files": {"daily_settings.json": "{", "state.json": "}"},
+    },
+    # --- legacy pc_control_state.json ----------------------------------------------
     {
         "name": "legacy_migrates_when_nothing_else_exists",
         "files": {"pc_control_state.json": LEGACY},
@@ -492,16 +628,29 @@ SCENARIOS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "legacy_invalid_aborts",
+        "name": "legacy_with_bad_values_is_ignored",
         "files": {"pc_control_state.json": dumps({"wake_time": "bad"})},
     },
     {
-        "name": "legacy_not_json_is_ignored",
-        "files": {"pc_control_state.json": "garbage"},
+        "name": "legacy_with_string_flag_is_ignored",
+        "files": {"pc_control_state.json": dumps({"manual_lock_active": "no"})},
+    },
+    {"name": "legacy_not_json_is_ignored", "files": {"pc_control_state.json": "garbage"}},
+    {
+        "name": "legacy_never_overwrites_existing_settings",
+        "files": {"daily_settings.json": DAILY_OK, "pc_control_state.json": LEGACY},
     },
     {
-        "name": "legacy_overwrites_daily_when_only_state_is_missing",
-        "files": {"daily_settings.json": DAILY_OK, "pc_control_state.json": LEGACY},
+        "name": "legacy_runtime_is_used_when_settings_were_lost",
+        "files": {"daily_settings.json": "{", "pc_control_state.json": LEGACY},
+    },
+    {
+        "name": "legacy_does_not_replace_a_good_state_file",
+        "files": {
+            "daily_settings.json": "{",
+            "state.json": STATE_NOW,
+            "pc_control_state.json": LEGACY,
+        },
     },
     {
         "name": "legacy_beats_program_data",
@@ -512,6 +661,7 @@ SCENARIOS: list[dict[str, Any]] = [
             )
         },
     },
+    # --- ProgramData bootstrap -----------------------------------------------------
     {
         "name": "program_data_bootstraps",
         "files": {},
@@ -548,7 +698,7 @@ SCENARIOS: list[dict[str, Any]] = [
         "program_data": {"daily_settings.json": dumps({"wake_time": "nope"})},
     },
     {
-        "name": "program_data_type_error_aborts",
+        "name": "program_data_wrong_type_falls_through",
         "files": {},
         "program_data": {"daily_settings.json": dumps({"allowance": {}})},
     },
@@ -585,11 +735,13 @@ SCENARIOS: list[dict[str, Any]] = [
             "install_config.json": dumps({"wake_time": "06:45"}),
         },
     },
+    {"name": "no_program_data_directory", "files": {}, "program_data": None},
     {
-        "name": "no_program_data_directory",
-        "files": {},
-        "program_data": None,
+        "name": "program_data_is_ignored_when_settings_exist",
+        "files": {"daily_settings.json": DAILY_OK},
+        "program_data": {"daily_settings.json": dumps({"wake_time": "08:30", "allowance": 5})},
     },
+    # --- save -----------------------------------------------------------------------
     {
         "name": "save_writes_both_files_with_clock_timestamp",
         "op": "save",
@@ -603,10 +755,34 @@ SCENARIOS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "save_without_bed_time_or_allowance",
+        "name": "save_keeps_the_previous_good_files_as_backups",
         "op": "save",
-        "files": {"daily_settings.json": DAILY_OK},
+        "files": {"daily_settings.json": DAILY_OK, "state.json": STATE_NOW},
         "save_daily": {"bed_time": None, "wake_time": "07:00", "allowance": None},
+        "save_runtime": {
+            "timestamp": "2000-01-01T00:00:00",
+            "accumulated_seconds": 0.0,
+            "manual_lock_active": False,
+            "cumulative_extension_seconds": 0,
+        },
+    },
+    {
+        "name": "save_does_not_back_up_a_corrupt_file",
+        "op": "save",
+        "files": {"daily_settings.json": "{broken", "state.json": dumps({"timestamp": "x"})},
+        "save_daily": {"bed_time": None, "wake_time": "07:00", "allowance": 60},
+        "save_runtime": {
+            "timestamp": "2000-01-01T00:00:00",
+            "accumulated_seconds": 0.0,
+            "manual_lock_active": False,
+            "cumulative_extension_seconds": 0,
+        },
+    },
+    {
+        "name": "save_does_not_back_up_a_file_with_bad_values",
+        "op": "save",
+        "files": {"daily_settings.json": dumps({"allowance": -5})},
+        "save_daily": {"bed_time": None, "wake_time": "07:00", "allowance": 60},
         "save_runtime": {
             "timestamp": "2000-01-01T00:00:00",
             "accumulated_seconds": 0.0,
@@ -684,6 +860,7 @@ def run_scenario(spec: dict[str, Any]) -> dict[str, Any]:
             return {"daily": daily_json(daily), "runtime": runtime_json(runtime)}
 
         case.update(outcome(run))
+        case["problems"] = [{"file": p.file, "action": p.action} for p in store.problems]
         case["files_after"] = read_tree(data_dir)
     return case
 

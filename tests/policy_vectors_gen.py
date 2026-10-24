@@ -89,10 +89,16 @@ PARSE_TIME_INPUTS = [
     ":30",
     "7.5:00",
     "0x7:00",
-    "１２:３０",  # fullwidth digits: Python accepts, see go/policy/doc.go
+    "１２:３０",  # fullwidth digits are not digits here
+    "7:5",
+    "07:5",
+    "7:005",
+    "007:00",
+    "7:00 ",
+    "\u00a07:00",
+    "7\u200b:00",
 ]
-# Unicode digits are a documented Go divergence; keep them out of the shared vectors.
-PARSE_TIME_SHARED = [text for text in PARSE_TIME_INPUTS if text.isascii()]
+PARSE_TIME_SHARED = PARSE_TIME_INPUTS
 
 
 def parse_time_cases() -> list[dict[str, Any]]:

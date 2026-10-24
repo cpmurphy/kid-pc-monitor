@@ -6,6 +6,7 @@ dependencies so it can be unit-tested on any development machine.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from datetime import time as dtime
@@ -38,12 +39,15 @@ def should_monitor_user(
     return True
 
 
+_HHMM_RE = re.compile(r"([0-9]{1,2}):([0-9]{2})")
+
+
 def parse_time_hhmm(value: str) -> dtime:
-    """Parse HH:MM or H:MM into a time; raises ValueError if invalid."""
-    parts = value.strip().split(":")
-    if len(parts) != 2:
+    """Parse H:MM or HH:MM (ASCII digits, two-digit minutes); raises ValueError if invalid."""
+    match = _HHMM_RE.fullmatch(value.strip())
+    if match is None:
         raise ValueError(f"Invalid time '{value}'; use HH:MM")
-    hour, minute = int(parts[0]), int(parts[1])
+    hour, minute = int(match.group(1)), int(match.group(2))
     if not (0 <= hour <= 23 and 0 <= minute <= 59):
         raise ValueError(f"Invalid time '{value}'; hour/minute out of range")
     return dtime(hour, minute)

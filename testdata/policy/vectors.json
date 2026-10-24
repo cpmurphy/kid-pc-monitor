@@ -914,15 +914,15 @@
   },
   {
    "input": "+7:05",
-   "result": "07:05"
+   "error": true
   },
   {
    "input": "07 :05",
-   "result": "07:05"
+   "error": true
   },
   {
    "input": "7: 5",
-   "result": "07:05"
+   "error": true
   },
   {
    "input": "5_9:5_9",
@@ -982,6 +982,38 @@
   },
   {
    "input": "0x7:00",
+   "error": true
+  },
+  {
+   "input": "１２:３０",
+   "error": true
+  },
+  {
+   "input": "7:5",
+   "error": true
+  },
+  {
+   "input": "07:5",
+   "error": true
+  },
+  {
+   "input": "7:005",
+   "error": true
+  },
+  {
+   "input": "007:00",
+   "error": true
+  },
+  {
+   "input": "7:00 ",
+   "result": "07:00"
+  },
+  {
+   "input": " 7:00",
+   "result": "07:00"
+  },
+  {
+   "input": "7​:00",
    "error": true
   }
  ],

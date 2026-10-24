@@ -10,6 +10,7 @@ from datetime import time as dtime
 from pathlib import Path
 from unittest import mock
 
+from kid_pc_monitor.agent_state import AgentStateStore
 from kid_pc_monitor.host_platform import HostPlatform
 from kid_pc_monitor.pc_time_control import PCTimeControl
 
@@ -95,6 +96,32 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertTrue(reloaded.runtime.manual_lock_active)
             self.assertAlmostEqual(reloaded.runtime.accumulated_seconds, 120.0)
             self.assertEqual(reloaded.runtime.cumulative_extension_seconds, 900)
+
+    def test_failed_load_does_not_overwrite_state_files_with_defaults(self) -> None:
+        platform = FakeHostPlatform()
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            first = PCTimeControl(
+                platform=platform, data_directory=data_dir, start_background_threads=False
+            )
+            first.set_daily_allowance(90)
+            first.save_state()
+            before = (data_dir / "daily_settings.json").read_text(encoding="utf-8")
+
+            with mock.patch.object(
+                AgentStateStore, "load", side_effect=PermissionError("file in use")
+            ):
+                second = PCTimeControl(
+                    platform=platform, data_directory=data_dir, start_background_threads=False
+                )
+                self.assertTrue(second.state_load_failed)
+                second.save_state()  # would write built-in defaults (no allowance)
+            self.assertEqual((data_dir / "daily_settings.json").read_text(encoding="utf-8"), before)
+
+            # Once the files are readable again the agent recovers its settings.
+            second.save_state()
+            self.assertFalse(second.state_load_failed)
+            self.assertEqual(second.daily.allowance, 90)
 
     def test_tick_accumulator_only_while_session_active(self) -> None:
         platform = FakeHostPlatform(session_active=True, locked=False)
