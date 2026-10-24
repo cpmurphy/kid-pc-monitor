@@ -438,6 +438,21 @@ class FitLogLinesTests(unittest.TestCase):
                     self._slow(path, list(lines), truncated),
                 )
 
+    def test_matches_exactly_at_the_frame_boundary(self) -> None:
+        # Sweep line counts across the cut so every off-by-one shows up,
+        # including the byte saved when `truncated` flips to true.
+        from kid_pc_monitor import request_dispatcher as rd
+
+        path = "C:\\logs\\pc_control.log"
+        for count in range(1560, 1600):
+            lines = [f"line {i:05d} " + "x" * 28 for i in range(count)]
+            for truncated in (False, True):
+                self.assertEqual(
+                    rd._fit_log_lines_to_frame(path, list(lines), truncated),
+                    self._slow(path, list(lines), truncated),
+                    (count, truncated),
+                )
+
     def test_an_oversized_path_drops_every_line(self) -> None:
         from kid_pc_monitor import request_dispatcher as rd
 

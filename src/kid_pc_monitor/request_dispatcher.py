@@ -216,17 +216,19 @@ def _fit_log_lines_to_frame(path: str, lines: list[str], truncated: bool) -> tup
 
     Each line adds a space plus its serialized token to the ``lines`` node, so
     the size is the cost with no lines plus a per-line sum; this finds the same
-    cut as re-serializing after every drop, in one pass.
+    cut as re-serializing after every drop, in one pass.  The first drop sets
+    ``truncated``, which is a byte shorter to write as ``true`` than ``false``.
     """
     budget = MAX_FRAME_BYTES - 1024
-    size = _logs_block_byte_size(path, [], truncated)
     costs = [1 + len(format_value(line).encode("utf-8")) for line in lines]
-    size += sum(costs)
+    size = _logs_block_byte_size(path, [], truncated) + sum(costs)
     drop = 0
     while drop < len(lines) and size > budget:
         size -= costs[drop]
+        if not truncated:
+            truncated = True
+            size += _logs_block_byte_size(path, [], True) - _logs_block_byte_size(path, [], False)
         drop += 1
-        truncated = True
     return lines[drop:], truncated
 
 
