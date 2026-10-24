@@ -23,9 +23,11 @@ from kid_pc_monitor.agent_protocol import (
     _parse_int,
     block_content,
     capabilities_content,
+    format_value,
     ok_content,
     serialize,
 )
+from kid_pc_monitor.lock_policy import parse_time_hhmm
 
 
 def _format_time(value: Any) -> str | None:
@@ -36,23 +38,27 @@ def _format_time(value: Any) -> str | None:
 
 
 def _parse_hhmm(raw: Any, req_id: str | None) -> tuple[int, int]:
+    if not isinstance(raw, str):
+        raise ProtocolError(INVALID_VALUE, "time must be HH:MM", req_id)
     try:
-        hour_str, minute_str = str(raw).split(":")
-        hour, minute = int(hour_str), int(minute_str)
-    except (ValueError, AttributeError):
-        raise ProtocolError(INVALID_VALUE, "time must be HH:MM", req_id) from None
-    if not (0 <= hour <= 23 and 0 <= minute <= 59):
-        raise ProtocolError(INVALID_VALUE, "time out of range (00:00–23:59)", req_id)
-    return hour, minute
+        parsed = parse_time_hhmm(raw)
+    except ValueError:
+        raise ProtocolError(INVALID_VALUE, "time must be HH:MM (00:00–23:59)", req_id) from None
+    return parsed.hour, parsed.minute
+
+
+_TRUE_WORDS = frozenset({"true", "yes", "1"})
+_FALSE_WORDS = frozenset({"false", "no", "0"})
 
 
 def _parse_bool(raw: Any, req_id: str | None) -> bool:
+    """A boolean: true/false, 1/0, or the words true/yes/1 and false/no/0."""
     if isinstance(raw, bool):
         return raw
-    text = str(raw).strip().lower()
-    if text in ("true", "yes", "1"):
+    text = str(raw).strip().lower() if isinstance(raw, int | str) else ""
+    if text in _TRUE_WORDS:
         return True
-    if text in ("false", "no", "0"):
+    if text in _FALSE_WORDS:
         return False
     raise ProtocolError(INVALID_VALUE, "expected a boolean", req_id)
 
@@ -153,13 +159,21 @@ def _do_clear(control: Any, req: Request) -> list[Node]:
 
 def _do_extend(control: Any, req: Request) -> list[Node]:
     minutes = _parse_int(req.val, req.id)
+    if not (MIN_DAILY_LIMIT <= minutes <= MAX_DAILY_LIMIT):
+        raise ProtocolError(
+            INVALID_VALUE,
+            f"minutes must be between {MIN_DAILY_LIMIT} and {MAX_DAILY_LIMIT}",
+            req.id,
+        )
     control.extend_time(minutes)
     control.save_state()
     return ok_content(minutes)
 
 
 def _do_message(control: Any, req: Request) -> list[Node]:
-    control.send_parent_message(str(req.val))
+    if not isinstance(req.val, str) or not req.val.strip():
+        raise ProtocolError(INVALID_VALUE, "message must be non-empty text", req.id)
+    control.send_parent_message(req.val)
     return ok_content("message sent")
 
 
@@ -198,12 +212,22 @@ def _logs_block_byte_size(path: str, lines: list[str], truncated: bool) -> int:
 
 
 def _fit_log_lines_to_frame(path: str, lines: list[str], truncated: bool) -> tuple[list[str], bool]:
-    """Drop oldest lines until the ``logs`` block fits under the frame cap."""
+    """Drop oldest lines until the ``logs`` block fits under the frame cap.
+
+    Each line adds a space plus its serialized token to the ``lines`` node, so
+    the size is the cost with no lines plus a per-line sum; this finds the same
+    cut as re-serializing after every drop, in one pass.
+    """
     budget = MAX_FRAME_BYTES - 1024
-    while lines and _logs_block_byte_size(path, lines, truncated) > budget:
-        lines = lines[1:]
+    size = _logs_block_byte_size(path, [], truncated)
+    costs = [1 + len(format_value(line).encode("utf-8")) for line in lines]
+    size += sum(costs)
+    drop = 0
+    while drop < len(lines) and size > budget:
+        size -= costs[drop]
+        drop += 1
         truncated = True
-    return lines, truncated
+    return lines[drop:], truncated
 
 
 def _do_get_logs(control: Any, req: Request) -> list[Node]:

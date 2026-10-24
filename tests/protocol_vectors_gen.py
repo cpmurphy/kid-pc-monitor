@@ -155,6 +155,11 @@ PARSE_TEXTS: list[tuple[str, str]] = [
     ("quoted_keywords_are_strings", 'a "true"\nb "null"\nc "123"'),
     ("numbers", "a 0\nb -7\nc +5\nd 007\ne 1_000"),
     ("not_numbers", "a 1.5\nb 0x10\nc 1e5\nd 12abc\ne -"),
+    ("not_ascii_numbers", "a ٣\nb １２\nc 1_0\nd 5_\ne _5\nf ++5\ng +-5"),
+    ("int64_limits", "a 9223372036854775807\nb -9223372036854775808"),
+    ("int_over_int64", "a 9223372036854775808"),
+    ("int_below_int64", "a -9223372036854775809"),
+    ("int_way_over", "a 99999999999999999999999"),
     ("multiple_args", 'lines "a b" c 3 true null'),
     ("string_escapes", r'a "q\"uote\\ \n \t \r \/ end"'),
     ("unicode_escape", r'a "\u{41}\u{1F600}\u{e9}"'),
@@ -538,6 +543,13 @@ def parse_request_inputs() -> list[tuple[str, dict[str, Any]]]:
     case("tail_negative", logs(-3))
     case("tail_5001", logs(5001))
     case("tail_numeric_string", logs("12"))
+    case("tail_string_with_spaces", logs(" 12 "))
+    case("tail_string_signed", logs("+12"))
+    case("tail_string_underscore", logs("1_2"))
+    case("tail_string_unicode_digits", logs("١٢"))
+    case("tail_string_huge", logs("9" * 30))
+    case("tail_string_fraction", logs("12.0"))
+    case("tail_int_beyond_2_53", logs(2**53 + 1))
     case("tail_text", logs("abc"))
     case("tail_bool", logs(True))
     case("tail_null_ignored", logs(None))

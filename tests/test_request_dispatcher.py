@@ -324,5 +324,126 @@ class DispatchTests(unittest.TestCase):
             self.assertTrue(truncated)
 
 
+class StrictInputTests(unittest.TestCase):
+    """Values from the wire are validated, not coerced."""
+
+    def _control(self, tmp: str) -> PCTimeControl:
+        return PCTimeControl(
+            platform=FakeHostPlatform(),
+            data_directory=Path(tmp),
+            start_background_threads=False,
+        )
+
+    def _code(self, control: PCTimeControl, req: Request) -> str:
+        with self.assertRaises(ProtocolError) as ctx:
+            dispatch(control, req)
+        return ctx.exception.code
+
+    def test_times_must_be_strict_hh_mm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            dispatch(control, _req("set", var="bed_time", val="9:30"))
+            self.assertEqual(control.daily.bed_time, dtime(9, 30))
+            for bad in ("7:5", "07:00:00", "5_0:00", "+7:00", "٧:٠٠", 730, True, "", "24:00"):
+                code = self._code(control, _req("set", var="wake_time", val=bad))
+                self.assertEqual(code, proto.INVALID_VALUE, bad)
+
+    def test_numbers_must_be_plain_decimal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            dispatch(control, _req("set", var="daily_limit", val=" 90 "))
+            self.assertEqual(control.daily.allowance, 90)
+            for bad in ("1_0", "٩٠", "9.5", "", True, 2**60, "9" * 30):
+                code = self._code(control, _req("set", var="daily_limit", val=bad))
+                self.assertEqual(code, proto.INVALID_VALUE, repr(bad))
+
+    def test_extend_must_add_a_sensible_number_of_minutes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            dispatch(control, _req("extend", val=30))
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
+            for bad in (0, -30, 1441, "x", None):
+                code = self._code(control, _req("extend", val=bad))
+                self.assertIn(code, (proto.INVALID_VALUE, proto.INVALID_REQUEST), repr(bad))
+            self.assertEqual(control.runtime.cumulative_extension_seconds, 1800)
+
+    def test_extension_survives_a_save_and_reload(self) -> None:
+        # Anything the dispatcher accepts must be something the state file accepts.
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            dispatch(control, _req("extend", val=1440))
+            reloaded = self._control(tmp)
+            self.assertEqual(reloaded.runtime.cumulative_extension_seconds, 1440 * 60)
+            self.assertEqual(reloaded.state_store.problems, [])
+
+    def test_message_must_be_non_empty_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            platform = control.platform
+            dispatch(control, _req("message", val="Dinner!\n"))
+            assert isinstance(platform, FakeHostPlatform)
+            self.assertEqual([text for _title, text in platform.messages], ["Dinner!\n"])
+            for bad in ("", "   ", 5, True, None):
+                self.assertEqual(
+                    self._code(control, _req("message", val=bad)), proto.INVALID_VALUE, repr(bad)
+                )
+
+    def test_manual_lock_accepts_the_documented_spellings_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            control = self._control(tmp)
+            for good, want in (
+                (True, True),
+                ("Yes", True),
+                ("1", True),
+                (1, True),
+                ("no", False),
+                (0, False),
+            ):
+                dispatch(control, _req("set", var="manual_lock", val=good))
+                self.assertIs(control.runtime.manual_lock_active, want, good)
+            for bad in ("maybe", 2, 1.5, None, ""):
+                code = self._code(control, _req("set", var="manual_lock", val=bad))
+                self.assertIn(code, (proto.INVALID_VALUE, proto.INVALID_REQUEST), repr(bad))
+
+
+class FitLogLinesTests(unittest.TestCase):
+    """The single-pass fit must cut exactly where re-serializing after every drop does."""
+
+    @staticmethod
+    def _slow(path: str, lines: list[str], truncated: bool) -> tuple[list[str], bool]:
+        from kid_pc_monitor import request_dispatcher as rd
+
+        budget = proto.MAX_FRAME_BYTES - 1024
+        while lines and rd._logs_block_byte_size(path, lines, truncated) > budget:
+            lines = lines[1:]
+            truncated = True
+        return lines, truncated
+
+    def test_matches_the_straightforward_loop(self) -> None:
+        from kid_pc_monitor import request_dispatcher as rd
+
+        samples = [
+            [],
+            ["short"],
+            [f'[2026-05-31 12:00:{i % 60:02d}] INFO line {i} "q" ünï' for i in range(2000)],
+            ["x" * 5000] * 20,
+            ["é" * 100, "plain", "tab\tnewline\n"] * 400,
+            ["true", "null", "123", "", "a b"] * 500,
+        ]
+        for lines in samples:
+            for truncated in (False, True):
+                path = "C:\\logs\\pc_control.log"
+                self.assertEqual(
+                    rd._fit_log_lines_to_frame(path, list(lines), truncated),
+                    self._slow(path, list(lines), truncated),
+                )
+
+    def test_an_oversized_path_drops_every_line(self) -> None:
+        from kid_pc_monitor import request_dispatcher as rd
+
+        lines, truncated = rd._fit_log_lines_to_frame("p" * 70_000, ["a", "b"], False)
+        self.assertEqual((lines, truncated), ([], True))
+
+
 if __name__ == "__main__":
     unittest.main()

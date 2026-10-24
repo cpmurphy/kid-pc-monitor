@@ -146,6 +146,9 @@ class Node:
         return {child.name: child.arg for child in self.children}
 
 
+# A bare word is an integer only in plain ASCII decimal form (no "1_0", no
+# Unicode digits) and only within 64 bits, so every implementation agrees.
+_INT_WORD_RE = re.compile(r"[+-]?[0-9]+")
 _BARE_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.:+\-]*")
 _KEYWORDS = {"true", "false", "null"}
 
@@ -223,10 +226,12 @@ def _parse_bare(word: str) -> Any:
         return False
     if word == "null":
         return None
-    try:
-        return int(word)
-    except ValueError:
-        return word
+    if _INT_WORD_RE.fullmatch(word):
+        number = int(word)
+        if not -(2**63) <= number < 2**63:
+            raise ProtocolError(INVALID_REQUEST, "integer out of range")
+        return number
+    return word
 
 
 _DELIMS = set(' \t\n\r{};"')
@@ -547,15 +552,21 @@ def build_request(
     return serialize(nodes)
 
 
+_MAX_PARSED_INT = 2**53
+
+
 def _parse_int(raw: Any, req_id: str | None) -> int:
-    if isinstance(raw, bool):  # bool is an int subclass; reject it explicitly
+    """A whole number: an int, or a decimal string such as ``"15"`` or ``" -3 "``."""
+    number: int | None = None
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        number = raw
+    elif isinstance(raw, str) and _INT_WORD_RE.fullmatch(raw.strip()):
+        number = int(raw.strip())
+    if number is None:
         raise ProtocolError(INVALID_VALUE, "expected a number", req_id)
-    if isinstance(raw, int):
-        return raw
-    try:
-        return int(str(raw))
-    except ValueError:
-        raise ProtocolError(INVALID_VALUE, "expected a number", req_id) from None
+    if abs(number) > _MAX_PARSED_INT:
+        raise ProtocolError(INVALID_VALUE, "number out of range", req_id)
+    return number
 
 
 def parse_request(
