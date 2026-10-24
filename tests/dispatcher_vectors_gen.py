@@ -64,6 +64,11 @@ def expand_lines(spec: Any) -> list[str]:
         return ["é" * 300 + str(i) for i in range(count)]
     if spec["gen"] == "quoted":
         return [f'"{i}" \\ \t' for i in range(count)]
+    if spec["gen"] == "boundary":
+        # Tuned so that, for pad 19, the kept lines fill the frame budget exactly
+        # once `truncated` is true (and overshoot it by a byte while it is false).
+        base = [f"line {i:05d} " + "x" * 28 for i in range(count)]
+        return [*base, "y" * spec["pad"]]
     raise ValueError(spec["gen"])
 
 
@@ -374,6 +379,12 @@ def build_cases() -> list[dict[str, Any]]:
         {"action": "get_logs", "tail": 5000},
         log_lines={"gen": "quoted", "count": 6000},
     )
+    for pad in (18, 19, 20):
+        add(
+            f"get_logs_frame_boundary_pad_{pad}",
+            {"action": "get_logs", "tail": 5000},
+            log_lines={"gen": "boundary", "count": 1700, "pad": pad},
+        )
     add("get_logs_huge_path_drops_everything", {"action": "get_logs"}, log_path="p" * 70000)
     add("get_logs_one_enormous_line", {"action": "get_logs"}, log_lines=["x" * 70000, "small"])
     return cases

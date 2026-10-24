@@ -439,19 +439,23 @@ class FitLogLinesTests(unittest.TestCase):
                 )
 
     def test_matches_exactly_at_the_frame_boundary(self) -> None:
-        # Sweep line counts across the cut so every off-by-one shows up,
-        # including the byte saved when `truncated` flips to true.
+        # Vary the last line's length one byte at a time so that, for some value,
+        # the kept lines fit the frame exactly when `truncated` is true but one
+        # byte over when it is false: the case a naive single pass gets wrong.
         from kid_pc_monitor import request_dispatcher as rd
 
         path = "C:\\logs\\pc_control.log"
-        for count in range(1560, 1600):
-            lines = [f"line {i:05d} " + "x" * 28 for i in range(count)]
-            for truncated in (False, True):
-                self.assertEqual(
-                    rd._fit_log_lines_to_frame(path, list(lines), truncated),
-                    self._slow(path, list(lines), truncated),
-                    (count, truncated),
-                )
+        base = [f"line {i:05d} " + "x" * 28 for i in range(1700)]
+        exact_hits = 0
+        for pad in range(0, 60):
+            lines = [*base, "y" * pad]
+            fast = rd._fit_log_lines_to_frame(path, list(lines), False)
+            self.assertEqual(fast, self._slow(path, list(lines), False), pad)
+            kept, _ = fast
+            budget = proto.MAX_FRAME_BYTES - 1024
+            if rd._logs_block_byte_size(path, kept, True) == budget:
+                exact_hits += 1
+        self.assertGreater(exact_hits, 0, "the sweep never reached the byte boundary")
 
     def test_an_oversized_path_drops_every_line(self) -> None:
         from kid_pc_monitor import request_dispatcher as rd
