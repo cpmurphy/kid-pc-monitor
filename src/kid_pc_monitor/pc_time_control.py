@@ -272,10 +272,12 @@ class PCTimeControl:
         issues a lock instead of trusting a state it could not verify.
         """
         try:
-            return self.platform.check_session_locked()
+            locked = self.platform.check_session_locked()
         except Exception as e:
             self._platform_query_failed("check_session_locked", e)
             return False
+        self._note_recovered("check_session_locked")
+        return locked
 
     def session_is_active(self) -> bool:
         """True when this session is the active console and not locked.
@@ -284,10 +286,12 @@ class PCTimeControl:
         rather than silently skipped.
         """
         try:
-            return self.platform.session_is_active()
+            active = self.platform.session_is_active()
         except Exception as e:
             self._platform_query_failed("session_is_active", e)
             return True
+        self._note_recovered("session_is_active")
+        return active
 
     def _platform_query_failed(self, name: str, error: Exception) -> None:
         self._note_failure(name, f"Platform {name} failed: {error}")

@@ -236,9 +236,12 @@ func (f *fake) ExtendTime(m int64) {
 	f.extension += m * 60
 	f.manual = false
 }
-func (f *fake) SendParentMessage(text string) { f.record("send_parent_message", text) }
-func (f *fake) ShutdownPC(seconds int64)      { f.record("shutdown_pc", seconds) }
-func (f *fake) SaveState()                    { f.record("save_state") }
+func (f *fake) SendParentMessage(text string) error {
+	f.record("send_parent_message", text)
+	return nil
+}
+func (f *fake) ShutdownPC(seconds int64) { f.record("shutdown_pc", seconds) }
+func (f *fake) SaveState()               { f.record("save_state") }
 
 func buildRequest(c obj) *protocol.Request {
 	r := c["request"].(obj)

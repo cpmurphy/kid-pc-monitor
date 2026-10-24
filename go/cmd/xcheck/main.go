@@ -125,9 +125,12 @@ func (c *toyControl) EngageManualLock()          { c.manualLock = true }
 func (c *toyControl) ClearManualLock()           { c.manualLock = false }
 func (c *toyControl) ClearExtensions()           { c.extension = 0 }
 func (c *toyControl) ExtendTime(minutes int64)   { c.extension += minutes * 60; c.manualLock = false }
-func (c *toyControl) SendParentMessage(t string) { c.messages = append(c.messages, t) }
-func (c *toyControl) ShutdownPC(seconds int64)   {}
-func (c *toyControl) SaveState()                 {}
+func (c *toyControl) SendParentMessage(t string) error {
+	c.messages = append(c.messages, t)
+	return nil
+}
+func (c *toyControl) ShutdownPC(seconds int64) {}
+func (c *toyControl) SaveState()               {}
 
 func logLines(n int) []string {
 	lines := make([]string, n)

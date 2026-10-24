@@ -6,7 +6,7 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
-- `go/` — Go ports of the protocol, lock policy and state files, plus the `xcheck` test fixture; see `go/README.md`.
+- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher and monitoring loop, plus the `xcheck` test fixture; see `go/README.md`.
 - `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
@@ -95,6 +95,7 @@ The Python code is the reference; Go packages under `go/` mirror it and are held
 | `lock_policy.py` | `go/policy` | `testdata/policy/vectors.json` | `tests/policy_vectors_gen.py` |
 | `agent_state.py` | `go/state` | `testdata/state/vectors.json` | `tests/state_vectors_gen.py` |
 | `request_dispatcher.py` | `go/dispatcher` | `testdata/dispatcher/vectors.json` | `tests/dispatcher_vectors_gen.py` |
+| `pc_time_control.py` | `go/monitor` | `testdata/monitor/vectors.json` | `tests/monitor_vectors_gen.py` |
 
 Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
 
@@ -109,6 +110,10 @@ python scripts/cross_check_go.py         # live Go<->Python sessions and state-f
 ### State file handling
 
 `agent_state.py` never silently discards a file: an unusable `daily_settings.json` / `state.json` is renamed to `<name>.corrupt-<timestamp>` and the last good `<name>.bak` (refreshed on every save) is restored; `AgentStateStore.problems` lists what happened. Values are validated strictly (see `go/state/doc.go`). A load that fails with an I/O error makes `PCTimeControl` skip saving, so defaults never overwrite real files.
+
+### Monitoring loop
+
+`PCTimeControl.monitor_step()` is one iteration of `run_monitor()` (which only adds the sleep); its phases (usage tick, warnings, lock enforcement, periodic save) run independently, so an error in one is logged once and never stops the others. Platform query errors fail toward enforcement: an unknown lock state counts as unlocked (so the lock is re-issued), an unknown session state as active (so time is counted). `PCTimeControl` takes `clock`, `current_user` and `program_data_dir` so tests and the monitor vectors can drive it deterministically.
 
 ## Windows Install Quirks
 

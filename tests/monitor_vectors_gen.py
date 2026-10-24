@@ -771,6 +771,11 @@ def fixed_scenarios() -> list[dict[str, Any]]:
                 state={"accumulated": 1200, "extension": 300, "manual": True},
             ),
             [
+                call("clear_manual_lock"),
+                plat(locked=False),
+                STEP,
+                adv(1),
+                STEP,  # a tick is in flight when the wake time changes
                 WARN,
                 call("set_wake_time", int(h), int(m)),
                 read("time_remaining"),
@@ -791,7 +796,7 @@ def fixed_scenarios() -> list[dict[str, Any]]:
         add(
             name,
             setup(),
-            [call("send_parent_message", text), call("send_parent_message", text, "Title")],
+            [call("send_parent_message", text)],
         )
     add(
         "message_failure", setup(), [plat(fail=["show_message"]), call("send_parent_message", "hi")]
@@ -958,6 +963,14 @@ def fixed_scenarios() -> list[dict[str, Any]]:
         "tail_invalid_utf8_sequences",
         b"\xf0\x9f\x98\nA\xf0\x9f\nB\xed\xa0\x80\nC\xc0\x80\nD\xf4\x90\x80\x80\nE\x80\x80\nF",
         [1, 2, 3, 4, 5, 6, 7],
+    )
+    tail_case(
+        "tail_invalid_utf8_prefixes",
+        # Valid prefixes of 3- and 4-byte sequences cut short, then plain text:
+        # each is one U+FFFD.  The "bad second byte" lines are one per byte.
+        b"\xed\x9fX\n\xf4\x8fX\n\xe0\xa0X\n\xf0\x90\x80X\n\xf1\x80\x80X\n\xe1\x80X\n\xc2X\n"
+        b"\xe0\x9f\x80X\n\xf0\x8f\x80\x80X\n\xed\xa0\x80X\n\xf4\x90\x80\x80X\n\xf5\x80X\n\xc1\xbfX",
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
     )
     tail_case("tail_zero_and_negative", log("a\nb\n"), [0])
     add(

@@ -5590,9 +5590,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -5637,7 +5644,6 @@
       "last_tick_at": "2026-05-17T12:00:01",
       "last_logged_reason": null,
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -5679,11 +5685,17 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
       "accumulated_seconds": 2.0,
       "last_tick_at": "2026-05-17T12:00:03",
+      "step_errors": [],
       "time_remaining": 59.96666666666667
      }
     }
@@ -5879,10 +5891,20 @@
        "lock"
       ]
      ],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "is_locked": true
+      "is_locked": true,
+      "step_errors": []
      }
     }
    ]
@@ -7078,6 +7100,25 @@
    },
    "ops": [
     {
+     "op": "call",
+     "method": "clear_manual_lock",
+     "args": []
+    },
+    {
+     "op": "platform",
+     "locked": false
+    },
+    {
+     "op": "step"
+    },
+    {
+     "op": "advance",
+     "us": 1000000
+    },
+    {
+     "op": "step"
+    },
+    {
      "op": "warnings"
     },
     {
@@ -7159,6 +7200,72 @@
    "steps": [
     {
      "events": [],
+     "logs": [
+      [
+       "INFO",
+       "Parent action: manual lock cleared"
+      ]
+     ],
+     "files": {},
+     "view": {
+      "manual_lock_active": false,
+      "time_remaining": 45.0,
+      "lock_window": [
+       false,
+       ""
+      ]
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [
+      [
+       "DEBUG",
+       "State saved"
+      ]
+     ],
+     "files": {
+      "daily_settings.json": {
+       "wake_time": "09:00",
+       "allowance": 60,
+       "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T07:09:00",
+       "accumulated_seconds": 1200.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
+      }
+     },
+     "view": {
+      "last_tick_at": "2026-05-17T07:09:00",
+      "last_persist_at": "2026-05-17T07:09:00"
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {
+      "accumulated_seconds": 1201.0,
+      "last_tick_at": "2026-05-17T07:09:01",
+      "time_remaining": 44.983333333333334
+     }
+    },
+    {
+     "events": [],
      "logs": [],
      "files": {},
      "view": {}
@@ -7178,15 +7285,12 @@
      "files": {},
      "view": {
       "wake_time": "07:00",
+      "timestamp": "2026-05-17T07:09:01",
       "accumulated_seconds": 0.0,
-      "manual_lock_active": false,
       "extension_seconds": 0,
       "warnings_date": "2026-05-17",
-      "time_remaining": 60.0,
-      "lock_window": [
-       false,
-       ""
-      ]
+      "last_tick_at": null,
+      "time_remaining": 60.0
      }
     },
     {
@@ -7211,7 +7315,7 @@
        "bed_time": null
       },
       "state.json": {
-       "timestamp": "2026-05-17T07:09:00",
+       "timestamp": "2026-05-17T07:09:01",
        "accumulated_seconds": 0.0,
        "manual_lock_active": false,
        "cumulative_extension_seconds": 0
@@ -7227,24 +7331,10 @@
     },
     {
      "events": [],
-     "logs": [
-      [
-       "DEBUG",
-       "State saved"
-      ]
-     ],
-     "files": {
-      "state.json": {
-       "timestamp": "2026-05-17T07:09:01",
-       "accumulated_seconds": 0.0,
-       "manual_lock_active": false,
-       "cumulative_extension_seconds": 0
-      }
-     },
+     "logs": [],
+     "files": {},
      "view": {
-      "timestamp": "2026-05-17T07:09:01",
-      "last_tick_at": "2026-05-17T07:09:01",
-      "last_persist_at": "2026-05-17T07:09:01"
+      "last_tick_at": "2026-05-17T07:09:02"
      }
     }
    ]
@@ -7259,6 +7349,25 @@
     }
    },
    "ops": [
+    {
+     "op": "call",
+     "method": "clear_manual_lock",
+     "args": []
+    },
+    {
+     "op": "platform",
+     "locked": false
+    },
+    {
+     "op": "step"
+    },
+    {
+     "op": "advance",
+     "us": 1000000
+    },
+    {
+     "op": "step"
+    },
     {
      "op": "warnings"
     },
@@ -7341,6 +7450,72 @@
    "steps": [
     {
      "events": [],
+     "logs": [
+      [
+       "INFO",
+       "Parent action: manual lock cleared"
+      ]
+     ],
+     "files": {},
+     "view": {
+      "manual_lock_active": false,
+      "time_remaining": 45.0,
+      "lock_window": [
+       false,
+       ""
+      ]
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [
+      [
+       "DEBUG",
+       "State saved"
+      ]
+     ],
+     "files": {
+      "daily_settings.json": {
+       "wake_time": "06:00",
+       "allowance": 60,
+       "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T06:30:00",
+       "accumulated_seconds": 1200.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
+      }
+     },
+     "view": {
+      "last_tick_at": "2026-05-17T06:30:00",
+      "last_persist_at": "2026-05-17T06:30:00"
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {
+      "accumulated_seconds": 1201.0,
+      "last_tick_at": "2026-05-17T06:30:01",
+      "time_remaining": 44.983333333333334
+     }
+    },
+    {
+     "events": [],
      "logs": [],
      "files": {},
      "view": {}
@@ -7364,7 +7539,7 @@
      "logs": [],
      "files": {},
      "view": {},
-     "result": 0
+     "result": 44.983333333333334
     },
     {
      "events": [],
@@ -7379,9 +7554,17 @@
        "wake_time": "07:00",
        "allowance": 60,
        "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T06:30:01",
+       "accumulated_seconds": 1201.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
       }
      },
-     "view": {}
+     "view": {
+      "timestamp": "2026-05-17T06:30:01"
+     }
     },
     {
      "events": [],
@@ -7390,34 +7573,13 @@
      "view": {}
     },
     {
-     "events": [
-      [
-       "lock"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Locking PC: Manual lock requested"
-      ],
-      [
-       "DEBUG",
-       "State saved"
-      ]
-     ],
-     "files": {
-      "state.json": {
-       "timestamp": "2026-05-17T06:30:01",
-       "accumulated_seconds": 1200.0,
-       "manual_lock_active": true,
-       "cumulative_extension_seconds": 300
-      }
-     },
+     "events": [],
+     "logs": [],
+     "files": {},
      "view": {
-      "timestamp": "2026-05-17T06:30:01",
-      "last_persist_at": "2026-05-17T06:30:01",
-      "is_locked": true,
-      "last_logged_reason": "Manual lock requested"
+      "accumulated_seconds": 1202.0,
+      "last_tick_at": "2026-05-17T06:30:02",
+      "time_remaining": 44.96666666666667
      }
     }
    ]
@@ -7432,6 +7594,25 @@
     }
    },
    "ops": [
+    {
+     "op": "call",
+     "method": "clear_manual_lock",
+     "args": []
+    },
+    {
+     "op": "platform",
+     "locked": false
+    },
+    {
+     "op": "step"
+    },
+    {
+     "op": "advance",
+     "us": 1000000
+    },
+    {
+     "op": "step"
+    },
     {
      "op": "warnings"
     },
@@ -7514,6 +7695,72 @@
    "steps": [
     {
      "events": [],
+     "logs": [
+      [
+       "INFO",
+       "Parent action: manual lock cleared"
+      ]
+     ],
+     "files": {},
+     "view": {
+      "manual_lock_active": false,
+      "time_remaining": 45.0,
+      "lock_window": [
+       false,
+       ""
+      ]
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [
+      [
+       "DEBUG",
+       "State saved"
+      ]
+     ],
+     "files": {
+      "daily_settings.json": {
+       "wake_time": "07:00",
+       "allowance": 60,
+       "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T12:00:00",
+       "accumulated_seconds": 1200.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
+      }
+     },
+     "view": {
+      "last_tick_at": "2026-05-17T12:00:00",
+      "last_persist_at": "2026-05-17T12:00:00"
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {
+      "accumulated_seconds": 1201.0,
+      "last_tick_at": "2026-05-17T12:00:01",
+      "time_remaining": 44.983333333333334
+     }
+    },
+    {
+     "events": [],
      "logs": [],
      "files": {},
      "view": {}
@@ -7536,7 +7783,7 @@
      "logs": [],
      "files": {},
      "view": {},
-     "result": 0
+     "result": 44.983333333333334
     },
     {
      "events": [],
@@ -7551,9 +7798,17 @@
        "wake_time": "08:30",
        "allowance": 60,
        "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T12:00:01",
+       "accumulated_seconds": 1201.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
       }
      },
-     "view": {}
+     "view": {
+      "timestamp": "2026-05-17T12:00:01"
+     }
     },
     {
      "events": [],
@@ -7562,34 +7817,13 @@
      "view": {}
     },
     {
-     "events": [
-      [
-       "lock"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Locking PC: Manual lock requested"
-      ],
-      [
-       "DEBUG",
-       "State saved"
-      ]
-     ],
-     "files": {
-      "state.json": {
-       "timestamp": "2026-05-17T12:00:01",
-       "accumulated_seconds": 1200.0,
-       "manual_lock_active": true,
-       "cumulative_extension_seconds": 300
-      }
-     },
+     "events": [],
+     "logs": [],
+     "files": {},
      "view": {
-      "timestamp": "2026-05-17T12:00:01",
-      "last_persist_at": "2026-05-17T12:00:01",
-      "is_locked": true,
-      "last_logged_reason": "Manual lock requested"
+      "accumulated_seconds": 1202.0,
+      "last_tick_at": "2026-05-17T12:00:02",
+      "time_remaining": 44.96666666666667
      }
     }
    ]
@@ -7604,6 +7838,25 @@
     }
    },
    "ops": [
+    {
+     "op": "call",
+     "method": "clear_manual_lock",
+     "args": []
+    },
+    {
+     "op": "platform",
+     "locked": false
+    },
+    {
+     "op": "step"
+    },
+    {
+     "op": "advance",
+     "us": 1000000
+    },
+    {
+     "op": "step"
+    },
     {
      "op": "warnings"
     },
@@ -7686,6 +7939,72 @@
    "steps": [
     {
      "events": [],
+     "logs": [
+      [
+       "INFO",
+       "Parent action: manual lock cleared"
+      ]
+     ],
+     "files": {},
+     "view": {
+      "manual_lock_active": false,
+      "time_remaining": 45.0,
+      "lock_window": [
+       false,
+       ""
+      ]
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [
+      [
+       "DEBUG",
+       "State saved"
+      ]
+     ],
+     "files": {
+      "daily_settings.json": {
+       "wake_time": "07:00",
+       "allowance": 60,
+       "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T12:00:00",
+       "accumulated_seconds": 1200.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
+      }
+     },
+     "view": {
+      "last_tick_at": "2026-05-17T12:00:00",
+      "last_persist_at": "2026-05-17T12:00:00"
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {
+      "accumulated_seconds": 1201.0,
+      "last_tick_at": "2026-05-17T12:00:01",
+      "time_remaining": 44.983333333333334
+     }
+    },
+    {
+     "events": [],
      "logs": [],
      "files": {},
      "view": {}
@@ -7708,7 +8027,7 @@
      "logs": [],
      "files": {},
      "view": {},
-     "result": 0
+     "result": 44.983333333333334
     },
     {
      "events": [],
@@ -7723,9 +8042,17 @@
        "wake_time": "00:00",
        "allowance": 60,
        "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T12:00:01",
+       "accumulated_seconds": 1201.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
       }
      },
-     "view": {}
+     "view": {
+      "timestamp": "2026-05-17T12:00:01"
+     }
     },
     {
      "events": [],
@@ -7734,34 +8061,13 @@
      "view": {}
     },
     {
-     "events": [
-      [
-       "lock"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Locking PC: Manual lock requested"
-      ],
-      [
-       "DEBUG",
-       "State saved"
-      ]
-     ],
-     "files": {
-      "state.json": {
-       "timestamp": "2026-05-17T12:00:01",
-       "accumulated_seconds": 1200.0,
-       "manual_lock_active": true,
-       "cumulative_extension_seconds": 300
-      }
-     },
+     "events": [],
+     "logs": [],
+     "files": {},
      "view": {
-      "timestamp": "2026-05-17T12:00:01",
-      "last_persist_at": "2026-05-17T12:00:01",
-      "is_locked": true,
-      "last_logged_reason": "Manual lock requested"
+      "accumulated_seconds": 1202.0,
+      "last_tick_at": "2026-05-17T12:00:02",
+      "time_remaining": 44.96666666666667
      }
     }
    ]
@@ -7776,6 +8082,25 @@
     }
    },
    "ops": [
+    {
+     "op": "call",
+     "method": "clear_manual_lock",
+     "args": []
+    },
+    {
+     "op": "platform",
+     "locked": false
+    },
+    {
+     "op": "step"
+    },
+    {
+     "op": "advance",
+     "us": 1000000
+    },
+    {
+     "op": "step"
+    },
     {
      "op": "warnings"
     },
@@ -7858,6 +8183,72 @@
    "steps": [
     {
      "events": [],
+     "logs": [
+      [
+       "INFO",
+       "Parent action: manual lock cleared"
+      ]
+     ],
+     "files": {},
+     "view": {
+      "manual_lock_active": false,
+      "time_remaining": 45.0,
+      "lock_window": [
+       false,
+       ""
+      ]
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [
+      [
+       "DEBUG",
+       "State saved"
+      ]
+     ],
+     "files": {
+      "daily_settings.json": {
+       "wake_time": "00:00",
+       "allowance": 60,
+       "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T00:30:00",
+       "accumulated_seconds": 1200.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
+      }
+     },
+     "view": {
+      "last_tick_at": "2026-05-17T00:30:00",
+      "last_persist_at": "2026-05-17T00:30:00"
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {
+      "accumulated_seconds": 1201.0,
+      "last_tick_at": "2026-05-17T00:30:01",
+      "time_remaining": 44.983333333333334
+     }
+    },
+    {
+     "events": [],
      "logs": [],
      "files": {},
      "view": {}
@@ -7881,7 +8272,7 @@
      "logs": [],
      "files": {},
      "view": {},
-     "result": 0
+     "result": 44.983333333333334
     },
     {
      "events": [],
@@ -7896,9 +8287,17 @@
        "wake_time": "07:00",
        "allowance": 60,
        "bed_time": null
+      },
+      "state.json": {
+       "timestamp": "2026-05-17T00:30:01",
+       "accumulated_seconds": 1201.0,
+       "manual_lock_active": false,
+       "cumulative_extension_seconds": 300
       }
      },
-     "view": {}
+     "view": {
+      "timestamp": "2026-05-17T00:30:01"
+     }
     },
     {
      "events": [],
@@ -7907,34 +8306,13 @@
      "view": {}
     },
     {
-     "events": [
-      [
-       "lock"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Locking PC: Manual lock requested"
-      ],
-      [
-       "DEBUG",
-       "State saved"
-      ]
-     ],
-     "files": {
-      "state.json": {
-       "timestamp": "2026-05-17T00:30:01",
-       "accumulated_seconds": 1200.0,
-       "manual_lock_active": true,
-       "cumulative_extension_seconds": 300
-      }
-     },
+     "events": [],
+     "logs": [],
+     "files": {},
      "view": {
-      "timestamp": "2026-05-17T00:30:01",
-      "last_persist_at": "2026-05-17T00:30:01",
-      "is_locked": true,
-      "last_logged_reason": "Manual lock requested"
+      "accumulated_seconds": 1202.0,
+      "last_tick_at": "2026-05-17T00:30:02",
+      "time_remaining": 44.96666666666667
      }
     }
    ]
@@ -7954,14 +8332,6 @@
      "method": "send_parent_message",
      "args": [
       "Dinner time"
-     ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "Dinner time",
-      "Title"
      ]
     }
    ],
@@ -8021,23 +8391,6 @@
       [
        "message",
        "PC Time Control",
-       "Dinner time"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: Dinner time"
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "Dinner time"
       ]
      ],
@@ -8068,14 +8421,6 @@
      "args": [
       "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
      ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
-      "Title"
-     ]
     }
    ],
    "init": {
@@ -8134,23 +8479,6 @@
       [
        "message",
        "PC Time Control",
-       "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
       ]
      ],
@@ -8181,14 +8509,6 @@
      "args": [
       "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
      ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm",
-      "Title"
-     ]
     }
    ],
    "init": {
@@ -8247,23 +8567,6 @@
       [
        "message",
        "PC Time Control",
-       "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm..."
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
       ]
      ],
@@ -8294,14 +8597,6 @@
      "args": [
       "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀ab😀"
      ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀ab😀",
-      "Title"
-     ]
     }
    ],
    "init": {
@@ -8360,23 +8655,6 @@
       [
        "message",
        "PC Time Control",
-       "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀ab😀"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: 😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀a..."
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀ab😀"
       ]
      ],
@@ -8407,14 +8685,6 @@
      "args": [
       "line1\nline2\r\n\ttab"
      ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "line1\nline2\r\n\ttab",
-      "Title"
-     ]
     }
    ],
    "init": {
@@ -8473,23 +8743,6 @@
       [
        "message",
        "PC Time Control",
-       "line1\nline2\r\n\ttab"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: line1\nline2\r\n\ttab"
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "line1\nline2\r\n\ttab"
       ]
      ],
@@ -8520,14 +8773,6 @@
      "args": [
       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxétail"
      ]
-    },
-    {
-     "op": "call",
-     "method": "send_parent_message",
-     "args": [
-      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxétail",
-      "Title"
-     ]
     }
    ],
    "init": {
@@ -8586,23 +8831,6 @@
       [
        "message",
        "PC Time Control",
-       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxétail"
-      ]
-     ],
-     "logs": [
-      [
-       "INFO",
-       "Parent action: message sent: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxé..."
-      ]
-     ],
-     "files": {},
-     "view": {}
-    },
-    {
-     "events": [
-      [
-       "message",
-       "Title",
        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxétail"
       ]
      ],
@@ -14074,6 +14302,366 @@
    ]
   },
   {
+   "name": "tail_invalid_utf8_prefixes",
+   "setup": {
+    "now": "2026-05-17T12:00:00",
+    "files": {
+     "daily_settings.json": "{\"wake_time\": \"07:00\"}",
+     "state.json": "{\"timestamp\": \"2026-05-17T12:00:00\", \"accumulated_seconds\": 0, \"manual_lock_active\": false, \"cumulative_extension_seconds\": 0}"
+    }
+   },
+   "ops": [
+    {
+     "op": "write_log",
+     "hex": "ed9f580af48f580ae0a0580af09080580af18080580ae180580ac2580ae09f80580af08f8080580aeda080580af4908080580af580580ac1bf58"
+    },
+    {
+     "op": "read_tail",
+     "tail": 1
+    },
+    {
+     "op": "read_tail",
+     "tail": 2
+    },
+    {
+     "op": "read_tail",
+     "tail": 3
+    },
+    {
+     "op": "read_tail",
+     "tail": 4
+    },
+    {
+     "op": "read_tail",
+     "tail": 5
+    },
+    {
+     "op": "read_tail",
+     "tail": 6
+    },
+    {
+     "op": "read_tail",
+     "tail": 7
+    },
+    {
+     "op": "read_tail",
+     "tail": 8
+    },
+    {
+     "op": "read_tail",
+     "tail": 9
+    },
+    {
+     "op": "read_tail",
+     "tail": 10
+    },
+    {
+     "op": "read_tail",
+     "tail": 11
+    },
+    {
+     "op": "read_tail",
+     "tail": 12
+    },
+    {
+     "op": "read_tail",
+     "tail": 13
+    }
+   ],
+   "init": {
+    "logs": [
+     [
+      "INFO",
+      "Monitoring enabled for user: kid"
+     ],
+     [
+      "INFO",
+      "State applied: bed_time=none wake_time=07:00 daily_allowance=none effective_allowance=none manual_lock=false accumulated_min=0.0 extension_sec=0"
+     ]
+    ],
+    "events": [],
+    "view": {
+     "bed_time": null,
+     "wake_time": "07:00",
+     "allowance": null,
+     "timestamp": "2026-05-17T12:00:00",
+     "accumulated_seconds": 0.0,
+     "manual_lock_active": false,
+     "extension_seconds": 0,
+     "warnings_sent": [],
+     "warnings_date": "2026-05-17",
+     "last_tick_at": null,
+     "last_persist_at": null,
+     "is_locked": false,
+     "last_logged_reason": null,
+     "state_load_failed": false,
+     "step_errors": [],
+     "time_remaining": null,
+     "lock_window": [
+      false,
+      ""
+     ],
+     "enforcement": [
+      false,
+      null
+     ]
+    },
+    "files": {
+     "daily_settings.json": {
+      "wake_time": "07:00"
+     },
+     "state.json": {
+      "timestamp": "2026-05-17T12:00:00",
+      "accumulated_seconds": 0,
+      "manual_lock_active": false,
+      "cumulative_extension_seconds": 0
+     }
+    }
+   },
+   "steps": [
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {}
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": true
+     }
+    },
+    {
+     "events": [],
+     "logs": [],
+     "files": {},
+     "view": {},
+     "result": {
+      "lines": [
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "�X",
+       "���X",
+       "����X",
+       "���X",
+       "����X",
+       "��X",
+       "��X"
+      ],
+      "truncated": false
+     }
+    }
+   ]
+  },
+  {
    "name": "tail_zero_and_negative",
    "setup": {
     "now": "2026-05-17T12:00:00",
@@ -15286,6 +15874,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "check_session_locked recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -15305,7 +15897,8 @@
      },
      "view": {
       "timestamp": "2026-05-17T10:49:05.499999",
-      "last_persist_at": "2026-05-17T10:49:05.499999"
+      "last_persist_at": "2026-05-17T10:49:05.499999",
+      "step_errors": []
      }
     },
     {
@@ -16946,12 +17539,18 @@
      ],
      "logs": [
       [
+       "INFO",
+       "check_session_locked recovered"
+      ],
+      [
        "ERROR",
        "Error locking PC: boom"
       ]
      ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -17248,7 +17847,6 @@
       "last_persist_at": "2026-05-17T21:45:44.997999",
       "last_logged_reason": "Manual lock requested",
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -19610,6 +20208,10 @@
      ],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "ERROR",
        "Platform check_session_locked failed:"
       ],
@@ -19622,8 +20224,7 @@
      "view": {
       "last_logged_reason": "Before wake-up time 09:30",
       "step_errors": [
-       "check_session_locked",
-       "session_is_active"
+       "check_session_locked"
       ]
      }
     },
@@ -19848,6 +20449,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "check_session_locked recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -19867,7 +20472,8 @@
      },
      "view": {
       "timestamp": "2026-05-17T01:35:21",
-      "last_persist_at": "2026-05-17T01:35:21"
+      "last_persist_at": "2026-05-17T01:35:21",
+      "step_errors": []
      }
     },
     {
@@ -21383,9 +21989,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -25546,10 +26159,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "last_tick_at": null
+      "last_tick_at": null,
+      "step_errors": []
      }
     },
     {
@@ -25692,6 +26311,10 @@
      "events": [],
      "logs": [
       [
+       "ERROR",
+       "Platform session_is_active failed:"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -25712,7 +26335,10 @@
      "view": {
       "timestamp": "2026-12-31T22:48:46.999999",
       "last_tick_at": "2026-12-31T22:48:46.999999",
-      "last_persist_at": "2026-12-31T22:48:46.999999"
+      "last_persist_at": "2026-12-31T22:48:46.999999",
+      "step_errors": [
+       "session_is_active"
+      ]
      }
     },
     {
@@ -28965,10 +29591,16 @@
        "lock"
       ]
      ],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "is_locked": true
+      "is_locked": true,
+      "step_errors": []
      }
     }
    ]
@@ -32451,12 +33083,15 @@
       [
        "ERROR",
        "Platform session_is_active failed:"
+      ],
+      [
+       "INFO",
+       "check_session_locked recovered"
       ]
      ],
      "files": {},
      "view": {
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -32669,6 +33304,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -32683,7 +33322,8 @@
      },
      "view": {
       "timestamp": "2026-05-18T02:03:35.748999",
-      "last_persist_at": "2026-05-18T02:03:35.748999"
+      "last_persist_at": "2026-05-18T02:03:35.748999",
+      "step_errors": []
      }
     },
     {
@@ -35573,6 +36213,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "check_session_locked recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -35587,7 +36231,8 @@
      },
      "view": {
       "timestamp": "2026-03-08T03:18:04.248000",
-      "last_persist_at": "2026-03-08T03:18:04.248000"
+      "last_persist_at": "2026-03-08T03:18:04.248000",
+      "step_errors": []
      }
     },
     {
@@ -40194,9 +40839,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -42879,9 +43531,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -44171,10 +44830,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "is_locked": false
+      "is_locked": false,
+      "step_errors": []
      }
     },
     {
@@ -44715,7 +45380,6 @@
       "last_tick_at": "2026-05-17T22:56:24.497999",
       "last_persist_at": "2026-05-17T22:56:24.497999",
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -45998,9 +46662,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {},
+     "view": {
+      "step_errors": []
+     },
      "result": "Locked — before wake-up"
     },
     {
@@ -47125,6 +47796,10 @@
       ],
       [
        "INFO",
+       "check_session_locked recovered"
+      ],
+      [
+       "INFO",
        "Locking PC: Daily allowance of 15 minutes reached"
       ]
      ],
@@ -47134,7 +47809,6 @@
       "is_locked": true,
       "last_logged_reason": "Daily allowance of 15 minutes reached",
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -47196,6 +47870,10 @@
      ],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -47210,7 +47888,8 @@
      },
      "view": {
       "timestamp": "2026-05-17T13:18:14.750000",
-      "last_persist_at": "2026-05-17T13:18:14.750000"
+      "last_persist_at": "2026-05-17T13:18:14.750000",
+      "step_errors": []
      }
     },
     {
@@ -47483,6 +48162,10 @@
      "events": [],
      "logs": [
       [
+       "ERROR",
+       "Platform session_is_active failed:"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -47503,7 +48186,10 @@
      "view": {
       "timestamp": "2026-05-17T13:25:54.999000",
       "last_tick_at": "2026-05-17T13:25:54.999000",
-      "last_persist_at": "2026-05-17T13:25:54.999000"
+      "last_persist_at": "2026-05-17T13:25:54.999000",
+      "step_errors": [
+       "session_is_active"
+      ]
      }
     },
     {
@@ -47604,10 +48290,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "last_tick_at": null
+      "last_tick_at": null,
+      "step_errors": []
      }
     },
     {
@@ -52691,6 +53383,10 @@
        "Platform session_is_active failed:"
       ],
       [
+       "INFO",
+       "check_session_locked recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -52707,7 +53403,6 @@
       "timestamp": "2026-05-17T03:02:50.998000",
       "last_persist_at": "2026-05-17T03:02:50.998000",
       "step_errors": [
-       "check_session_locked",
        "session_is_active"
       ]
      }
@@ -52783,6 +53478,10 @@
      ],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "ERROR",
        "Error locking PC: boom"
       ],
@@ -52801,7 +53500,8 @@
      },
      "view": {
       "timestamp": "2026-05-17T02:03:48.997999",
-      "last_persist_at": "2026-05-17T02:03:48.997999"
+      "last_persist_at": "2026-05-17T02:03:48.997999",
+      "step_errors": []
      }
     },
     {
@@ -54228,10 +54928,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "last_tick_at": null
+      "last_tick_at": null,
+      "step_errors": []
      }
     },
     {
@@ -54251,8 +54957,7 @@
      "files": {},
      "view": {
       "step_errors": [
-       "check_session_locked",
-       "session_is_active"
+       "check_session_locked"
       ]
      },
      "result": "Unlocked"
@@ -54652,9 +55357,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -57100,10 +57812,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
      "view": {
-      "last_tick_at": null
+      "last_tick_at": null,
+      "step_errors": []
      }
     },
     {
@@ -57438,8 +58156,7 @@
      "view": {
       "is_locked": false,
       "step_errors": [
-       "check_session_locked",
-       "session_is_active"
+       "check_session_locked"
       ]
      }
     },
@@ -61240,6 +61957,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -61254,7 +61975,8 @@
      },
      "view": {
       "timestamp": "2026-05-17T22:09:08.499000",
-      "last_persist_at": "2026-05-17T22:09:08.499000"
+      "last_persist_at": "2026-05-17T22:09:08.499000",
+      "step_errors": []
      }
     },
     {
@@ -61320,8 +62042,7 @@
       "timestamp": "2026-05-17T23:09:08.499000",
       "last_persist_at": "2026-05-17T23:09:08.499000",
       "step_errors": [
-       "check_session_locked",
-       "session_is_active"
+       "check_session_locked"
       ]
      }
     },
@@ -61568,9 +62289,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -62841,9 +63569,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -64298,9 +65033,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "session_is_active recovered"
+      ]
+     ],
      "files": {},
-     "view": {},
+     "view": {
+      "step_errors": []
+     },
      "result": true
     },
     {
@@ -69573,9 +70315,16 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "INFO",
+       "check_session_locked recovered"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": []
+     }
     },
     {
      "events": [],
@@ -69941,9 +70690,18 @@
     },
     {
      "events": [],
-     "logs": [],
+     "logs": [
+      [
+       "ERROR",
+       "Platform check_session_locked failed:"
+      ]
+     ],
      "files": {},
-     "view": {}
+     "view": {
+      "step_errors": [
+       "check_session_locked"
+      ]
+     }
     },
     {
      "events": [],
@@ -71325,6 +72083,10 @@
      "events": [],
      "logs": [
       [
+       "INFO",
+       "session_is_active recovered"
+      ],
+      [
        "DEBUG",
        "State saved"
       ]
@@ -71340,7 +72102,8 @@
      "view": {
       "timestamp": "2026-05-17T04:48:30.999999",
       "last_tick_at": "2026-05-17T04:48:30.999999",
-      "last_persist_at": "2026-05-17T04:48:30.999999"
+      "last_persist_at": "2026-05-17T04:48:30.999999",
+      "step_errors": []
      }
     }
    ]

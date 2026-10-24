@@ -61,7 +61,9 @@ type Control interface {
 	ClearManualLock()
 	ClearExtensions()
 	ExtendTime(minutes int64)
-	SendParentMessage(text string)
+	// SendParentMessage shows a popup; its failure is reported to the parent
+	// as an internal error (the popup is the whole point of the request).
+	SendParentMessage(text string) error
 	ShutdownPC(seconds int64)
 	SaveState()
 }
@@ -281,7 +283,9 @@ func doMessage(c Control, req *protocol.Request) ([]protocol.Node, error) {
 	if !ok || strings.TrimFunc(text, isPySpace) == "" {
 		return nil, fail(protocol.InvalidValue, "message must be non-empty text", req)
 	}
-	c.SendParentMessage(text)
+	if err := c.SendParentMessage(text); err != nil {
+		return nil, err
+	}
 	return protocol.OKContent("message sent"), nil
 }
 
