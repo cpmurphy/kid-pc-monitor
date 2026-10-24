@@ -40,15 +40,45 @@ jobs:
       - name: Pytest
         run: ./venv/bin/pytest
 
+  # Go protocol port: golden vectors + live cross-check against the Python side.
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: gofmt
+        run: test -z "$(gofmt -l go)"
+
+      - name: go vet
+        run: cd go && go vet ./...
+
+      - name: go test
+        run: cd go && go test ./...
+
+      - name: Cross-check against Python
+        run: |
+          python -m venv venv
+          ./venv/bin/pip install --upgrade pip
+          ./venv/bin/pip install -e ".[dev]"
+          ./venv/bin/python scripts/cross_check_go.py
+
   # Single required check for branch rules / Dependabot auto-merge.
   ci:
-    needs: test
+    needs: [test, go]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: All matrix jobs passed
+      - name: All jobs passed
         run: |
-          if [ "${{ needs.test.result }}" != "success" ]; then
-            echo "Matrix result: ${{ needs.test.result }}"
+          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.go.result }}" != "success" ]; then
+            echo "test: ${{ needs.test.result }}, go: ${{ needs.go.result }}"
             exit 1
           fi
