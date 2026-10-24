@@ -6,8 +6,8 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
-- `go/` — Go port of the wire protocol (`go/protocol`) plus the `xcheck` test fixture; see `go/README.md`.
-- `testdata/protocol/vectors.json` — golden protocol vectors shared by Python and Go (generated, do not hand-edit).
+- `go/` — Go ports of the protocol, lock policy and state files, plus the `xcheck` test fixture; see `go/README.md`.
+- `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
 
@@ -85,17 +85,25 @@ Tests stub the Windows platform via `FakeHostPlatform` — no real Windows sessi
 - Agents dial out to the panel reverse port (**9998**) and speak native v3; HTTP `/agent/v1/discover` on **5000** is bootstrap only (env/cache, then agent `/24` scan).
 - Web panel **Agent log** page (`/logs/<ip>`) uses `get_logs` over the reverse session; agents without that action show an upgrade message.
 
-## Go Protocol Port
+## Go Port
 
-`agent_protocol.py` is the reference. Any change to wire behavior must regenerate the golden vectors and keep the Go package in step:
+The Python code is the reference; Go packages under `go/` mirror it and are held to it by golden vectors in `testdata/` (generated, do not hand-edit):
+
+| Python module | Go package | Vectors | Generator |
+|---|---|---|---|
+| `agent_protocol.py`, `agent_auth.py` | `go/protocol` | `testdata/protocol/vectors.json` | `tests/protocol_vectors_gen.py` |
+| `lock_policy.py` | `go/policy` | `testdata/policy/vectors.json` | `tests/policy_vectors_gen.py` |
+| `agent_state.py` | `go/state` | `testdata/state/vectors.json` | `tests/state_vectors_gen.py` |
+
+Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
 
 ```bash
-python tests/protocol_vectors_gen.py     # rewrite testdata/protocol/vectors.json
+python tests/<name>_vectors_gen.py       # rewrite the vectors
 (cd go && go test ./...)                 # Go must agree on every vector
-python scripts/cross_check_go.py         # live Go<->Python sessions over TCP
+python scripts/cross_check_go.py         # live Go<->Python sessions and state-file interop
 ```
 
-`tests/test_protocol_vectors.py` fails when the vectors file is stale. Needs Go 1.22+ for the Go parts only; the Python tests do not need Go.
+`tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.22+; the Python tests do not.
 
 ## Windows Install Quirks
 

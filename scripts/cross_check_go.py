@@ -7,6 +7,10 @@ direction, so each implementation has to understand frames the other wrote:
   A. Go agent  <->  Python panel   (remote_client.exchange_on_socket)
   B. Python agent (the real dispatcher, fake host)  <->  Go panel
 
+and checks that each side can load the settings/state files the other saved:
+
+  C. Python AgentStateStore  <->  Go state.Store
+
 The golden vectors (``go test ./...`` plus ``tests/test_protocol_vectors.py``)
 check each function in isolation; this checks the whole session, framing and
 all.  Needs a Go toolchain.  Linux/macOS/Windows; no Windows session required.
@@ -25,6 +29,8 @@ import sys
 import tempfile
 import time
 import traceback
+from datetime import datetime
+from datetime import time as dtime
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -34,6 +40,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tests"))
 
 from kid_pc_monitor import agent_protocol as proto  # noqa: E402
+from kid_pc_monitor.agent_state import AgentStateStore, DailySettings, RuntimeState  # noqa: E402
 from kid_pc_monitor.pc_time_control import PCTimeControl  # noqa: E402
 from kid_pc_monitor.remote_client import exchange_on_socket  # noqa: E402
 from kid_pc_monitor.remote_control_server import handle_request  # noqa: E402
@@ -313,6 +320,94 @@ def python_agent_session(exe: Path) -> Checks:
     return checks
 
 
+# ---------------------------------------------------------------------------
+# C. State files: each side loads what the other wrote
+# ---------------------------------------------------------------------------
+STATE_NOW = "2026-05-17T10:00:00"
+STATE_SAMPLE = {
+    "wake_time": "06:30",
+    "bed_time": "21:15",
+    "allowance": 100,
+    "timestamp": STATE_NOW,
+    "accumulated_seconds": 1234.568,  # rounded to 3 places on save
+    "manual_lock_active": True,
+    "cumulative_extension_seconds": 300,
+}
+
+
+def state_files_session(exe: Path) -> Checks:
+    print("C. State files: Python <-> Go")
+    checks = Checks("state-files")
+    now = datetime.fromisoformat(STATE_NOW)
+
+    def python_store(directory: Path) -> AgentStateStore:
+        return AgentStateStore(
+            directory, current_user="kid", clock=lambda: now, program_data_dir=None
+        )
+
+    def dump(directory: Path) -> dict[str, Any]:
+        proc = subprocess.run(
+            [str(exe), "state-dump", "-dir", str(directory), "-now", STATE_NOW],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        checks.check("go state-dump exits cleanly", (proc.returncode, proc.stderr.strip()), (0, ""))
+        return json.loads(proc.stdout) if proc.stdout.strip() else {}
+
+    with tempfile.TemporaryDirectory() as tmp:
+        py_dir, go_dir = Path(tmp) / "py", Path(tmp) / "go"
+
+        # Python writes, Go reads.
+        python_store(py_dir).save(
+            DailySettings(bed_time=dtime(21, 15), wake_time=dtime(6, 30), allowance=100),
+            RuntimeState(
+                timestamp=now,
+                accumulated_seconds=1234.56789,
+                manual_lock_active=True,
+                cumulative_extension_seconds=300,
+            ),
+        )
+        checks.check("Go loads what Python saved", dump(py_dir), STATE_SAMPLE)
+
+        # Go writes, Python reads.
+        subprocess.run(
+            [str(exe), "state-write", "-dir", str(go_dir), "-now", STATE_NOW], check=True
+        )
+        daily, runtime = python_store(go_dir).load()
+        checks.check(
+            "Python loads what Go saved",
+            {
+                "wake_time": f"{daily.wake_time:%H:%M}",
+                "bed_time": f"{daily.bed_time:%H:%M}" if daily.bed_time else None,
+                "allowance": daily.allowance,
+                "timestamp": runtime.timestamp.isoformat(),
+                "accumulated_seconds": runtime.accumulated_seconds,
+                "manual_lock_active": runtime.manual_lock_active,
+                "cumulative_extension_seconds": runtime.cumulative_extension_seconds,
+            },
+            STATE_SAMPLE,
+        )
+
+        # A Go load of an empty directory writes the same defaults Python does.
+        go_empty, py_empty = Path(tmp) / "go-empty", Path(tmp) / "py-empty"
+        dump(go_empty)
+        python_store(py_empty).load()
+        checks.check(
+            "default files match",
+            {
+                name: json.loads((go_empty / name).read_text())
+                for name in ("daily_settings.json", "state.json")
+            },
+            {
+                name: json.loads((py_empty / name).read_text())
+                for name in ("daily_settings.json", "state.json")
+            },
+        )
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", default=shutil.which("go"), help="path to the go tool")
@@ -322,7 +417,11 @@ def main() -> int:
         print("cross_check_go: the Go toolchain is not installed (or pass --go)", file=sys.stderr)
         return 2
 
-    sessions: list[Callable[[Path], Checks]] = [go_agent_session, python_agent_session]
+    sessions: list[Callable[[Path], Checks]] = [
+        go_agent_session,
+        python_agent_session,
+        state_files_session,
+    ]
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = Path(args.keep) if args.keep else Path(tmp)
         out_dir.mkdir(parents=True, exist_ok=True)
