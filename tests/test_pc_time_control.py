@@ -380,5 +380,87 @@ class PCTimeControlTests(unittest.TestCase):
             self.assertTrue(control.check_if_locked())
 
 
+class MonitorStepTests(unittest.TestCase):
+    """monitor_step: phases are isolated and platform errors never stop enforcement."""
+
+    def setUp(self) -> None:
+        self.now = datetime(2026, 5, 17, 12, 0, 0)
+        self.platform = FakeHostPlatform()
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.control = PCTimeControl(
+            platform=self.platform,
+            data_directory=Path(tmp.name),
+            start_background_threads=False,
+            clock=lambda: self.now,
+            current_user="kid",
+            program_data_dir=None,
+        )
+
+    def test_failing_popup_does_not_stop_the_other_phases(self) -> None:
+        self.control.daily.allowance = 10
+        self.control.runtime.accumulated_seconds = 9.5 * 60
+
+        def boom(message: str, title: str = "") -> None:
+            raise RuntimeError("no desktop")
+
+        self.platform.show_message = boom  # type: ignore[method-assign]
+        with self.assertLogs("PCTimeControl", level="ERROR") as logs:
+            self.control.monitor_step()
+        self.assertEqual(
+            logs.output,
+            ["ERROR:PCTimeControl:Monitor phase check_and_send_warnings failed: no desktop"],
+        )
+        self.assertEqual(self.control.last_persist_at, self.now)
+        self.assertEqual(self.control.warnings_sent, set())  # retried once the popup works
+
+    def test_phase_error_is_logged_once_and_other_phases_still_run(self) -> None:
+        self.control.engage_manual_lock()
+        self.platform.locked = False
+        self.platform.lock_calls = 0
+
+        def broken() -> None:
+            raise RuntimeError("bad")
+
+        self.control.check_and_send_warnings = broken  # type: ignore[method-assign]
+        with self.assertLogs("PCTimeControl", level="INFO") as logs:
+            self.control.monitor_step()
+            self.platform.locked = False
+            self.control.monitor_step()
+        self.assertEqual(self.platform.lock_calls, 2)
+        self.assertEqual(
+            [m for m in logs.output if "failed" in m],
+            ["ERROR:PCTimeControl:Monitor phase check_and_send_warnings failed: bad"],
+        )
+
+    def test_platform_query_errors_fail_toward_enforcement(self) -> None:
+        def broken() -> bool:
+            raise OSError("wts down")
+
+        self.platform.check_session_locked = broken  # type: ignore[method-assign]
+        self.platform.session_is_active = broken  # type: ignore[method-assign]
+        self.assertFalse(self.control.check_if_locked())
+        self.assertTrue(self.control.session_is_active())
+
+    def test_failed_lock_does_not_mark_pc_locked(self) -> None:
+        def broken() -> None:
+            raise OSError("no")
+
+        self.platform.lock_workstation = broken  # type: ignore[method-assign]
+        self.control.lock_pc()
+        self.assertFalse(self.control.is_locked)
+
+    def test_save_is_due_after_the_clock_goes_backwards(self) -> None:
+        self.control.monitor_step()
+        first = self.control.last_persist_at
+        self.assertEqual(first, self.now)
+        self.now += timedelta(seconds=30)
+        self.control.monitor_step()
+        self.assertEqual(self.control.last_persist_at, first)  # throttled
+        self.now -= timedelta(hours=2)
+        self.control.monitor_step()
+        self.assertEqual(self.control.last_persist_at, self.now)  # not stalled
+
+
 if __name__ == "__main__":
     unittest.main()
