@@ -65,6 +65,13 @@ jobs:
       - name: go test
         run: cd go && go test -race ./...
 
+      - name: Build the web panel for every release target
+        run: |
+          cd go
+          for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build -trimpath -o /dev/null ./cmd/kid-pc-web-panel
+          done
+
       # The panel uses modernc.org/sqlite; the agent must stay standard-library only.
       - name: Agent has no third-party dependencies
         run: |

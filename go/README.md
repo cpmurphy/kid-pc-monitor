@@ -40,10 +40,28 @@ tag publishes amd64 and arm64 builds (`.github/workflows/release.yml`).
 Go 1.26 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
 `cmd/wincheck` also builds and tests on Linux and macOS.
 
+## Web panel (in progress)
+
+`cmd/kid-pc-web-panel` replaces `python -m kid_pc_monitor.web_panel` on the
+parent's machine, reading the same `panel.db`, `web_panel_auth.json`, TLS
+files and shared secret:
+
+```bash
+cd go
+go build -o kid-pc-web-panel ./cmd/kid-pc-web-panel
+./kid-pc-web-panel set-secret   # once, unless an installer already stored it
+./kid-pc-web-panel              # serves http(s)://0.0.0.0:5000 and TCP 9998
+```
+
+Release builds are published for Windows, Linux and macOS (amd64 and arm64).
+Logins from the Python panel do not carry over (different session cookie), so
+log in once after switching.
+
 ## Packages
 
 | Path | Python original | What |
 |---|---|---|
+| `cmd/kid-pc-web-panel/` | `web_panel.main` | The parent web panel executable (Windows, macOS, Linux): UI on 5000, reverse listener on 9998, same env vars and files as the Python panel; `set-secret` stores the shared secret. |
 | `cmd/kid-pc-agent/` | `pc_control.py` | The executable: logging, monitor, reverse client; diagnostics in the background. |
 | `agent/` | `agent_sync_client.py`, `pc_control.py` | Reverse client (env / cache / LAN discovery, TLS with self-signed fallback, reconnect), Python-format size-rotated `pc_control.log`, data dir and user name. |
 | `monitor/` | `pc_time_control.py` | The enforcement loop: usage accounting, low-time warnings, lock enforcement, periodic saves, parent actions. Implements `dispatcher.Control` over a `Platform` interface; safe for concurrent use. |
