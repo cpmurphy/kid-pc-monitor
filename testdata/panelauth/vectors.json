@@ -479,91 +479,109 @@
  "auth_record": [
   {
    "text": "{\"secret_key\": \"cccccccccccccccccccccccccccccccc\", \"password_hash\": \"scrypt:32768:8:1$a$b\"}",
+   "locked": false,
    "password_hash": "scrypt:32768:8:1$a$b",
    "secret_key": "cccccccccccccccccccccccccccccccc"
   },
   {
    "text": "{\"password_hash\": \"scrypt:32768:8:1$a$b\"}",
+   "locked": false,
    "password_hash": "scrypt:32768:8:1$a$b",
    "secret_key": null
   },
   {
    "text": "{\"secret_key\": \"short\", \"password_hash\": \"x\"}",
+   "locked": false,
    "password_hash": "x",
    "secret_key": null
   },
   {
    "text": "{\"secret_key\": \"kkkkkkkkkkkkkkkk\"}",
+   "locked": false,
    "password_hash": null,
    "secret_key": "kkkkkkkkkkkkkkkk"
   },
   {
    "text": "{\"secret_key\": \"kkkkkkkkkkkkkkk\", \"password_hash\": \"\"}",
+   "locked": false,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{\"secret_key\": \"ééééééééééééééé✓\", \"password_hash\": \"h\"}",
+   "locked": false,
    "password_hash": "h",
    "secret_key": "ééééééééééééééé✓"
   },
   {
    "text": "{\"secret_key\": 1234567890123456789, \"password_hash\": 5}",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{\"hash\": \"scrypt:abc\", \"salt\": \"aaaaaaaaaaaaaaaa\"}",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{\"password_hash\": null, \"secret_key\": null}",
+   "locked": false,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{}",
+   "locked": false,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "[]",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "null",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "\"\"",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "not json",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{\"password_hash\": \"h\", \"password_hash\": \"\"}",
+   "locked": false,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "{\"password_hash\": \"h\",}",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   },
   {
    "text": "﻿{\"password_hash\": \"h\"}",
+   "locked": true,
    "password_hash": null,
    "secret_key": null
   }

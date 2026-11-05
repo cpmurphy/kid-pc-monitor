@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -73,5 +74,30 @@ func TestStaticRejectsTraversalAndReadme(t *testing.T) {
 	}
 	if rec := do(app, "GET", "/static/js/home.js"); rec.Code != 200 || rec.Header().Get("Cache-Control") != "no-cache" {
 		t.Fatalf("static js = %d %q", rec.Code, rec.Header().Get("Cache-Control"))
+	}
+}
+
+func TestDamagedAuthFileLocksThePanel(t *testing.T) {
+	app := newApp(t, nil)
+	path := app.auth.SavePath()
+	if err := os.WriteFile(path, []byte(`{"secret_key": "cccccccccccccccc", "password_hash": `), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{"/", "/login", "/set-password", "/control/KID-PC", "/no-such-page"} {
+		rec := do(app, "GET", p)
+		if rec.Code != http.StatusServiceUnavailable || rec.Body.String() != auth.LockedText(path) {
+			t.Errorf("GET %s = %d %q", p, rec.Code, rec.Body.String())
+		}
+		if rec.Header().Get("Content-Type") != "text/plain; charset=utf-8" || rec.Header().Get("Cache-Control") != DynamicCacheControl {
+			t.Errorf("GET %s headers %v", p, rec.Header())
+		}
+	}
+	for _, p := range []string{"/agent/v1/discover", "/static/css/panel.css"} {
+		if rec := do(app, "GET", p); rec.Code != http.StatusOK {
+			t.Errorf("GET %s = %d while locked", p, rec.Code)
+		}
+	}
+	if rec := do(app, "POST", "/set-password"); rec.Code != http.StatusBadRequest {
+		t.Errorf("POST /set-password = %d", rec.Code)
 	}
 }

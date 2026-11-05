@@ -27,8 +27,10 @@ import argparse
 import hashlib
 import json
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 from werkzeug.security import _hash_internal, check_password_hash
 
@@ -159,21 +161,25 @@ AUTH_FILE_TEXTS = [
 
 
 def auth_record_cases() -> list[dict[str, Any]]:
+    """Each text as the panel reads it from its auth file (read_auth_file).
+
+    ``locked`` means the file cannot be used and the panel stays locked.
+    """
     out = []
-    for text in AUTH_FILE_TEXTS:
-        try:
-            record = json.loads(text)
-        except json.JSONDecodeError:
-            record = None
-        case: dict[str, Any] = {"text": text}
-        try:
-            case["password_hash"] = wp._stored_password_hash(record)
-            case["secret_key"] = wp._panel_secret_key(record)
-        except AttributeError:
-            # A JSON value that is not an object: the Python panel crashes;
-            # Go treats it as no record.
-            case["error"] = True
-        out.append(case)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / wp.AUTH_FILE
+        with mock.patch.object(wp, "_auth_path", return_value=path):
+            for text in AUTH_FILE_TEXTS:
+                path.write_text(text, encoding="utf-8")
+                record, problem = wp.read_auth_file()
+                out.append(
+                    {
+                        "text": text,
+                        "locked": problem is not None,
+                        "password_hash": wp._stored_password_hash(record),
+                        "secret_key": wp._panel_secret_key(record),
+                    }
+                )
     return out
 
 

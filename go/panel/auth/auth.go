@@ -13,9 +13,7 @@
 //   - The session cookie is this package's own format (Flask's is
 //     itsdangerous-signed), so switching panels means logging in again.
 //   - A hash werkzeug rejects by raising (unknown method, malformed
-//     parameters) is a wrong password instead of a server error, and an
-//     auth file holding a JSON value that is not an object counts as no file
-//     instead of crashing.
+//     parameters) is a wrong password instead of a server error.
 //   - The auth file is written atomically with mode 0600 (it holds the
 //     session signing key); Python writes it in place with the umask.
 //   - Python also reads the file from its package directory (where installs
@@ -24,10 +22,14 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 
 	"kidpcmonitor/panel/pyval"
@@ -90,19 +92,27 @@ type Files struct {
 // DefaultFiles uses the panel's config directory (paths.config_dir).
 func DefaultFiles() Files { return Files{Dir: secrets.ConfigDir()} }
 
-func isFile(path string) bool {
-	st, err := os.Stat(path)
-	return err == nil && st.Mode().IsRegular()
+// notThere reports whether err says the path does not exist.
+func notThere(err error) bool {
+	return errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR)
+}
+
+// mayExist is false only when path certainly does not exist; any other stat
+// error counts as existing, so reading the file reports the problem
+// (web_panel._may_exist).
+func mayExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !notThere(err)
 }
 
 // ReadPath is the file to read (web_panel._auth_path).
 func (f Files) ReadPath() string {
 	canonical := filepath.Join(f.Dir, AuthFile)
-	if isFile(canonical) {
+	if mayExist(canonical) {
 		return canonical
 	}
 	for _, legacy := range f.Legacy {
-		if isFile(legacy) {
+		if mayExist(legacy) {
 			return legacy
 		}
 	}
@@ -112,13 +122,67 @@ func (f Files) ReadPath() string {
 // SavePath is where passwords are written (web_panel._auth_save_path).
 func (f Files) SavePath() string { return filepath.Join(f.Dir, AuthFile) }
 
-// Load reads the auth record, or nil when there is none or it is unreadable.
-func (f Files) Load() Record {
-	data, err := os.ReadFile(f.ReadPath())
+// Read reads the auth record (web_panel.read_auth_file). It returns nil, nil
+// when there is no file (no password set), and an error when the file exists
+// but cannot be used: unreadable, not UTF-8, not a JSON object, a
+// password_hash that is neither a string nor null, or the old hash/salt
+// format. The panel must then stay
+// locked rather than act as if no password were set.
+func (f Files) Read() (Record, error) {
+	path := f.ReadPath()
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil
+		if notThere(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("cannot read %s: %w", path, err)
 	}
-	return ParseRecord(data)
+	if !utf8.Valid(data) {
+		return nil, fmt.Errorf("cannot read %s: not UTF-8 text", path)
+	}
+	v, err := pyval.DecodeJSON(data)
+	if err != nil {
+		return nil, fmt.Errorf("%s is not valid JSON: %w", path, err)
+	}
+	rec, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("%s does not hold a JSON object", path)
+	}
+	if h, present := rec["password_hash"]; present && h != nil {
+		if _, ok := h.(string); !ok {
+			return nil, fmt.Errorf("%s has a password_hash that is not a string", path)
+		}
+	}
+	if _, old := rec["hash"]; old && Record(rec).PasswordHash() == "" {
+		// The panel's short-lived salt/hash format (May 2026).
+		return nil, fmt.Errorf("%s uses an old password format; delete it and set the password again", path)
+	}
+	return rec, nil
+}
+
+// Problem is why the auth file exists but cannot be used, or nil
+// (web_panel.auth_file_problem).
+func (f Files) Problem() error {
+	_, err := f.Read()
+	return err
+}
+
+// Load reads the auth record, or nil when there is none or it cannot be used
+// (web_panel.load_auth_record).
+func (f Files) Load() Record {
+	rec, _ := f.Read()
+	return rec
+}
+
+// LockedText is the body the panel serves while the auth file at path cannot
+// be used (web_panel.auth_file_locked_text).
+func LockedText(path string) string {
+	return "Kid PC Monitor is locked: its password file " + path + " is damaged or cannot be read.\n" +
+		"\n" +
+		"Nothing is shown until the file is fixed, so the panel is not left open to\n" +
+		"anyone on the network. Restore the file (the panel's log says what is wrong\n" +
+		"with it), or delete it and set a new password: deleting it removes the\n" +
+		"password, and the next person to open the panel can set one.\n"
 }
 
 // PasswordConfigured reports whether a password is set.
@@ -135,8 +199,14 @@ func FormatRecordJSON(secretKey, passwordHash string) string {
 // SavePassword stores a new password hash, keeping the existing secret key
 // (or making one), and returns the secret key now stored
 // (web_panel.save_password).
+//
+// It refuses to replace an auth file that cannot be used (see Read).
 func (f Files) SavePassword(password string) (string, error) {
-	secretKey := f.Load().SecretKey()
+	rec, err := f.Read()
+	if err != nil {
+		return "", err
+	}
+	secretKey := rec.SecretKey()
 	if secretKey == "" {
 		var err error
 		if secretKey, err = RandomHex(32); err != nil {

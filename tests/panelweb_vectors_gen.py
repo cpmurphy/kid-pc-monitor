@@ -344,9 +344,34 @@ PROTECTED_REQUESTS: list[dict[str, Any]] = [
     req("GET", "/"),
 ]
 
+# A password file that exists but cannot be used locks every page except
+# static files and agent discovery.
+DAMAGED_AUTH_TEXT = '{\n  "secret_key": "' + "c" * 32 + '",\n  "password_hash": '
+DAMAGED_AUTH_REQUESTS: list[dict[str, Any]] = [
+    req("GET", "/"),
+    req("GET", "/login"),
+    req("GET", "/set-password"),
+    req("GET", "/control/KID-PC"),
+    req("GET", "/usage/alice"),
+    req("GET", "/no-such-page"),
+    req("HEAD", "/"),
+    req(
+        "POST", "/set-password", form={"password": "attacker123", "password_confirm": "attacker123"}
+    ),
+    req("POST", "/action", json={"ip": A, "action": "unlock"}, csrf="header"),
+    req("GET", "/agent/v1/discover"),
+    req("GET", "/static/css/panel.css"),
+]
+
 SCENARIOS: list[dict[str, Any]] = [
     {"name": "open_panel", "auth": None, "requests": OPEN_REQUESTS},
     {"name": "password_protected", "auth": AUTH_RECORD, "requests": PROTECTED_REQUESTS},
+    {
+        "name": "damaged_auth_file",
+        "auth": None,
+        "auth_text": DAMAGED_AUTH_TEXT,
+        "requests": DAMAGED_AUTH_REQUESTS,
+    },
 ]
 
 
@@ -428,6 +453,8 @@ def panel_env(scenario: dict[str, Any]) -> Iterator[tuple[Any, Path]]:
         auth_path = Path(tmp) / wp.AUTH_FILE
         if scenario["auth"] is not None:
             auth_path.write_text(json.dumps(scenario["auth"], indent=2), encoding="utf-8")
+        if "auth_text" in scenario:
+            auth_path.write_text(scenario["auth_text"], encoding="utf-8")
         stack.enter_context(mock.patch.object(panel_db, "_db_path_override", db_path))
         stack.enter_context(mock.patch.object(wp, "_auth_path", return_value=auth_path))
         stack.enter_context(mock.patch.object(wp, "_auth_save_path", return_value=auth_path))
@@ -460,13 +487,16 @@ def allow_set(value: str) -> str:
     return ", ".join(sorted(m.strip() for m in value.split(",")))
 
 
-def body_record(response: Any) -> dict[str, Any]:
+def body_record(response: Any, auth_dir: Path) -> dict[str, Any]:
     content_type = response.headers.get("Content-Type", "")
     data = response.get_data()
     if content_type.startswith("application/json"):
         return {"json": json.loads(data)}
     if content_type.startswith("text/html"):
         return {"html": normalize_html(data.decode("utf-8"))}
+    if content_type.startswith("text/plain"):
+        # The locked page names the auth file; its directory is a temp dir.
+        return {"text": data.decode("utf-8").replace(str(auth_dir), "<DIR>")}
     return {"sha256": hashlib.sha256(data).hexdigest(), "length": len(data)}
 
 
@@ -499,17 +529,22 @@ def run_scenario(scenario: dict[str, Any]) -> dict[str, Any]:
                     for h in RECORDED_HEADERS
                     if h in response.headers
                 },
-                **body_record(response),
+                **body_record(response, auth_path.parent),
             }
             out_requests.append({**spec, "response": record})
-        auth_after = json.loads(auth_path.read_text()) if auth_path.exists() else None
-    return {
+        auth_text_after = auth_path.read_text() if auth_path.exists() else None
+        auth_after = wp.load_auth_record()
+    out = {
         "name": scenario["name"],
         "auth": scenario["auth"],
         "requests": out_requests,
         # A password set during the scenario: only whether one exists (salts are random).
         "password_set_after": bool(auth_after and auth_after.get("password_hash")),
     }
+    if "auth_text" in scenario:
+        out["auth_text"] = scenario["auth_text"]
+        out["auth_text_unchanged"] = auth_text_after == scenario["auth_text"]
+    return out
 
 
 def build_vectors() -> dict[str, Any]:
