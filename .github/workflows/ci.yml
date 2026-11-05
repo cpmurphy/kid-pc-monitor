@@ -123,6 +123,14 @@ jobs:
         shell: powershell
         run: .\tests\install_agent_test.ps1 -Python .\venv\Scripts\python.exe
 
+      - name: Build the web panel as releases do
+        working-directory: go
+        run: go build -trimpath -buildvcs=false -ldflags "-s -w" -o kid-pc-web-panel.exe ./cmd/kid-pc-web-panel
+
+      - name: Web panel installer tests (Windows PowerShell 5.1)
+        shell: powershell
+        run: .\tests\install_web_panel_test.ps1 -PanelExe .\go\kid-pc-web-panel.exe -Python .\venv\Scripts\python.exe
+
       - name: Cross-check against Python
         run: .\venv\Scripts\python.exe scripts/cross_check_go.py
 

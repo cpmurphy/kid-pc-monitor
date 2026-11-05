@@ -186,6 +186,10 @@ python scripts\install_web_panel.py
 
 Choose option 2, `Remove scheduled task`
 
+If you installed the Go web panel, run
+`powershell -ExecutionPolicy Bypass -File install_web_panel.ps1 -Uninstall` from an
+administrator PowerShell instead.
+
 ## 🔄 Updating (this fork)
 
 Updates install the latest release from GitHub (checked against its
@@ -213,6 +217,8 @@ pulls and rebuilds (`update.bat auto` / `auto-off` for automatic updates).
 The **parent web panel** runs from the checkout directly, so there you only need
 `git pull` and a restart of the panel. On Linux, re-running
 `./scripts/install_web_panel_linux.sh install` does both the dependency update and the restart.
+For the Go web panel, re-run its installer (`install_web_panel.ps1`, or
+`install_web_panel_linux.sh install --go`) to get the latest release.
 
 ## 📸 Screenshots
 
@@ -359,6 +365,52 @@ python3 -m venv venv
 
 The launch scripts switch to `venv/` automatically when it exists.
 If you recreate the venv, rerun the `pip install` command above before starting the panel again.
+
+#### Go web panel (optional: no Python needed)
+
+The web panel is also available as a single program, `kid-pc-web-panel`, for
+Windows, Linux and macOS. It is published with every release and does the same
+job as the Python panel, using the same database, password and shared secret,
+so you can switch either way and keep your history. After switching, log in
+once more in your browser.
+
+- **Windows:** download `install_web_panel.ps1` from the
+  [latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)
+  (or use the copy in `scripts\` of a checkout) and run it from an
+  administrator PowerShell:
+
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File install_web_panel.ps1
+  ```
+
+  It downloads `kid-pc-web-panel.exe` for your PC (checked against the
+  release's `SHA256SUMS`; with Go installed and a checkout it builds it
+  instead), asks for the shared secret unless one is already stored, replaces
+  the Python panel's `KidPCMonitorWebPanel` task, and offers firewall rules for
+  TCP 5000 and 9998. The panel runs in the background and logs to
+  `%LOCALAPPDATA%\kid-pc-monitor\web_panel.log`. Run it again to update;
+  `-Uninstall` removes it.
+- **Linux:** `./scripts/install_web_panel_linux.sh install --go` sets up the
+  same systemd service with the Go panel (built with Go if you have it,
+  otherwise downloaded and checked). `--binary PATH` installs a binary you
+  already have; `--version v1.2.3` picks a release. Run `install` without
+  `--go` to go back to the Python panel.
+- **macOS:** download `kid-pc-web-panel-darwin-arm64` (Apple silicon) or
+  `-darwin-amd64` (Intel) from the release, then:
+
+  ```bash
+  chmod +x kid-pc-web-panel-darwin-arm64
+  xattr -d com.apple.quarantine kid-pc-web-panel-darwin-arm64  # if your browser downloaded it
+  ./kid-pc-web-panel-darwin-arm64 set-secret
+  ./kid-pc-web-panel-darwin-arm64
+  ```
+
+  Allow incoming connections when macOS asks. To start it automatically, add
+  it to **System Settings → General → Login Items**.
+
+Passwords from installs older than May 2026 lived inside the package folder;
+both installers copy that file to the config folder for the Go panel (or run
+it with `-legacy-auth PATH`).
 
 ## Option B: Single PC Setup
 

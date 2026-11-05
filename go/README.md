@@ -54,6 +54,10 @@ go build -o kid-pc-web-panel ./cmd/kid-pc-web-panel
 ```
 
 Release builds are published for Windows, Linux and macOS (amd64 and arm64).
+`scripts/install_web_panel.ps1` (Windows) and
+`scripts/install_web_panel_linux.sh install --go` set it up as a background
+task or service; `serve -background` hides the console Windows creates for a
+scheduled task and logs to `config_dir/web_panel.log`.
 Logins from the Python panel do not carry over (different session cookie), so
 log in once after switching.
 
