@@ -6,7 +6,7 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
-- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`. `go/panel/` is the in-progress port of the web panel (so far its formatting helpers, `panel.db` store and login/session handling). Only the panel has third-party Go dependencies (`modernc.org/sqlite`, pure Go; `golang.org/x/crypto` for scrypt); the agent must stay standard-library only (CI checks).
+- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`. `go/panel/` is the in-progress port of the web panel (so far its formatting helpers, `panel.db` store, login/session handling and the reverse listener on 9998). Only the panel has third-party Go dependencies (`modernc.org/sqlite`, pure Go; `golang.org/x/crypto` for scrypt); the agent must stay standard-library only (CI checks).
 - `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
@@ -99,13 +99,14 @@ The Python code is the reference; Go packages under `go/` mirror it and are held
 | `panel_format.py`, `remote_client.py` helpers, `scan_store.dashboard_status_key` | `go/panel/format` (+ `go/panel/pyval`) | `testdata/panelformat/vectors.json` | `tests/panelformat_vectors_gen.py` |
 | `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | `go/panel/store` | `testdata/panelstore/vectors.json` | `tests/panelstore_vectors_gen.py` |
 | `web_panel.py` auth helpers, werkzeug password hashes | `go/panel/auth` | `testdata/panelauth/vectors.json` | `tests/panelauth_vectors_gen.py` |
+| `panel_reverse_server.py` | `go/panel/reverse` | — (live: `cross_check_go.py` stage E runs one Python agent through the same actions against both servers) | — |
 
 Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
 
 ```bash
 python tests/<name>_vectors_gen.py       # rewrite the vectors
 (cd go && go test ./...)                 # Go must agree on every vector
-python scripts/cross_check_go.py         # live Go<->Python sessions and state-file interop
+python scripts/cross_check_go.py         # live Go<->Python sessions, state-file interop, reverse-server parity
 ```
 
 `tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.26+; the Python tests do not.
