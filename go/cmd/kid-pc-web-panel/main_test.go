@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -40,5 +42,27 @@ func TestListenNetwork(t *testing.T) {
 		if got := listenNetwork(host); got != want {
 			t.Errorf("listenNetwork(%q) = %q, want %q", host, got, want)
 		}
+	}
+}
+
+func TestOpenLogRollsOverLargeFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "logs", "web_panel.log")
+	f, err := openLog(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Write(bytes.Repeat([]byte("x"), maxLogBytes+1))
+	f.Close()
+	f, err = openLog(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.WriteString("fresh\n")
+	f.Close()
+	if st, err := os.Stat(path + ".1"); err != nil || st.Size() != maxLogBytes+1 {
+		t.Fatalf("rolled file: %v %v", st, err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "fresh\n" {
+		t.Fatalf("new log = %q", b)
 	}
 }

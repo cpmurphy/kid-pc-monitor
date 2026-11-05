@@ -2,7 +2,7 @@
 // 5000 and the reverse listener on TCP 9998 that kid agents connect to. It
 // is a port of web_panel.main and runs on Windows, macOS and Linux.
 //
-//	kid-pc-web-panel              serve (default)
+//	kid-pc-web-panel [serve] [-background] [-log-file PATH] [-legacy-auth PATH]
 //	kid-pc-web-panel set-secret   store the panel <-> agent shared secret
 //	kid-pc-web-panel version
 //
@@ -13,6 +13,10 @@
 // KID_PC_MONITOR_SECRET (session key override), KID_PC_MONITOR_LOG_LEVEL,
 // and config_dir()/panel.db, web_panel_auth.json and the secrets
 // directories, so it can replace the Python panel in place.
+//
+// -background is for scheduled tasks and services: on Windows it hides the
+// console window created for the launch, and it logs to -log-file (default
+// config_dir()/web_panel.log, kept under 1 MiB by rolling to .1 at start).
 package main
 
 import (
@@ -59,8 +63,16 @@ func main() {
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
 		legacyAuth := fs.String("legacy-auth", "", "also read the password from this older web_panel_auth.json until a new one is saved")
+		background := fs.Bool("background", false, "run unattended: hide a console window Windows created for this launch and log to a file")
+		logFile := fs.String("log-file", "", "append the log to this file (default with -background: config_dir/web_panel.log)")
 		_ = fs.Parse(args)
-		err = serve(*legacyAuth)
+		if *background {
+			hideOwnConsole()
+			if *logFile == "" {
+				*logFile = filepath.Join(secrets.ConfigDir(), "web_panel.log")
+			}
+		}
+		err = serve(*legacyAuth, *logFile)
 	case "set-secret":
 		fs := flag.NewFlagSet("set-secret", flag.ExitOnError)
 		replace := fs.Bool("replace", false, "prompt for a new secret even when one is stored")
@@ -77,7 +89,21 @@ func main() {
 	}
 }
 
-func logger() *slog.Logger {
+const maxLogBytes = 1 << 20
+
+// openLog appends to path, first rolling a file over maxLogBytes to path.1.
+func openLog(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return nil, err
+	}
+	if st, err := os.Stat(path); err == nil && st.Size() > maxLogBytes {
+		os.Remove(path + ".1")
+		os.Rename(path, path+".1")
+	}
+	return os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+}
+
+func logger(w io.Writer) *slog.Logger {
 	level := slog.LevelInfo
 	switch strings.ToUpper(strings.TrimSpace(os.Getenv("KID_PC_MONITOR_LOG_LEVEL"))) {
 	case "DEBUG":
@@ -87,7 +113,7 @@ func logger() *slog.Logger {
 	case "ERROR", "CRITICAL":
 		level = slog.LevelError
 	}
-	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level}))
+	return slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{Level: level}))
 }
 
 func envOr(name, fallback string) string {
@@ -129,8 +155,18 @@ func listenNetwork(host string) string {
 	return "tcp"
 }
 
-func serve(legacyAuth string) error {
-	log := logger()
+func serve(legacyAuth, logFile string) error {
+	var out io.Writer = os.Stdout
+	logOut := io.Writer(os.Stderr)
+	if logFile != "" {
+		f, err := openLog(logFile)
+		if err != nil {
+			return fmt.Errorf("open log file: %w", err)
+		}
+		defer f.Close()
+		out, logOut = f, f
+	}
+	log := logger(logOut)
 	slog.SetDefault(log)
 	host := envOr("KID_PC_MONITOR_HOST", "0.0.0.0")
 	port, err := strconv.Atoi(envOr("KID_PC_MONITOR_PORT", "5000"))
@@ -203,14 +239,14 @@ func serve(legacyAuth string) error {
 	if useTLS {
 		scheme = "https"
 	}
-	fmt.Printf("Kid PC Monitor web panel on %s://%s:%d\n", scheme, host, port)
+	fmt.Fprintf(out, "Kid PC Monitor web panel on %s://%s:%d\n", scheme, host, port)
 	withTLS := ""
 	if useTLS {
 		withTLS = " with TLS"
 	}
-	fmt.Printf("Agent reverse TCP on %s://%s:%d (native v3%s)\n", scheme, host, reversePort, withTLS)
+	fmt.Fprintf(out, "Agent reverse TCP on %s://%s:%d (native v3%s)\n", scheme, host, reversePort, withTLS)
 	if useTLS {
-		fmt.Println("TLS enabled. iOS Safari password autofill requires the certificate authority to be trusted on your phone.")
+		fmt.Fprintln(out, "TLS enabled. iOS Safari password autofill requires the certificate authority to be trusted on your phone.")
 	}
 
 	srv := &http.Server{
