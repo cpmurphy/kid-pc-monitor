@@ -80,7 +80,7 @@ func (s *Store) SavePollSnapshot(info Info) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(upsertSnapshotSQL, username, textValue(hostname), ip,
+	_, err = s.exec(upsertSnapshotSQL, username, textValue(hostname), ip,
 		now.Format("2006-01-02"), pyval.ISOFormatSeconds(now, true), payloadJSON)
 	return err
 }

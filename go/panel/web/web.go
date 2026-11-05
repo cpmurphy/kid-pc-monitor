@@ -400,12 +400,23 @@ func (a *App) serveStatic(c *reqCtx, name string) {
 		c.abort(http.StatusInternalServerError)
 		return
 	}
-	ctype := mime.TypeByExtension(path.Ext(name))
+	ctype := staticTypes[path.Ext(name)]
+	if ctype == "" {
+		ctype = mime.TypeByExtension(path.Ext(name))
+	}
 	if ctype == "" {
 		ctype = "application/octet-stream"
 	}
 	c.write(http.StatusOK, ctype, data)
 	c.header.Set("Cache-Control", "no-cache")
+}
+
+// staticTypes fixes the Content-Type of the panel's own static files.
+// mime.TypeByExtension consults the registry on Windows, where .js is often
+// application/javascript; Flask serves text/javascript on every platform.
+var staticTypes = map[string]string{
+	".css": "text/css; charset=utf-8",
+	".js":  "text/javascript; charset=utf-8",
 }
 
 // loginRequired redirects to the login page while a password is set and

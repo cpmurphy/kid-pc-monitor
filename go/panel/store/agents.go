@@ -18,7 +18,7 @@ func (s *Store) RecordAgentPoll(hostname, ip string, info Info) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec(`INSERT OR REPLACE INTO reverse_agents
+	_, err = s.exec(`INSERT OR REPLACE INTO reverse_agents
             (hostname, ip, last_seen, payload_json)
         VALUES (?, ?, ?, ?)`, hostname, ip, s.stamp(), payloadJSON)
 	return err
@@ -26,13 +26,13 @@ func (s *Store) RecordAgentPoll(hostname, ip string, info Info) error {
 
 // ClearAgentForIP drops the heartbeat rows for ip.
 func (s *Store) ClearAgentForIP(ip string) error {
-	_, err := s.db.Exec("DELETE FROM reverse_agents WHERE ip = ?", ip)
+	_, err := s.exec("DELETE FROM reverse_agents WHERE ip = ?", ip)
 	return err
 }
 
 // ClearAgentForHostname drops the heartbeat row for hostname.
 func (s *Store) ClearAgentForHostname(hostname string) error {
-	_, err := s.db.Exec("DELETE FROM reverse_agents WHERE hostname = ?", hostname)
+	_, err := s.exec("DELETE FROM reverse_agents WHERE hostname = ?", hostname)
 	return err
 }
 
