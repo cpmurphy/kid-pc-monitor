@@ -12,7 +12,7 @@ a checkout or on its own (it is attached to every GitHub release):
 
 With no switches it shows a menu (install / remove). It:
   - gets kid-pc-agent.exe: -AgentExe if given, else a build from go/ when Go
-    1.22+ and the sources are present, else the GitHub release's exe for this
+    1.26+ and the sources are present, else the GitHub release's exe for this
     PC's architecture (checked against the release's SHA256SUMS);
   - copies it to %ProgramData%\KidPCMonitor, removes the Python agent's
     files from there, and restricts the folder to SYSTEM and Administrators

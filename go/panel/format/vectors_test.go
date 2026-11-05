@@ -218,6 +218,12 @@ func TestPyvalRepr(t *testing.T) {
 			t.Errorf("FloatRepr(%v) = %q, want %q", c["in"], got, c["out"])
 		}
 	}
+	for _, c := range cases(t, sub, "json_dumps") {
+		got, err := pyval.EncodeJSON(c["in"])
+		if err != nil || got != c["out"] {
+			t.Errorf("EncodeJSON(%#v) = %q, %v; want %q", c["in"], got, err, c["out"])
+		}
+	}
 	for _, c := range cases(t, sub, "str_repr") {
 		if got := pyval.Repr(str(c["in"])); got != c["out"] {
 			t.Errorf("Repr(%q) = %q, want %q", c["in"], got, c["out"])
