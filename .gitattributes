@@ -1,0 +1,4 @@
+# Served byte for byte by both panels (the Go panel embeds go/panel/web/static,
+# and its tests compare the copy with testdata hashes): keep LF on Windows too.
+src/kid_pc_monitor/static/** text eol=lf
+go/panel/web/static/** text eol=lf

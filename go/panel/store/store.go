@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver (pure Go, no cgo)
@@ -53,6 +54,11 @@ type Info = map[string]any
 // Store is an open panel.db.
 type Store struct {
 	db *sql.DB
+	// writeMu makes this process's writes take turns. SQLite allows one
+	// writer at a time; busy_timeout is then only needed against another
+	// process (such as the Python panel) and never runs out between the
+	// panel's own goroutines.
+	writeMu sync.Mutex
 
 	// Now returns the current time (default time.Now) and Loc is the local
 	// timezone (default time.Local); tests and vectors pin both.
@@ -218,6 +224,8 @@ func backfillScanPCsHostname(tx *sql.Tx) error {
 
 // tx runs fn in one transaction, committing when it returns nil.
 func (s *Store) tx(fn func(*sql.Tx) error) error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -227,6 +235,13 @@ func (s *Store) tx(fn func(*sql.Tx) error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// exec runs one write statement outside a transaction.
+func (s *Store) exec(query string, args ...any) (sql.Result, error) {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	return s.db.Exec(query, args...)
 }
 
 // now is panel_clock.now(): the current time in the local timezone.
