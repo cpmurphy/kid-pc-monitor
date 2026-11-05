@@ -1,6 +1,6 @@
-// Package secrets reads the secrets the Python installers store, a port of
-// the read side of src/kid_pc_monitor/secrets_store.py and
-// shared_secret.load_shared_secret. Standard library only.
+// Package secrets reads and writes the secrets the installers store, a port
+// of src/kid_pc_monitor/secrets_store.py and shared_secret.load_shared_secret.
+// Standard library only.
 //
 // Each secret is a Fernet token (AES-128-CBC + HMAC-SHA256) in <name>.enc. The
 // Fernet key is PBKDF2-HMAC-SHA256 (600 000 rounds, salt "kpm-fernet-salt") of
@@ -14,7 +14,7 @@
 //  3. the per-user config directory (%LOCALAPPDATA%\kid-pc-monitor\secrets on
 //     Windows, $XDG_CONFIG_HOME or ~/.config elsewhere).
 //
-// Writing secrets stays with the Python installers.
+// Save writes to the first of those directories that accepts the file.
 package secrets
 
 import (

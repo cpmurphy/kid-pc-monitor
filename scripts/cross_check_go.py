@@ -16,6 +16,14 @@ Go reverse server (go/panel/reverse) and the Python one, comparing results:
 
   E. Python agent  <->  Go and Python PanelReverseServer
 
+then runs the Go panel executable next to the Python panel, each with its own
+copy of the same files and a Python agent, sends both the same HTTP script and
+compares the answers, and finally starts each on the other's panel.db,
+password and secret:
+
+  F. kid-pc-web-panel  vs  python -m kid_pc_monitor.web_panel
+  G. the same two panels with their config directories swapped
+
 and, on Windows only, runs the real Go agent against the Python panel:
 
   D. go/cmd/kid-pc-agent  <->  PanelReverseServer + a discovery endpoint
@@ -32,7 +40,10 @@ all.  Needs a Go toolchain.  Linux/macOS/Windows; no Windows session required.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import http.cookiejar
 import json
+import re
 import shutil
 import socket
 import subprocess
@@ -41,7 +52,10 @@ import tempfile
 import threading
 import time
 import traceback
-from datetime import datetime
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timedelta
 from datetime import time as dtime
 from collections.abc import Callable
 from pathlib import Path
@@ -57,6 +71,7 @@ from kid_pc_monitor.agent_state import AgentStateStore, DailySettings, RuntimeSt
 from kid_pc_monitor.pc_time_control import PCTimeControl  # noqa: E402
 from kid_pc_monitor.remote_client import exchange_on_socket  # noqa: E402
 from kid_pc_monitor.remote_control_server import handle_request  # noqa: E402
+from panelweb_vectors_gen import normalize_html  # noqa: E402
 from test_pc_time_control import FakeHostPlatform  # noqa: E402
 
 SECRET = "cross-check-secret ✓"
@@ -794,6 +809,266 @@ def reverse_server_parity(exe: Path) -> Checks:
     return checks
 
 
+# ---------------------------------------------------------------------------
+# F. The real Go and Python panels side by side; G. each on the other's files
+# ---------------------------------------------------------------------------
+PANEL_PASSWORD = "cross-check-pw1"
+PANEL_NEW_PASSWORD = "cross-check-pw2"
+_TIME_RE = re.compile(r"\b\d{1,2}:\d{2}[ap]m\b")
+_ISO_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:\d{2}|Z)?")
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _seed_panel_files(config_root: Path) -> None:
+    """A Python-written panel.db (a few PCs over the last days) and auth file."""
+    from werkzeug.security import generate_password_hash
+
+    from kid_pc_monitor import panel_clock, panel_db, scan_store, snapshot_store
+
+    cfg = config_root / "kid-pc-monitor"
+    cfg.mkdir(parents=True)
+    db = cfg / panel_db.DB_FILENAME
+    now = datetime.now().astimezone()
+    with mock.patch.object(panel_db, "_db_path_override", db):
+        for days_ago, seconds in ((2, 4200), (1, 1800)):
+            at = now - timedelta(days=days_ago)
+            with panel_clock.fixed(lambda at=at: at):
+                snapshot_store.save_snapshot(
+                    {"hostname": "OLD-PC", "ip": "10.1.1.5", "current_user": "kid",
+                     "status": "UNLOCKED", "reachable": True, "accumulated_seconds": seconds,
+                     "daily_limit": 60, "time_remaining": "10 minutes"}
+                )
+        with panel_clock.fixed(lambda: now - timedelta(hours=1)):
+            scan_store.record_poll_inspect(
+                "10.1.1.5", {"hostname": "OLD-PC", "status": "UNLOCKED", "reachable": True}
+            )
+        with panel_clock.fixed(lambda: now - timedelta(minutes=30)):
+            scan_store.record_poll_inspect(
+                "10.1.1.5", {"hostname": "OLD-PC", "reachable": False}
+            )
+        panel_db._initialized_paths.discard(db)
+    (cfg / "web_panel_auth.json").write_text(
+        json.dumps({"secret_key": "k" * 32,
+                    "password_hash": generate_password_hash(PANEL_PASSWORD, method="scrypt")}),
+        encoding="utf-8",
+    )
+
+
+class _Panel:
+    """One running panel process plus an HTTP client with its own cookies."""
+
+    def __init__(self, label: str, argv: list[str], config_root: Path, secrets_dir: Path) -> None:
+        import os
+
+        self.label = label
+        self.port = _free_port()
+        self.reverse_port = _free_port()
+        env = {
+            **os.environ,
+            "XDG_CONFIG_HOME": str(config_root),
+            "LOCALAPPDATA": str(config_root),
+            "KID_PC_MONITOR_SECRETS_DIR": str(secrets_dir),
+            "KID_PC_MONITOR_HOST": "127.0.0.1",
+            "KID_PC_MONITOR_PORT": str(self.port),
+            "KID_PC_MONITOR_REVERSE_PORT": str(self.reverse_port),
+            "PYTHONPATH": str(ROOT / "src"),
+        }
+        env.pop("KID_PC_MONITOR_SECRET", None)
+        self.proc = subprocess.Popen(
+            argv, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True
+        )
+        self.cookies = http.cookiejar.CookieJar()
+        self.opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(self.cookies), _NoRedirect()
+        )
+        self.csrf = ""
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if self.proc.poll() is not None:
+                raise RuntimeError(f"{label} panel exited: {self.proc.stderr.read() if self.proc.stderr else ''}")
+            try:
+                socket.create_connection(("127.0.0.1", self.port), timeout=1).close()
+                socket.create_connection(("127.0.0.1", self.reverse_port), timeout=1).close()
+                return
+            except OSError:
+                time.sleep(0.1)
+        raise RuntimeError(f"{label} panel did not start")
+
+    def request(self, method: str, path: str, *, form: dict[str, str] | None = None,
+                body: dict[str, Any] | None = None) -> dict[str, Any]:
+        headers: dict[str, str] = {}
+        data = None
+        if form is not None:
+            data = urllib.parse.urlencode({**form, "csrf_token": self.csrf}).encode()
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+        elif body is not None:
+            data = json.dumps(body).encode()
+            headers["Content-Type"] = "application/json"
+            headers["X-CSRF-Token"] = self.csrf
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}{urllib.parse.quote(path, safe='/?=&')}",
+            data=data, method=method, headers=headers,
+        )
+        try:
+            resp = self.opener.open(req, timeout=IO_TIMEOUT)
+        except urllib.error.HTTPError as exc:
+            resp = exc
+        raw = resp.read()
+        ctype = resp.headers.get("Content-Type", "")
+        out: dict[str, Any] = {"status": resp.status, "location": resp.headers.get("Location")}
+        if ctype.startswith("application/json"):
+            out["json"] = json.loads(_ISO_RE.sub("ISO", raw.decode()))
+        elif ctype.startswith("text/html"):
+            text = raw.decode("utf-8")
+            scraped = re.search(r'name="csrf-token" content="([^"]+)"', text)
+            if scraped:
+                self.csrf = scraped.group(1)
+            # Live timestamps differ by seconds between the two panels; the
+            # golden vectors pin their formatting.
+            out["html"] = _TIME_RE.sub("TIME", _ISO_RE.sub("ISO", normalize_html(text)))
+        else:
+            out["sha256"] = hashlib.sha256(raw).hexdigest()
+        return out
+
+    def stop(self) -> None:
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=IO_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+
+PANEL_SCRIPT: list[tuple[str, str, dict[str, Any]]] = [
+    ("GET", "/", {}),
+    ("GET", "/login?next=/", {}),
+    ("POST", "/login", {"form": {"password": "wrong", "next": "/"}}),
+    ("POST", "/login", {"form": {"password": PANEL_PASSWORD, "next": "/"}, "expect": (302, None)}),
+    ("GET", "/", {"expect": (200, PY_HOSTNAME)}),
+    ("GET", f"/control/{PY_HOSTNAME}", {"expect": (200, "Quick actions")}),
+    ("GET", f"/control/{PY_HOSTNAME}/stats", {}),
+    ("GET", f"/control/{PY_HOSTNAME}/poll-meta", {}),
+    ("POST", "/action", {"body": {"ip": REVERSE_IP, "action": "set_daily_limit", "minutes": 90}}),
+    ("POST", "/action", {"body": {"ip": REVERSE_IP, "action": "extend_time", "minutes": "abc"}}),
+    ("POST", "/action", {"body": {"ip": REVERSE_IP, "action": "lock"}}),
+    ("WAIT", "", {}),
+    ("GET", f"/control/{PY_HOSTNAME}/stats", {}),
+    ("GET", f"/logs/{REVERSE_IP}", {"expect": (200, REVERSE_LOG_LINES[0])}),
+    ("GET", f"/daily_settings/{REVERSE_IP}", {}),
+    ("GET", "/control/OLD-PC", {}),
+    ("GET", "/usage/kid", {}),
+    ("GET", "/static/js/core.js", {}),
+    ("GET", "/set-password", {}),
+    ("POST", "/set-password", {"form": {"current_password": PANEL_PASSWORD,
+                                        "password": PANEL_NEW_PASSWORD,
+                                        "password_confirm": PANEL_NEW_PASSWORD},
+                       "expect": (302, None)}),
+    ("GET", "/", {}),
+    ("GET", "/logout", {}),
+]
+
+SWAPPED_SCRIPT: list[tuple[str, str, dict[str, Any]]] = [
+    ("GET", "/login", {}),
+    ("POST", "/login", {"form": {"password": PANEL_PASSWORD}, "expect": (200, "Incorrect password.")}),
+    ("POST", "/login", {"form": {"password": PANEL_NEW_PASSWORD}, "expect": (302, None)}),
+    ("GET", "/", {"expect": (200, "Not connected")}),
+    ("GET", f"/control/{PY_HOSTNAME}", {}),
+    ("GET", "/usage/kid", {}),
+]
+
+
+def _run_panel_script(panels: list[_Panel], script: list[tuple[str, str, dict[str, Any]]],
+                      checks: Checks, prefix: str) -> None:
+    for method, path, step_kwargs in script:
+        kwargs = dict(step_kwargs)
+        if method == "WAIT":
+            time.sleep(6.5)  # one status refresh (5 s) so pages show the actions
+            continue
+        expect = kwargs.pop("expect", None) if "expect" in kwargs else None
+        results = [p.request(method, path, **kwargs) for p in panels]
+        label = f"{prefix} {method} {path} {json.dumps(kwargs.get('body', kwargs.get('form', '')))}"
+        checks.check(label, json.dumps(results[1], sort_keys=True), json.dumps(results[0], sort_keys=True))
+        if expect is not None:
+            status, needle = expect
+            for panel, result in zip(panels, results, strict=True):
+                got = (result["status"], needle is None or needle in result.get("html", ""))
+                checks.check(f"{label}: {panel.label} answers {status}"
+                             + (f" showing {needle!r}" if needle else ""), got, (status, True))
+
+
+def real_panels_session(exe: Path, go: str, out_dir: Path) -> Checks:
+    """The Go panel executable against the Python panel, then on each other's files."""
+    from kid_pc_monitor import secrets_store
+
+    print("F. Real Go and Python panels, side by side (Go must answer like Python)")
+    checks = Checks("real-panels")
+    panel_exe = out_dir / ("kid-pc-web-panel.exe" if sys.platform == "win32" else "kid-pc-web-panel")
+    subprocess.run([go, "build", "-o", str(panel_exe), "./cmd/kid-pc-web-panel"], cwd=ROOT / "go", check=True)
+    work = Path(tempfile.mkdtemp(prefix="kpm-panels-"))
+    py_cfg, go_cfg = work / "py-config", work / "go-config"
+    py_secrets, go_secrets = work / "py-secrets", work / "go-secrets"
+    for cfg in (py_cfg, go_cfg):
+        _seed_panel_files(cfg)
+    with mock.patch.dict("os.environ", {"KID_PC_MONITOR_SECRETS_DIR": str(py_secrets)}):
+        secrets_store.save_secret("panel-agent-shared-secret", SECRET)
+    import os
+
+    set_secret = subprocess.run(
+        [str(panel_exe), "set-secret"], input=f"{SECRET}\n{SECRET}\n", text=True, capture_output=True,
+        env={**os.environ, "KID_PC_MONITOR_SECRETS_DIR": str(go_secrets)}, encoding="utf-8",
+    )
+    checks.check("go set-secret exit status", set_secret.returncode, 0)
+    with mock.patch.dict("os.environ", {"KID_PC_MONITOR_SECRETS_DIR": str(go_secrets)}):
+        checks.check("Python reads the secret Go stored", secrets_store.load_secret("panel-agent-shared-secret"), SECRET)
+
+    def start(py_root: Path, go_root: Path, py_sec: Path, go_sec: Path) -> list[_Panel]:
+        python = _Panel("python", [sys.executable, "-m", "kid_pc_monitor.web_panel"], py_root, py_sec)
+        try:
+            gopanel = _Panel("go", [str(panel_exe)], go_root, go_sec)
+        except Exception:
+            python.stop()
+            raise
+        return [python, gopanel]
+
+    panels = start(py_cfg, go_cfg, py_secrets, go_secrets)
+    agents: list[tuple[Any, threading.Thread, Any]] = []
+    try:
+        tmp_dirs = [Path(tempfile.mkdtemp(prefix="kpm-agent-")) for _ in panels]
+        agents = [_reverse_agent(p.reverse_port, d) for p, d in zip(panels, tmp_dirs, strict=True)]
+        time.sleep(1.0)  # identify + first status
+        _run_panel_script(panels, PANEL_SCRIPT, checks, "F")
+    finally:
+        for client, thread, _platform in agents:
+            client.stop()
+            thread.join(timeout=IO_TIMEOUT)
+        time.sleep(0.5)
+        for p in panels:
+            p.stop()
+        for p in panels:
+            err = p.proc.stderr.read() if p.proc.stderr else ""
+            if "Traceback" in err or "panic:" in err:
+                checks.check(f"{p.label} panel stderr has no crash", err[-2000:], "")
+
+    print("G. Each panel on the other's panel.db, password and secret")
+    panels = start(go_cfg, py_cfg, go_secrets, py_secrets)
+    try:
+        _run_panel_script(panels, SWAPPED_SCRIPT, checks, "G")
+    finally:
+        for p in panels:
+            p.stop()
+    shutil.rmtree(work, ignore_errors=True)
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", default=shutil.which("go"), help="path to the go tool")
@@ -813,6 +1088,12 @@ def main() -> int:
         out_dir = Path(args.keep) if args.keep else Path(tmp)
         out_dir.mkdir(parents=True, exist_ok=True)
         exe = build_xcheck(args.go, out_dir)
+
+        def real_panels(exe: Path) -> Checks:
+            return real_panels_session(exe, args.go, out_dir)
+
+        real_panels.__name__ = "real_panels_session"
+        sessions.append(real_panels)
         if sys.platform == "win32":
 
             def real_agent(exe: Path) -> Checks:
