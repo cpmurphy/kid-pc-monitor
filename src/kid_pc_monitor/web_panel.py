@@ -116,13 +116,25 @@ def _safe_next_url(target: str | None) -> str:
     return target
 
 
+def _may_exist(path: Path) -> bool:
+    """False only when path certainly does not exist (any other stat error
+    counts as existing, so reading it reports the problem)."""
+    try:
+        path.stat()
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError:
+        return True
+    return True
+
+
 def _auth_path() -> Path:
     """Return the auth file to read; prefer canonical config_dir, then legacy package dir."""
     canonical = config_dir() / AUTH_FILE
-    if canonical.is_file():
+    if _may_exist(canonical):
         return canonical
     legacy = package_dir() / AUTH_FILE
-    if legacy.is_file():
+    if _may_exist(legacy):
         return legacy
     return canonical
 
@@ -155,14 +167,56 @@ def _verify_password(record: dict, password: str) -> bool:
     return check_password_hash(stored, password)
 
 
-def load_auth_record() -> dict | None:
+def read_auth_file() -> tuple[dict | None, str | None]:
+    """Read the auth file as ``(record, problem)``.
+
+    ``(None, None)`` means there is no file (no password set). A file that
+    exists but cannot be used (unreadable, not a JSON object, a
+    ``password_hash`` that is not a string, or the old ``hash``/``salt``
+    format) gives ``(None, problem)``: the
+    panel must then stay locked rather than act as if no password were set.
+    """
     path = _auth_path()
-    if not path.is_file():
-        return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return None
+        text = path.read_text(encoding="utf-8")
+    except (FileNotFoundError, NotADirectoryError):
+        return None, None
+    except (OSError, ValueError) as exc:
+        return None, f"cannot read {path}: {exc}"
+    try:
+        record = json.loads(text)
+    except ValueError as exc:
+        return None, f"{path} is not valid JSON: {exc}"
+    if not isinstance(record, dict):
+        return None, f"{path} does not hold a JSON object"
+    if record.get("password_hash") is not None and not isinstance(record["password_hash"], str):
+        return None, f"{path} has a password_hash that is not a string"
+    if not record.get("password_hash") and "hash" in record:
+        # Written by the panel's short-lived salt/hash format (May 2026),
+        # which this panel cannot check.
+        return None, f"{path} uses an old password format; delete it and set the password again"
+    return record, None
+
+
+def auth_file_problem() -> str | None:
+    """Why the auth file exists but cannot be used, or None."""
+    return read_auth_file()[1]
+
+
+def load_auth_record() -> dict | None:
+    return read_auth_file()[0]
+
+
+def auth_file_locked_text(path: Path) -> str:
+    """The body served while the auth file is unusable."""
+    return (
+        f"Kid PC Monitor is locked: its password file {path} is damaged or cannot be read.\n"
+        "\n"
+        "Nothing is shown until the file is fixed, so the panel is not left open to\n"
+        "anyone on the network. Restore the file (the panel's log says what is wrong\n"
+        "with it), or delete it and set a new password: deleting it removes the\n"
+        "password, and the next person to open the panel can set one.\n"
+    )
 
 
 def password_is_configured() -> bool:
@@ -170,7 +224,14 @@ def password_is_configured() -> bool:
 
 
 def save_password(password: str) -> None:
-    record = load_auth_record() or {}
+    """Store a new password hash, keeping the session secret key.
+
+    Refuses (``RuntimeError``) to replace an auth file that cannot be used.
+    """
+    loaded, problem = read_auth_file()
+    if problem is not None:
+        raise RuntimeError(problem)
+    record = loaded or {}
     secret_key = _panel_secret_key(record) or secrets.token_hex(32)
     path = _auth_save_path()
     path.write_text(
@@ -359,6 +420,22 @@ def create_app() -> Flask:
             return
         if request.method == "POST" and not _csrf_valid():
             abort(400)
+
+    @app.before_request
+    def require_usable_auth_file() -> Response | None:
+        # A damaged password file must not read as "no password set": that
+        # would let anyone on the network in, or set a password of their own.
+        if request.endpoint == "static" or request.path.startswith("/agent/v1/"):
+            return None
+        problem = auth_file_problem()
+        if problem is None:
+            return None
+        logger.error("Web panel locked: %s", problem)
+        return Response(
+            auth_file_locked_text(_auth_path()),
+            status=503,
+            mimetype="text/plain",
+        )
 
     @app.after_request
     def prevent_dynamic_page_cache(response: Response) -> Response:
