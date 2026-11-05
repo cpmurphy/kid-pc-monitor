@@ -6,6 +6,12 @@
 # (using uv to download Python when the system has none), installs the package,
 # asks for the shared secret, starts the service, and then checks whether
 # lingering or firewall changes are actually needed before suggesting them.
+#
+# `install --go` sets up the Go panel instead (no Python needed to run it): a
+# kid-pc-web-panel binary from --binary, a local `go build`, or the GitHub
+# release (checked against its SHA256SUMS), in ~/.local/share/kid-pc-monitor/bin.
+# It uses the same unit name, config files and secret, so either mode can
+# replace the other; re-run `install` without --go to go back to Python.
 
 set -euo pipefail
 
@@ -25,6 +31,18 @@ UV_INSTALL_URL="https://astral.sh/uv/install.sh"
 VENV_DIR=""
 VENV_PY=""
 
+# Go panel (install --go).
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/kid-pc-monitor"
+GO_BIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/kid-pc-monitor/bin"
+GO_BIN="${GO_BIN_DIR}/kid-pc-web-panel"
+REPOSITORY="${KID_PC_MONITOR_REPOSITORY:-cpmurphy/kid-pc-monitor}"
+GITHUB_API="${KID_PC_MONITOR_GITHUB_API:-https://api.github.com}"
+GITHUB_WEB="${KID_PC_MONITOR_GITHUB_WEB:-https://github.com}"
+# Set by parse_install_args.
+USE_GO=0
+GO_BINARY_ARG=""
+GO_VERSION_ARG=""
+
 usage() {
     cat <<'EOF'
 Usage: install_web_panel_linux.sh <command>
@@ -32,13 +50,20 @@ Usage: install_web_panel_linux.sh <command>
 Commands:
   install     Set up the virtualenv, install the panel, enable and start the service.
               Safe to re-run (e.g. after git pull) to update dependencies and restart.
+  install --go [--binary PATH] [--version TAG]
+              Install the Go panel (kid-pc-web-panel) instead: PATH if given, else a
+              local `go build` when Go is installed, else the GitHub release (latest,
+              or TAG) checked against SHA256SUMS. Same service, files and secret.
   uninstall   Stop, disable, and remove the user unit.
   status      Show systemctl --user status.
-  cat-unit    Print the unit file that would be used (no writes).
+  cat-unit [--go]
+              Print the unit file that would be used (no writes).
 
 Environment (optional):
   PYTHON      Python 3.11+ used to create the virtualenv when the repo has none
               (default: the newest python3 on PATH, else uv-managed Python)
+  KID_PC_MONITOR_REPOSITORY
+              GitHub repository for --go downloads (default: cpmurphy/kid-pc-monitor)
 EOF
 }
 
@@ -213,10 +238,199 @@ WantedBy=default.target
 EOF
 }
 
+# The same unit for the Go panel: no virtualenv, no PYTHONPATH.
+render_go_unit() {
+    local binary="$1"
+    cat <<EOF
+[Unit]
+Description=Kid PC Monitor web panel (parent UI on port ${PANEL_PORT})
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=${HOME}
+ExecStart=${binary} serve
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+}
+
 write_unit() {
     mkdir -p "$UNIT_DIR"
-    render_unit "$VENV_DIR" >"$UNIT_PATH"
+    if [[ "$USE_GO" -eq 1 ]]; then
+        render_go_unit "$GO_BIN" >"$UNIT_PATH"
+    else
+        render_unit "$VENV_DIR" >"$UNIT_PATH"
+    fi
     echo "Wrote: $UNIT_PATH"
+}
+
+# ---------------------------------------------------------------------------
+# Go panel
+# ---------------------------------------------------------------------------
+parse_install_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --go) USE_GO=1 ;;
+            --binary)
+                [[ $# -ge 2 ]] || die "--binary needs a path."
+                GO_BINARY_ARG="$2"
+                USE_GO=1
+                shift
+                ;;
+            --version)
+                [[ $# -ge 2 ]] || die "--version needs a release tag."
+                GO_VERSION_ARG="$2"
+                shift
+                ;;
+            *) die "Unknown option: $1 (see --help)." ;;
+        esac
+        shift
+    done
+    if [[ -n "$GO_VERSION_ARG" && "$USE_GO" -ne 1 ]]; then
+        die "--version only applies with --go."
+    fi
+}
+
+# The release asset suffix for this machine.
+go_arch() {
+    case "$(uname -m)" in
+        x86_64 | amd64) echo amd64 ;;
+        aarch64 | arm64) echo arm64 ;;
+        *) die "There is no released web panel for $(uname -m); install Go and re-run to build it." ;;
+    esac
+}
+
+download() {
+    local url="$1" out="$2"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL --retry 2 -o "$out" "$url"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$out" "$url"
+    else
+        die "Neither curl nor wget is available to download the panel."
+    fi
+}
+
+# Print the release tag to install: --version, else the latest release.
+release_tag() {
+    if [[ -n "$GO_VERSION_ARG" ]]; then
+        echo "$GO_VERSION_ARG"
+        return
+    fi
+    local json tag
+    json="$(mktemp)"
+    if ! download "${GITHUB_API}/repos/${REPOSITORY}/releases/latest" "$json"; then
+        rm -f "$json"
+        die "Could not look up the latest release of ${REPOSITORY}."
+    fi
+    tag="$(grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' "$json" | head -n 1 | sed 's/.*"\([^"]*\)"$/\1/')"
+    rm -f "$json"
+    [[ -n "$tag" ]] || die "Could not find the latest release of ${REPOSITORY}."
+    echo "$tag"
+}
+
+# Download this machine's release binary into $1, checked against SHA256SUMS.
+download_go_panel() {
+    local out="$1" tag asset sums expected actual
+    tag="$(release_tag)" || exit 1
+    asset="kid-pc-web-panel-linux-$(go_arch)" || exit 1
+    echo "Downloading ${asset} from release ${tag} of ${REPOSITORY} ..."
+    sums="$(mktemp)"
+    if ! download "${GITHUB_WEB}/${REPOSITORY}/releases/download/${tag}/SHA256SUMS" "$sums"; then
+        rm -f "$sums"
+        die "Could not download SHA256SUMS for release ${tag}."
+    fi
+    expected="$(awk -v name="$asset" '{ f = $2; sub(/^\*/, "", f); if (f == name) print tolower($1) }' "$sums" | head -n 1)"
+    rm -f "$sums"
+    [[ -n "$expected" ]] || die "Release ${tag} has no ${asset} (it may predate the Go panel)."
+    download "${GITHUB_WEB}/${REPOSITORY}/releases/download/${tag}/${asset}" "$out" \
+        || die "Could not download ${asset}."
+    actual="$(sha256sum "$out" | awk '{ print $1 }')"
+    if [[ "$actual" != "$expected" ]]; then
+        die "The downloaded ${asset} does not match SHA256SUMS (got ${actual}, expected ${expected})."
+    fi
+    echo "  SHA-256 verified: ${actual}"
+}
+
+# Put kid-pc-web-panel in GO_BIN: --binary, a local build, or the release.
+# Each source writes a temporary file first, so a failure keeps the old one.
+install_go_panel() {
+    local tmp status=0
+    mkdir -p "$GO_BIN_DIR"
+    tmp="$(mktemp "${GO_BIN_DIR}/.kid-pc-web-panel.XXXXXX")"
+    if [[ -n "$GO_BINARY_ARG" ]]; then
+        if [[ -f "$GO_BINARY_ARG" ]]; then
+            cp "$GO_BINARY_ARG" "$tmp" || status=$?
+        else
+            echo "Error: Panel binary not found: ${GO_BINARY_ARG}" >&2
+            status=1
+        fi
+    elif [[ -z "$GO_VERSION_ARG" ]] && command -v go >/dev/null 2>&1 && [[ -f "${REPO_ROOT}/go/go.mod" ]]; then
+        echo "Building the Go panel with $(command -v go) ..."
+        (cd "${REPO_ROOT}/go" && go build -trimpath -buildvcs=false -o "$tmp" ./cmd/kid-pc-web-panel) || status=$?
+    else
+        (download_go_panel "$tmp") || status=$?
+    fi
+    if [[ "$status" -eq 0 ]]; then
+        chmod 755 "$tmp"
+        if ! "$tmp" version >/dev/null 2>&1; then
+            echo "Error: The panel binary does not run on this machine." >&2
+            status=1
+        fi
+    fi
+    if [[ "$status" -ne 0 ]]; then
+        rm -f "$tmp"
+        exit "$status"
+    fi
+    mv -f "$tmp" "$GO_BIN"
+    echo "Installed: ${GO_BIN} ($("$GO_BIN" version))"
+}
+
+# Installs before the May 2026 package layout kept web_panel_auth.json in the
+# package directory; the Go panel reads only the config directory, so copy
+# it there (the Python panel prefers that copy too).
+migrate_legacy_auth() {
+    local canonical="${CONFIG_DIR}/web_panel_auth.json"
+    local legacy="${SRC_DIR}/kid_pc_monitor/web_panel_auth.json"
+    if [[ ! -f "$canonical" && -f "$legacy" ]]; then
+        mkdir -p "$CONFIG_DIR"
+        cp "$legacy" "$canonical"
+        chmod 600 "$canonical"
+        echo "Copied the panel password file to ${canonical}."
+    fi
+}
+
+# Like prompt_shared_secret, but with the Go panel. Cancelling (or having no
+# terminal) leaves the secret unset, as with the Python prompt.
+go_shared_secret() {
+    "$GO_BIN" set-secret || echo "Shared secret not changed. Set it later with: ${GO_BIN} set-secret"
+}
+
+go_panel_url() {
+    local scheme=http ip=""
+    if [[ -f "${CONFIG_DIR}/tls/cert.pem" && -f "${CONFIG_DIR}/tls/key.pem" ]]; then
+        scheme=https
+    fi
+    if command -v hostname >/dev/null 2>&1; then
+        ip="$(hostname -I 2>/dev/null | awk '{ print $1 }')" || ip=""
+    fi
+    echo "${scheme}://${ip:-<this-host-ip>}:${PANEL_PORT}"
+}
+
+# The firewall helper is Python; use a system Python 3.11+ when there is one.
+go_check_firewall() {
+    local base
+    if base="$(pick_base_python)"; then
+        env PYTHONPATH="${SRC_DIR}" "$base" -m kid_pc_monitor.linux_firewall --interactive \
+            "$PANEL_PORT" "$REVERSE_PORT" \
+            || echo "  (Firewall changes were not applied; see the commands above.)"
+    else
+        echo "Firewall: make sure inbound TCP ${PANEL_PORT} and ${REVERSE_PORT} are allowed from your LAN."
+    fi
 }
 
 # Prompt for and store the panel <-> agent shared secret via the Python helper,
@@ -277,11 +491,18 @@ check_firewall() {
 }
 
 cmd_install() {
+    parse_install_args "$@"
     require_linux
     require_systemctl_user
-    ensure_venv
-    install_package
-    prompt_shared_secret
+    if [[ "$USE_GO" -eq 1 ]]; then
+        install_go_panel
+        migrate_legacy_auth
+        go_shared_secret
+    else
+        ensure_venv
+        install_package
+        prompt_shared_secret
+    fi
     write_unit
     systemctl --user daemon-reload
     systemctl --user enable "$UNIT_NAME"
@@ -289,12 +510,20 @@ cmd_install() {
     echo ""
     if wait_for_panel; then
         echo "Service is enabled and running. Check: systemctl --user status $UNIT_NAME"
-        echo "Open: $(panel_url)"
+        if [[ "$USE_GO" -eq 1 ]]; then
+            echo "Open: $(go_panel_url)"
+        else
+            echo "Open: $(panel_url)"
+        fi
     fi
     echo ""
     check_linger
     echo ""
-    check_firewall
+    if [[ "$USE_GO" -eq 1 ]]; then
+        go_check_firewall
+    else
+        check_firewall
+    fi
     echo ""
     echo "iPhone password autofill: see docs/FAQ.md for instructions to run with trusted HTTPS."
 }
@@ -315,18 +544,22 @@ cmd_status() {
 cmd_cat_unit() {
     require_linux
     local dir
-    dir="$(existing_venv_dir)"
     echo "# Preview (not written to disk):"
+    if [[ "${1:-}" == "--go" ]]; then
+        render_go_unit "$GO_BIN"
+        return
+    fi
+    dir="$(existing_venv_dir)"
     render_unit "${dir:-${REPO_ROOT}/venv}"
 }
 
 main() {
     local cmd="${1:-}"
     case "$cmd" in
-        install) cmd_install ;;
+        install) shift; cmd_install "$@" ;;
         uninstall) cmd_uninstall ;;
         status) cmd_status ;;
-        cat-unit) cmd_cat_unit ;;
+        cat-unit) shift; cmd_cat_unit "$@" ;;
         -h|--help|help) usage ;;
         *) usage; exit 1 ;;
     esac

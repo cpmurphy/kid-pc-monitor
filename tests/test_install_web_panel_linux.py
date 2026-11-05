@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 import stat
 import subprocess
@@ -14,7 +15,7 @@ _SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "install_web_pane
 
 # Real tools the script needs; everything else on PATH is a fake.
 _REAL_TOOLS = ("bash", "sh", "env", "dirname", "uname", "mkdir", "seq", "grep", "sleep", "id")
-_REAL_TOOLS += ("cat", "rm", "chmod")
+_REAL_TOOLS += ("cat", "rm", "chmod", "cp", "mv", "mktemp", "awk", "sed", "head", "sha256sum")
 
 
 def _write_executable(path: Path, body: str) -> None:
@@ -61,7 +62,11 @@ class _Sandbox:
         self.fake("ss", "#!/bin/sh\necho 'LISTEN 0 128 0.0.0.0:5000 0.0.0.0:*'\n")
 
     def fake(self, name: str, body: str) -> None:
-        _write_executable(self.bindir / name, body)
+        path = self.bindir / name
+        # Never write through a symlink to a real tool.
+        if path.is_symlink():
+            path.unlink()
+        _write_executable(path, body)
 
     def venv_python(self, body: str, venv: str = "venv") -> None:
         _write_executable(self.root / venv / "bin" / "python3", body)
@@ -83,7 +88,7 @@ class _Sandbox:
             """,
         )
 
-    def run_install(self, **env_overrides: str) -> subprocess.CompletedProcess[str]:
+    def run_install(self, *args: str, **env_overrides: str) -> subprocess.CompletedProcess[str]:
         env = {
             "PATH": str(self.bindir),
             "HOME": str(self.home),
@@ -96,10 +101,11 @@ class _Sandbox:
                 "-c",
                 'source "$1"; REPO_ROOT="$2"; SRC_DIR="$2/src"; '
                 'UNIT_DIR="$2/unit"; UNIT_PATH="$UNIT_DIR/$UNIT_NAME"; '
-                "cmd_install",
+                'cmd_install "${@:3}"',
                 "bash",
                 str(_SCRIPT),
                 str(self.root),
+                *args,
             ],
             check=False,
             capture_output=True,
@@ -212,6 +218,143 @@ class InstallWebPanelLinuxTests(unittest.TestCase):
         completed = self.box.run_install()
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("sudo loginctl enable-linger parent", completed.stdout)
+
+
+def _fake_panel(log: Path, secret_status: int = 0) -> str:
+    """A kid-pc-web-panel binary that logs how it is called."""
+    return f"""\
+        #!/bin/sh
+        printf 'panel %s\\n' "$*" >> "{log}"
+        case "$1" in
+            version) echo v9.9.9 ;;
+            set-secret) exit {secret_status} ;;
+        esac
+        exit 0
+        """
+
+
+class InstallGoWebPanelLinuxTests(unittest.TestCase):
+    """install --go: the Go panel binary, no virtualenv."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.box = _Sandbox(Path(self._tmp.name))
+        self.box.fake("uname", '#!/bin/sh\ncase "$1" in -m) echo x86_64 ;; *) echo Linux ;; esac\n')
+        self.go_bin = (
+            self.box.home / ".local" / "share" / "kid-pc-monitor" / "bin" / "kid-pc-web-panel"
+        )
+
+    def tearDown(self) -> None:
+        self._tmp.cleanup()
+
+    def _binary(self, name: str = "built-panel", secret_status: int = 0) -> Path:
+        path = self.box.root / name
+        _write_executable(path, _fake_panel(self.box.log, secret_status))
+        return path
+
+    def _release(self, *, corrupt: bool = False) -> None:
+        """A fake curl serving a v9.9.9 release from a local folder."""
+        release = self.box.root / "release"
+        release.mkdir()
+        asset = release / "kid-pc-web-panel-linux-amd64"
+        _write_executable(asset, _fake_panel(self.box.log))
+        digest = hashlib.sha256(asset.read_bytes()).hexdigest()
+        if corrupt:
+            asset.write_text(asset.read_text() + "# tampered\n", encoding="utf-8")
+        (release / "SHA256SUMS").write_text(
+            f"{'0' * 64}  kid-pc-agent-windows-amd64.exe\n{digest}  kid-pc-web-panel-linux-amd64\n",
+            encoding="utf-8",
+        )
+        (release / "latest.json").write_text(
+            '{"tag_name": "v9.9.9", "name": "x"}', encoding="utf-8"
+        )
+        self.box.fake(
+            "curl",
+            f"""\
+            #!/bin/sh
+            out=""; url=""
+            while [ $# -gt 0 ]; do
+                case "$1" in -o) out="$2"; shift ;; -*) ;; *) url="$1" ;; esac
+                shift
+            done
+            printf 'curl %s\\n' "$url" >> "{self.box.log}"
+            case "$url" in
+                */repos/cpmurphy/kid-pc-monitor/releases/latest) cp "{release}/latest.json" "$out" ;;
+                */cpmurphy/kid-pc-monitor/releases/download/v9.9.9/*) cp "{release}/${{url##*/}}" "$out" ;;
+                *) exit 22 ;;
+            esac
+            """,
+        )
+
+    def test_installs_given_binary_without_python(self) -> None:
+        completed = self.box.run_install("--go", "--binary", str(self._binary()))
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertTrue(self.go_bin.is_file())
+        self.assertTrue(self.go_bin.stat().st_mode & stat.S_IXUSR)
+        unit = self.box.unit_path.read_text(encoding="utf-8")
+        self.assertIn(f"ExecStart={self.go_bin} serve", unit)
+        self.assertNotIn("PYTHONPATH", unit)
+        calls = self.box.calls()
+        self.assertIn("panel set-secret", calls)
+        self.assertNotIn("venv-python", calls)
+        self.assertNotIn("base-python", calls)
+        self.assertIn("systemctl --user restart kid-pc-monitor-web-panel.service", calls)
+        self.assertIn("Installed:", completed.stdout)
+        self.assertIn("v9.9.9", completed.stdout)
+        # No system Python here, so the firewall advice is printed instead.
+        self.assertIn("inbound TCP 5000 and 9998", completed.stdout)
+
+    def test_missing_binary_stops_before_the_unit(self) -> None:
+        completed = self.box.run_install("--go", "--binary", str(self.box.root / "nope"))
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("Panel binary not found", completed.stderr)
+        self.assertFalse(self.box.unit_path.exists())
+        self.assertFalse(self.go_bin.exists())
+
+    def test_downloads_release_and_checks_sha256(self) -> None:
+        self._release()
+        completed = self.box.run_install("--go")
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("SHA-256 verified", completed.stdout)
+        self.assertIn("releases/download/v9.9.9/kid-pc-web-panel-linux-amd64", self.box.calls())
+        self.assertTrue(self.go_bin.is_file())
+        self.assertTrue(self.box.unit_path.exists())
+
+    def test_download_with_bad_checksum_keeps_old_binary_and_stops(self) -> None:
+        self.go_bin.parent.mkdir(parents=True)
+        self.go_bin.write_text("old", encoding="utf-8")
+        self._release(corrupt=True)
+        completed = self.box.run_install("--go", "--version", "v9.9.9")
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("does not match SHA256SUMS", completed.stderr)
+        self.assertEqual(self.go_bin.read_text(encoding="utf-8"), "old")
+        self.assertFalse(self.box.unit_path.exists())
+        leftovers = [p.name for p in self.go_bin.parent.iterdir() if p.name != "kid-pc-web-panel"]
+        self.assertEqual(leftovers, [])
+
+    def test_copies_legacy_auth_file_once(self) -> None:
+        legacy = self.box.root / "src" / "kid_pc_monitor" / "web_panel_auth.json"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text('{"password_hash": "legacy"}', encoding="utf-8")
+        canonical = self.box.home / ".config" / "kid-pc-monitor" / "web_panel_auth.json"
+        completed = self.box.run_install("--go", "--binary", str(self._binary()))
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(canonical.read_text(encoding="utf-8"), '{"password_hash": "legacy"}')
+        self.assertEqual(stat.S_IMODE(canonical.stat().st_mode), 0o600)
+        canonical.write_text('{"password_hash": "newer"}', encoding="utf-8")
+        self.box.run_install("--go", "--binary", str(self._binary()))
+        self.assertEqual(canonical.read_text(encoding="utf-8"), '{"password_hash": "newer"}')
+
+    def test_cancelled_secret_does_not_stop_the_install(self) -> None:
+        completed = self.box.run_install("--go", "--binary", str(self._binary(secret_status=1)))
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("Set it later with:", completed.stdout)
+        self.assertTrue(self.box.unit_path.exists())
+
+    def test_version_without_go_is_rejected(self) -> None:
+        completed = self.box.run_install("--version", "v1")
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("--version only applies with --go", completed.stderr)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ name: Release
 
 # Push a tag such as v1.2.0 to publish kid-pc-agent.exe (amd64 and arm64),
 # kid-pc-web-panel for Windows, Linux and macOS (amd64 and arm64),
-# install_agent.ps1 and SHA256SUMS on that tag's GitHub release.
+# install_agent.ps1, install_web_panel.ps1 and SHA256SUMS on that tag's GitHub release.
 # scripts/install_agent.ps1 downloads from here when Go is not installed.
 
 on:
@@ -47,7 +47,7 @@ jobs:
               -ldflags "-s -w -X main.version=$TAG" \
               -o "../dist/kid-pc-web-panel-$os-$arch$ext" ./cmd/kid-pc-web-panel)
           done
-          cp scripts/install_agent.ps1 dist/
+          cp scripts/install_agent.ps1 scripts/install_web_panel.ps1 dist/
           (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
 
       - name: Publish

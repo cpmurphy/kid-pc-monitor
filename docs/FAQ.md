@@ -15,7 +15,7 @@ If they have administrator access, yes. This tool is based on trust and communic
 
 ### Does it work on Mac/Linux?
 - **Kid PC (monitoring agent):** Windows only today (`pc_control.py` uses Windows-specific lock and session APIs).
-- **Parent web panel:** Runs on **Windows, Linux, or macOS**. Install Python, `pip install -r requirements.txt` (on non-Windows, `pywin32` is skipped automatically), then run `web_panel.py` from `src/`. Agents discover the panel over TCP **5000** and connect reverse control on TCP **9998**.
+- **Parent web panel:** Runs on **Windows, Linux, or macOS**. Without Python, use the Go panel (`kid-pc-web-panel`, published with each release; see the README's "Go web panel" section). Install Python, `pip install -r requirements.txt` (on non-Windows, `pywin32` is skipped automatically), then run `web_panel.py` from `src/`. Agents discover the panel over TCP **5000** and connect reverse control on TCP **9998**.
 
 ## Setup Issues
 
