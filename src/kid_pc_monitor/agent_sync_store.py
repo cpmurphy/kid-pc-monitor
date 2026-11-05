@@ -6,13 +6,14 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
+from kid_pc_monitor import panel_clock
 from kid_pc_monitor.panel_db import connect
 
 RECENT_AGENT_SECONDS = 180
 
 
 def _now() -> datetime:
-    return datetime.now().astimezone().replace(microsecond=0)
+    return panel_clock.now().replace(microsecond=0)
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -20,7 +21,7 @@ def _parse_dt(value: str | None) -> datetime | None:
         return None
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.astimezone()
+        dt = panel_clock.localize(dt)
     return dt
 
 

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-import random
 import threading
 import time
 
+from kid_pc_monitor import panel_clock
 from kid_pc_monitor.scan_store import prune_stale_tracked_ips
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def _poll_interval_sec() -> float:
 
 def _cycle_sleep_sec(interval: float) -> float:
     jitter = max(0.0, min(interval * 0.1, 5.0))
-    return random.uniform(interval - jitter, interval + jitter)
+    return panel_clock.uniform(interval - jitter, interval + jitter)
 
 
 def poll_once() -> None:
@@ -36,7 +36,7 @@ def poll_once() -> None:
 
 def _run(stop: threading.Event) -> None:
     interval = _poll_interval_sec()
-    time.sleep(random.uniform(INITIAL_JITTER_MIN_SEC, INITIAL_JITTER_MAX_SEC))
+    time.sleep(panel_clock.uniform(INITIAL_JITTER_MIN_SEC, INITIAL_JITTER_MAX_SEC))
     while not stop.is_set():
         try:
             poll_once()
