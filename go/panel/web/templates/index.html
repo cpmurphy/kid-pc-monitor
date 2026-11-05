@@ -1,0 +1,76 @@
+{{define "title"}}Kids PC Control Panel{{end}}
+{{define "body_class"}}page-home{{end}}
+
+{{define "stylesheets"}}
+<link rel="stylesheet" href="{{urlStatic "css/home.css"}}">
+{{end}}
+
+{{define "content"}}
+    <main class="container" id="home-dashboard">
+        {{with .Flashes}}
+            {{range .}}
+              {{if eq .Category "success"}}
+              <p class="flash flash-success">{{.Message}}</p>
+              {{else if eq .Category "error"}}
+              <p class="flash flash-error">{{.Message}}</p>
+              {{end}}
+            {{end}}
+        {{end}}
+
+        <div class="page-head with-meta">
+            <h1>PCs</h1>
+            {{if .D.last_poll_at}}
+            <p class="page-meta">Updated {{.Recorded .D.last_poll_at}}</p>
+            {{end}}
+        </div>
+
+        {{if .D.pcs}}
+            <ul class="pc-list">
+            {{range .D.pcs}}{{$ip := .IP}}{{$info := .Info}}
+                {{$connected := and (getd $info "reachable" true) (not (get $info "agent_not_running")) (not (get $info "connection_error"))}}
+                <li>
+                <a class="pc-card{{if not $connected}} offline{{end}}" href="{{urlControl (or (get $info "hostname") $ip)}}">
+                    <div class="pc-card-main">
+                        <div class="pc-name">{{show $info "hostname"}}</div>
+                        <div class="pc-meta">
+                            {{if get $info "current_user"}}{{show $info "current_user"}}<span class="meta-sep">·</span>{{end}}{{$ip}}
+                        </div>
+                        {{if and $connected (notnone (get $info "accumulated_seconds"))}}
+                        {{$remaining := remaining (get $info "time_remaining")}}
+                        <div class="pc-usage">
+                            {{- fsec (get $info "accumulated_seconds")}} used today
+                            {{- if notnone $remaining}}<span class="meta-sep">·</span>{{fmin (maxzero $remaining)}} left{{end -}}
+                        </div>
+                        {{end}}
+                    </div>
+                    <div class="pc-card-side">
+                        {{if get $info "connection_error"}}
+                        <span class="pill pill-warning">Can't control</span>
+                        {{else if or (not (getd $info "reachable" true)) (get $info "agent_not_running")}}
+                        <span class="pill pill-neutral" title="The agent is not connected — the PC may be off, signed out, or the agent stopped.">Not connected</span>
+                        {{else if get $info "locked"}}
+                        <span class="pill pill-danger">Locked</span>
+                        {{else}}
+                        <span class="pill pill-success">Online</span>
+                        {{end}}
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                    </div>
+                </a>
+                </li>
+            {{end}}
+            </ul>
+        {{else}}
+            <div class="card empty-state">
+                <h2>No PCs connected yet</h2>
+                <p>
+                    Kid PCs appear here after the agent finds this panel
+                    and connects outbound.
+                </p>
+            </div>
+        {{end}}
+    </main>
+{{end}}
+
+{{define "scripts"}}
+<script type="module" src="{{urlStatic "js/home.js"}}"></script>
+{{end}}

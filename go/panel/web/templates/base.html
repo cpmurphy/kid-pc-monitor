@@ -1,0 +1,40 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{.CSRFToken}}">
+    <meta name="color-scheme" content="light dark">
+    <title>{{block "title" .}}Kids PC Control Panel{{end}}</title>
+    <link rel="stylesheet" href="{{urlStatic "css/panel.css"}}">
+    {{block "stylesheets" .}}{{end}}
+    {{block "head" .}}{{end}}
+</head>
+<body class="{{block "body_class" .}}{{end}}">
+    <header class="app-header">
+        <div class="app-header-inner">
+            <a class="brand" href="{{urlIndex}}">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+                </span>
+                Kids PC Control Panel
+            </a>
+            {{block "account_links" .}}
+            <nav class="account-links" aria-label="Account">
+                {{if not .PasswordProtected}}
+                <a href="{{urlSetPassword}}">Add password</a>
+                {{else if .PanelAuth}}
+                <a href="{{urlSetPassword}}">Change password</a>
+                <a href="{{urlLogout}}">Log out</a>
+                {{else}}
+                <a href="{{urlLogin .RequestPath}}">Log in</a>
+                {{end}}
+            </nav>
+            {{end}}
+        </div>
+    </header>
+    {{block "content" .}}{{end}}
+    {{block "scripts" .}}{{end}}
+</body>
+</html>
+{{end}}

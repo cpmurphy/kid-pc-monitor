@@ -1,0 +1,67 @@
+{{define "title"}}Daily settings — {{show .D.pc_info "hostname"}}{{end}}
+{{define "body_class"}}page-daily{{end}}
+
+{{define "stylesheets"}}
+<link rel="stylesheet" href="{{urlStatic "css/action-pages.css"}}">
+<link rel="stylesheet" href="{{urlStatic "css/daily-settings.css"}}">
+{{end}}
+
+{{define "content"}}{{$pc := .D.pc_info}}
+    <main class="container" data-ip="{{.D.ip}}">
+        <a href="{{urlControl (or (get $pc "hostname") .D.ip)}}" class="back-link">← {{show $pc "hostname"}}</a>
+
+        <div class="page-head">
+            <h1>Daily settings</h1>
+            <p class="page-meta">
+                These apply every day and take effect immediately on {{show $pc "hostname"}}.
+            </p>
+        </div>
+
+        <div id="status-message" class="status-message" role="status" aria-live="polite"></div>
+
+        <section class="action-group">
+            <h2 class="action-title">Daily allowance</h2>
+            <p class="hint">Screen-time cap per day, in minutes. Leave it unset for no cap.</p>
+            <div class="field-row">
+                <input type="number" id="daily-limit-minutes" min="1" inputmode="numeric"
+                       placeholder="e.g. 120" aria-label="Daily allowance in minutes"
+                       value="{{if notnone (get $pc "daily_limit")}}{{show $pc "daily_limit"}}{{end}}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-daily-limit">Save</button>
+            </div>
+            {{if notnone (get $pc "daily_limit")}}
+            <div class="setting-footer">
+                <button type="button" class="btn btn-text danger btn-clear" data-action="clear-daily-limit">Remove daily allowance</button>
+            </div>
+            {{end}}
+        </section>
+
+        <section class="action-group">
+            <h2 class="action-title">Bedtime</h2>
+            <p class="hint">The PC locks at this time until wake-up.</p>
+            <div class="field-row">
+                <input type="time" id="bed-time" aria-label="Bedtime"
+                       value="{{str (or (getd $pc "bed_time" "21:00") "21:00")}}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-bed-time">Save</button>
+            </div>
+            {{if get $pc "bed_time"}}
+            <div class="setting-footer">
+                <button type="button" class="btn btn-text danger btn-clear" data-action="clear-bed-time">Remove bedtime</button>
+            </div>
+            {{end}}
+        </section>
+
+        <section class="action-group">
+            <h2 class="action-title">Wake-up time</h2>
+            <p class="hint">Bedtime locks lift here, and daily usage resets.</p>
+            <div class="field-row">
+                <input type="time" id="wake-time" aria-label="Wake-up time"
+                       value="{{str (or (getd $pc "wake_time" "07:00") "07:00")}}">
+                <button type="button" class="btn btn-primary btn-save" data-action="save-wake-time">Save</button>
+            </div>
+        </section>
+    </main>
+{{end}}
+
+{{define "scripts"}}
+<script type="module" src="{{urlStatic "js/daily-settings.js"}}"></script>
+{{end}}

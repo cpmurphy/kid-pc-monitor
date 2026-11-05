@@ -1,0 +1,100 @@
+{{define "stats"}}{{$pc := .D.pc_info}}{{$ip := .D.ip}}{{if or (getd $pc "reachable" true) (get $pc "is_snapshot")}}
+{{$remaining := remaining (get $pc "time_remaining")}}
+{{$used := or (getd $pc "accumulated_seconds" 0) 0}}
+{{$limit := get $pc "effective_limit_minutes"}}
+<section class="action-group">
+    <div class="card-head">
+        <h2 class="action-title">Today</h2>
+        {{if pyeq (get $pc "access_status") "Unlocked"}}
+        <span class="pill pill-success">{{show $pc "access_status"}}</span>
+        {{else if pyeq (get $pc "access_status") "Screen locked"}}
+        <span class="pill pill-neutral">{{show $pc "access_status"}}</span>
+        {{else}}
+        <span class="pill pill-danger">{{show $pc "access_status"}}</span>
+        {{end}}
+    </div>
+
+    <div class="usage-summary">
+        <div class="usage-figure">
+            <span class="usage-value">{{fsec $used}}</span>
+            <span class="usage-label">used</span>
+        </div>
+        {{if notnone $remaining}}
+        <div class="usage-figure end">
+            <span class="usage-value">{{fmin (maxzero $remaining)}}</span>
+            <span class="usage-label">left</span>
+        </div>
+        {{end}}
+    </div>
+    {{if $limit}}
+    {{$m := meter $used $limit}}
+    <div class="meter{{$m.Class}}"
+         role="progressbar" aria-label="Allowance used"
+         aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{$m.Now}}">
+        <span class="meter-fill" style="width: {{$m.Width}}%"></span>
+    </div>
+    {{end}}
+
+    <dl class="stat-grid">
+        <div>
+            <dt>Daily allowance</dt>
+            <dd>
+            {{if notnone (get $pc "daily_limit")}}
+                {{fmin (get $pc "daily_limit")}}
+            {{else}}
+                <span class="muted">Not set</span>
+            {{end}}
+            </dd>
+        </div>
+        <div>
+            <dt>Extra today</dt>
+            <dd>
+            {{if gt0 (getd $pc "cumulative_extension_seconds" 0)}}
+                +{{fsec (get $pc "cumulative_extension_seconds")}}
+            {{else}}
+                <span class="muted">—</span>
+            {{end}}
+            </dd>
+        </div>
+        <div>
+            <dt>Bedtime</dt>
+            <dd>
+            {{if get $pc "bed_time"}}
+                {{show $pc "bed_time"}}
+            {{else}}
+                <span class="muted">Not set</span>
+            {{end}}
+            </dd>
+        </div>
+        <div>
+            <dt>Wake-up</dt>
+            <dd>
+            {{if get $pc "wake_time"}}
+                {{show $pc "wake_time"}}
+            {{else}}
+                <span class="muted">Unknown</span>
+            {{end}}
+            </dd>
+        </div>
+    </dl>
+
+    {{if get $pc "manual_lock_active"}}
+    <div class="inline-alert">
+        <span>Manual lock is on</span>
+        <button type="button" class="btn btn-danger btn-sm" data-action="clear-manual-lock">Clear</button>
+    </div>
+    {{end}}
+
+    {{if or (get $pc "current_user") (getd $pc "reachable" true)}}
+    <nav class="card-links" aria-label="More for this PC">
+        {{if get $pc "current_user"}}
+        <a href="{{urlUsage (get $pc "current_user")}}">Usage history</a>
+        {{end}}
+        {{if getd $pc "reachable" true}}
+        <a href="{{urlDaily $ip}}">Daily settings</a>
+        <a href="{{urlLogs $ip}}">Agent log</a>
+        {{end}}
+    </nav>
+    {{end}}
+</section>
+{{end}}{{end}}
