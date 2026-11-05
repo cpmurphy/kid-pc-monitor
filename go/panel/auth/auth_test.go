@@ -179,3 +179,49 @@ func TestGeneratePasswordHashSalts(t *testing.T) {
 		t.Fatalf("salt %q", salt)
 	}
 }
+
+func TestDamagedAuthFileIsAProblemNotNoPassword(t *testing.T) {
+	cases := map[string]func(path string) error{
+		"not UTF-8": func(p string) error { return os.WriteFile(p, []byte("{\"password_hash\": \"\xff\"}"), 0o600) },
+		"truncated": func(p string) error { return os.WriteFile(p, []byte(`{"password_hash": `), 0o600) },
+		"directory": func(p string) error { return os.Mkdir(p, 0o700) },
+		"old format": func(p string) error {
+			return os.WriteFile(p, []byte(`{"salt": "00ff", "hash": "abcd"}`), 0o600)
+		},
+	}
+	if runtime.GOOS != "windows" && os.Geteuid() != 0 {
+		cases["unreadable"] = func(p string) error {
+			if err := os.WriteFile(p, []byte(`{"password_hash": "x"}`), 0o600); err != nil {
+				return err
+			}
+			return os.Chmod(p, 0)
+		}
+	}
+	for name, damage := range cases {
+		t.Run(name, func(t *testing.T) {
+			f := Files{Dir: t.TempDir()}
+			legacy := filepath.Join(t.TempDir(), AuthFile)
+			if err := os.WriteFile(legacy, []byte(`{"password_hash": "legacy"}`), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			f.Legacy = []string{legacy}
+			if err := damage(f.SavePath()); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chmod(f.SavePath(), 0o600)
+			if f.ReadPath() != f.SavePath() {
+				t.Fatal("damaged canonical file skipped for the legacy one")
+			}
+			if f.Problem() == nil || f.Load() != nil {
+				t.Fatalf("Problem() = %v, Load() = %v", f.Problem(), f.Load())
+			}
+			if _, err := f.SavePassword("attacker123"); err == nil {
+				t.Fatal("SavePassword replaced a damaged auth file")
+			}
+		})
+	}
+	f := Files{Dir: t.TempDir()}
+	if rec, err := f.Read(); rec != nil || err != nil {
+		t.Fatalf("missing file: Read() = %v, %v", rec, err)
+	}
+}

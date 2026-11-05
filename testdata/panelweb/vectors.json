@@ -1671,6 +1671,181 @@
     }
    ],
    "password_set_after": true
+  },
+  {
+   "name": "damaged_auth_file",
+   "auth": null,
+   "requests": [
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/set-password",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/alice",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/no-such-page",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": "Kid PC Monitor is locked: its password file <DIR>/web_panel_auth.json is damaged or cannot be read.\n\nNothing is shown until the file is fixed, so the panel is not left open to\nanyone on the network. Restore the file (the panel's log says what is wrong\nwith it), or delete it and set a new password: deleting it removes the\npassword, and the next person to open the panel can set one.\n"
+     }
+    },
+    {
+     "method": "HEAD",
+     "path": "/",
+     "response": {
+      "status": 503,
+      "headers": {
+       "Content-Type": "text/plain; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "text": ""
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "password": "attacker123",
+      "password_confirm": "attacker123"
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>400 Bad Request</title><h1>Bad Request</h1><p>The browser (or proxy) sent a request that this server could not understand.</p>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "unlock"
+     },
+     "csrf": "header",
+     "response": {
+      "status": 400,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>400 Bad Request</title><h1>Bad Request</h1><p>The browser (or proxy) sent a request that this server could not understand.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/agent/v1/discover",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "reverse_port": 9998,
+       "service": "kid-pc-monitor-panel",
+       "version": 1
+      }
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/static/css/panel.css",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/css; charset=utf-8",
+       "Cache-Control": "no-cache"
+      },
+      "sha256": "3c8ec012e84abcc5d85bccd37a3233c6bdc2eab26aa480557fc37d4ba5a004b6",
+      "length": 9611
+     }
+    }
+   ],
+   "password_set_after": false,
+   "auth_text": "{\n  \"secret_key\": \"cccccccccccccccccccccccccccccccc\",\n  \"password_hash\": ",
+   "auth_text_unchanged": true
   }
  ]
 }

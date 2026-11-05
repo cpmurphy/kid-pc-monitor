@@ -74,11 +74,15 @@ func TestCheckPasswordHash(t *testing.T) {
 func TestAuthRecord(t *testing.T) {
 	for _, c := range cases(t, "auth_record") {
 		text := str(c["text"])
-		rec := ParseRecord([]byte(text))
-		wantHash, wantKey := str(c["password_hash"]), str(c["secret_key"])
-		if c["error"] == true {
-			wantHash, wantKey = "", ""
+		files := Files{Dir: t.TempDir()}
+		if err := os.WriteFile(files.SavePath(), []byte(text), 0o600); err != nil {
+			t.Fatal(err)
 		}
+		rec, err := files.Read()
+		if locked := err != nil; locked != c["locked"] {
+			t.Errorf("Read(%q) locked = %v (%v), want %v", text, locked, err, c["locked"])
+		}
+		wantHash, wantKey := str(c["password_hash"]), str(c["secret_key"])
 		if got := rec.PasswordHash(); got != wantHash {
 			t.Errorf("PasswordHash(%q) = %q, want %q", text, got, wantHash)
 		}

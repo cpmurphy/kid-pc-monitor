@@ -233,6 +233,9 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			c.abort(http.StatusBadRequest)
 			return
 		}
+		if !a.authUsable(c) {
+			return
+		}
 		a.route(c)
 	}()
 	if !c.static {
@@ -249,6 +252,27 @@ func (a *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodHead {
 		w.Write(c.body.Bytes())
 	}
+}
+
+// authUsable serves the locked page, and reports false, when the auth file
+// exists but cannot be used (require_usable_auth_file): a damaged password
+// file must not read as "no password set", which would let anyone on the
+// network in or set a password of their own. Static files and the agent
+// discovery endpoint stay available.
+func (a *App) authUsable(c *reqCtx) bool {
+	p := c.r.URL.Path
+	if strings.HasPrefix(p, "/agent/v1/") || (strings.HasPrefix(p, "/static/") && len(p) > len("/static/")) {
+		return true
+	}
+	problem := a.auth.Problem()
+	if problem == nil {
+		return true
+	}
+	a.log.Error("Web panel locked: " + problem.Error())
+	c.status = http.StatusServiceUnavailable
+	c.header.Set("Content-Type", "text/plain; charset=utf-8")
+	c.body.WriteString(auth.LockedText(a.auth.ReadPath()))
+	return false
 }
 
 // headerOnly lets Sessions.Save add its cookie to the buffered headers.

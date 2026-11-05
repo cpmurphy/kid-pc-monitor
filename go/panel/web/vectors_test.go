@@ -198,21 +198,34 @@ func TestScenarios(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+			authText, damaged := sc["auth_text"].(string)
+			if damaged {
+				if err := os.WriteFile(files.SavePath(), []byte(authText), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			app, err := New(Config{Store: s, Auth: files, Reverse: fakeReverse{v["sessions"].(obj)}, ReversePort: 9998})
 			if err != nil {
 				t.Fatal(err)
 			}
 			seed(t, s, app, list(v["seed"]))
 			s.Now = func() time.Time { return now }
-			runRequests(t, app, list(sc["requests"]))
+			runRequests(t, app, list(sc["requests"]), dir)
 			if got := files.PasswordConfigured(); got != sc["password_set_after"] {
 				t.Errorf("password set after scenario = %v, want %v", got, sc["password_set_after"])
+			}
+			if damaged {
+				after, _ := os.ReadFile(files.SavePath())
+				if got := string(after) == authText; got != sc["auth_text_unchanged"] {
+					t.Errorf("auth file unchanged = %v, want %v", got, sc["auth_text_unchanged"])
+				}
 			}
 		})
 	}
 }
 
-func runRequests(t *testing.T, app *App, requests []any) {
+// runRequests replays requests; authDir is shown as <DIR> in text bodies.
+func runRequests(t *testing.T, app *App, requests []any, authDir string) {
 	cookies := map[string]string{}
 	csrf := ""
 	for i, raw := range requests {
@@ -301,6 +314,11 @@ func runRequests(t *testing.T, app *App, requests []any) {
 			got := normalizeHTML(text)
 			if w := str(want["html"]); got != w {
 				t.Errorf("%s: html differs\n%s", label, firstDifference(got, w))
+			}
+		case hasKey(want, "text"):
+			got := strings.ReplaceAll(strings.ReplaceAll(text, authDir, "<DIR>"), `\`, "/")
+			if w := str(want["text"]); got != w {
+				t.Errorf("%s: text differs\n%s", label, firstDifference(got, w))
 			}
 		default:
 			sum := sha256.Sum256(rec.Body.Bytes())
