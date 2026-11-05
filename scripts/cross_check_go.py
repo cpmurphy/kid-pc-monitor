@@ -11,6 +11,11 @@ and checks that each side can load the settings/state files the other saved:
 
   C. Python AgentStateStore  <->  Go state.Store
 
+runs one Python agent through the same script of parent actions against the
+Go reverse server (go/panel/reverse) and the Python one, comparing results:
+
+  E. Python agent  <->  Go and Python PanelReverseServer
+
 and, on Windows only, runs the real Go agent against the Python panel:
 
   D. go/cmd/kid-pc-agent  <->  PanelReverseServer + a discovery endpoint
@@ -33,6 +38,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import traceback
 from datetime import datetime
@@ -40,6 +46,7 @@ from datetime import time as dtime
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -586,6 +593,207 @@ def real_agent_session(_exe: Path, go: str, out_dir: Path) -> Checks:
     return checks
 
 
+# ---------------------------------------------------------------------------
+# E. Python agent <-> Go and Python panel reverse servers (parity)
+# ---------------------------------------------------------------------------
+REVERSE_IP = "127.0.0.1"
+REVERSE_LOG_LINES = ["2026-06-05 14:58:00 INFO started", "2026-06-05 14:59:00 INFO locked"]
+REVERSE_SCRIPT: list[dict[str, Any]] = [
+    {"cmd": "wait_status"},
+    {"cmd": "session", "ip": REVERSE_IP},
+    {"cmd": "action", "action": "set_daily_limit", "payload": {"minutes": 90}},
+    {"cmd": "action", "action": "extend_time", "payload": {"minutes": "15"}},
+    {"cmd": "pause"},
+    {"cmd": "session", "ip": REVERSE_IP},
+    {"cmd": "action", "action": "message", "payload": {"message": "Dinner in 10 minutes"}},
+    {"cmd": "action", "action": "set_bed_time", "payload": {"time": "21:30"}},
+    {"cmd": "action", "action": "set_bed_time", "payload": {"time": "25:00"}},
+    {"cmd": "action", "action": "set_wake_time", "payload": {"time": "06:45"}},
+    {"cmd": "pause"},
+    {"cmd": "session", "ip": REVERSE_IP},
+    {"cmd": "action", "action": "clear_bed_time", "payload": {}},
+    {"cmd": "action", "action": "lock", "payload": {}},
+    {"cmd": "action", "action": "clear_manual_lock", "payload": {}},
+    {"cmd": "action", "action": "clear_extensions", "payload": {}},
+    {"cmd": "action", "action": "set_daily_limit", "payload": {"minutes": ""}},
+    {"cmd": "action", "action": "extend_time", "payload": {"minutes": "abc"}},
+    {"cmd": "action", "action": "extend_time", "payload": {}},
+    {"cmd": "action", "action": "bogus", "payload": {}},
+    {"cmd": "action", "action": "shutdown", "payload": {}},
+    {"cmd": "logs", "ip": REVERSE_IP, "tail": 5},
+    {"cmd": "logs", "ip": "10.9.9.9", "tail": 5},
+    {"cmd": "action", "ip": "10.9.9.9", "action": "lock", "payload": {}},
+    {"cmd": "pause"},
+    {"cmd": "session", "ip": REVERSE_IP},
+]
+
+
+def _reverse_agent(port: int, data_dir: Path) -> tuple[Any, threading.Thread, FakeHostPlatform]:
+    """A Python agent (real dispatcher, fake host, fixed clock) on a reverse socket."""
+    from kid_pc_monitor.agent_sync_client import AgentReverseClient
+
+    (data_dir / "pc_control.log").write_text("\n".join(REVERSE_LOG_LINES) + "\n", encoding="utf-8")
+    platform = FakeHostPlatform(hostname=PY_HOSTNAME)
+    control = PCTimeControl(
+        platform=platform,
+        data_directory=data_dir,
+        start_background_threads=False,
+        clock=lambda: datetime(2026, 6, 5, 15, 0, 0),
+    )
+    sock = socket.create_connection((REVERSE_IP, port), timeout=IO_TIMEOUT)
+    client = AgentReverseClient(control)
+    client.running = True
+    thread = threading.Thread(target=client._serve_connection, args=(sock, SECRET), daemon=True)
+    thread.start()
+    return client, thread, platform
+
+
+def _run_reverse_script(send: Callable[[dict[str, Any]], dict[str, Any]], port: int) -> list[Any]:
+    with tempfile.TemporaryDirectory() as tmp:
+        client, thread, platform = _reverse_agent(port, Path(tmp))
+        results: list[Any] = []
+        for command in REVERSE_SCRIPT:
+            if command["cmd"] == "pause":
+                # Session settings change only on a status refresh (every 0.2 s
+                # here), so let one happen before reading them.
+                time.sleep(0.7)
+                results.append({})
+                continue
+            result = send({"ip": REVERSE_IP, **command})
+            if isinstance(result.get("path"), str):  # each run has its own data directory
+                result["path"] = result["path"].replace(tmp, "<data>")
+            results.append(result)
+        client.stop()
+        thread.join(timeout=IO_TIMEOUT)
+        results.append(send({"cmd": "wait_disconnect"}))
+        results.append(
+            {
+                "lock_calls": platform.lock_calls,
+                "shutdown_calls": platform.shutdown_calls,
+                "messages": [m for _, m in platform.messages],
+            }
+        )
+    return results
+
+
+def _python_reverse_results() -> list[Any]:
+    import queue
+
+    from kid_pc_monitor import shared_secret
+    from kid_pc_monitor.panel_reverse_server import PanelReverseServer
+    from kid_pc_monitor.remote_client import settings_to_pc_info
+
+    statuses: queue.Queue[dict[str, Any]] = queue.Queue()
+    disconnects: queue.Queue[dict[str, Any]] = queue.Queue()
+
+    def on_status(hostname: str, ip: str, settings: dict[str, Any]) -> None:
+        pc_info = settings_to_pc_info(settings, host=ip, hostname_fallback=hostname)
+        statuses.put({"hostname": hostname, "ip": ip, "pc_info": pc_info})
+
+    probe = socket.socket()
+    probe.bind((REVERSE_IP, 0))
+    port = probe.getsockname()[1]
+    probe.close()
+    server = PanelReverseServer(
+        host=REVERSE_IP,
+        port=port,
+        on_status=on_status,
+        on_disconnect=lambda h, ip: disconnects.put({"hostname": h, "ip": ip}),
+        status_refresh_sec=0.2,
+    )
+
+    def send(cmd: dict[str, Any]) -> dict[str, Any]:
+        ip = cmd.get("ip", REVERSE_IP)
+        if cmd["cmd"] == "wait_status":
+            return statuses.get(timeout=20)
+        if cmd["cmd"] == "wait_disconnect":
+            return disconnects.get(timeout=20)
+        if cmd["cmd"] == "action":
+            result = server.perform_action(ip, cmd["action"], cmd["payload"])
+            if result is None:
+                return {"ok": False, "text": "", "found": False}
+            return {"ok": result[0], "text": result[1], "found": True}
+        if cmd["cmd"] == "logs":
+            try:
+                logs = server.get_logs(ip, tail=cmd["tail"])
+            except Exception as exc:  # noqa: BLE001 - compared with Go's error text
+                return {"error": str(exc)}
+            return {"lines": logs.lines, "truncated": logs.truncated, "path": logs.path}
+        session = server.session_for_ip(ip)
+        if session is None:
+            return {"found": False}
+        pc_info = settings_to_pc_info(session.pc_info, host=ip, hostname_fallback=session.hostname)
+        return {"hostname": session.hostname, "pc_info": pc_info}
+
+    with mock.patch.object(shared_secret, "require_shared_secret", return_value=SECRET):
+        server.start()
+        try:
+            deadline = time.monotonic() + IO_TIMEOUT
+            while time.monotonic() < deadline:
+                try:
+                    socket.create_connection((REVERSE_IP, port), timeout=1).close()
+                    break
+                except OSError:
+                    time.sleep(0.05)
+            return _run_reverse_script(send, port)
+        finally:
+            server.stop()
+
+
+def _go_reverse_results(exe: Path) -> list[Any]:
+    proc = subprocess.Popen(
+        [
+            str(exe),
+            "reverse-panel",
+            "-listen",
+            f"{REVERSE_IP}:0",
+            "-secret",
+            SECRET,
+            "-refresh",
+            "200ms",
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+    )
+    assert proc.stdin is not None and proc.stdout is not None
+    try:
+        ready = proc.stdout.readline().split()
+        if len(ready) != 2 or ready[0] != "LISTENING":
+            raise RuntimeError(f"xcheck reverse-panel did not start: {ready!r}")
+
+        def send(cmd: dict[str, Any]) -> dict[str, Any]:
+            assert proc.stdin is not None and proc.stdout is not None
+            proc.stdin.write(json.dumps(cmd) + "\n")
+            proc.stdin.flush()
+            return json.loads(proc.stdout.readline())
+
+        return _run_reverse_script(send, int(ready[1]))
+    finally:
+        proc.stdin.close()
+        try:
+            proc.wait(timeout=IO_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+
+def reverse_server_parity(exe: Path) -> Checks:
+    print("E. Python agent <-> Go and Python panel reverse servers")
+    checks = Checks("reverse-parity")
+    python_results = _python_reverse_results()
+    go_results = _go_reverse_results(exe)
+    labels = [
+        f"{c['cmd']} {c.get('action', '')} {json.dumps(c.get('payload', c.get('tail', '')))}".strip()
+        for c in REVERSE_SCRIPT
+    ] + ["wait_disconnect", "agent host effects"]
+    for label, py, go in zip(labels, python_results, go_results, strict=True):
+        # json.dumps keeps 60 and 60.0 apart, which == would not.
+        checks.check(label, json.dumps(go, sort_keys=True), json.dumps(py, sort_keys=True))
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--go", default=shutil.which("go"), help="path to the go tool")
@@ -599,6 +807,7 @@ def main() -> int:
         go_agent_session,
         python_agent_session,
         state_files_session,
+        reverse_server_parity,
     ]
     with tempfile.TemporaryDirectory() as tmp:
         out_dir = Path(args.keep) if args.keep else Path(tmp)

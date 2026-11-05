@@ -8,6 +8,9 @@
 //	xcheck panel -listen 127.0.0.1:0 -secret S
 //	    a toy panel that waits for an agent and runs a scripted conversation,
 //	    printing one JSON line per step
+//	xcheck reverse-panel -listen 127.0.0.1:0 -secret S -refresh 200ms
+//	    the real panel reverse server (panel/reverse), driven by one JSON
+//	    command per stdin line, answering one JSON line each
 //	xcheck state-write -dir D -now ISO
 //	    save a fixed sample of settings and runtime state into D
 //	xcheck state-dump -dir D -now ISO -user U
@@ -45,6 +48,7 @@ func main() {
 	dir := fs.String("dir", "", "state-*: agent data directory")
 	nowFlag := fs.String("now", "", "state-*: fake wall-clock time (ISO 8601)")
 	user := fs.String("user", "kid", "state-dump: account the agent runs as")
+	refresh := fs.Duration("refresh", 5*time.Second, "reverse-panel: idle status refresh")
 	_ = fs.Parse(os.Args[2:])
 	switch os.Args[1] {
 	case "state-write":
@@ -62,6 +66,8 @@ func main() {
 		runAgent(*connect, *secret, *hostname)
 	case "panel":
 		runPanel(*listen, *secret)
+	case "reverse-panel":
+		runReversePanel(*listen, *secret, *refresh)
 	default:
 		fatalf("unknown mode %q", os.Args[1])
 	}
