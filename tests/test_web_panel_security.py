@@ -89,6 +89,36 @@ class WebPanelSecurityTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.location, "/control/192.168.1.1")
 
+    def test_login_rejects_next_that_browsers_send_off_site(self) -> None:
+        password = self._write_auth()
+        for target in (
+            "//evil.example/",
+            "///evil.example/",
+            "/\\evil.example/",
+            "\\\\evil.example/",
+            "/\t/evil.example/",
+            "http://localhost/control/x",
+            "javascript:alert(1)",
+            "control/x",
+        ):
+            with self.subTest(target=target):
+                csrf = self._get_csrf("/login")
+                response = self.client.post(
+                    "/login",
+                    data={"password": password, "csrf_token": csrf, "next": target},
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.location, "/")
+
+    def test_is_local_path(self) -> None:
+        self.assertTrue(wp.is_local_path("/"))
+        self.assertTrue(wp.is_local_path("/usage/kid%20name"))
+        self.assertTrue(wp.is_local_path("/control/192.168.1.1?x=//y"))
+        self.assertFalse(wp.is_local_path(""))
+        self.assertTrue(wp.is_local_path("/usage/kid name"))
+        self.assertFalse(wp.is_local_path("/a\nb"))
+        self.assertFalse(wp.is_local_path("/a\x00b"))
+
     def test_post_without_csrf_rejected(self) -> None:
         self._write_auth()
         response = self.client.post(
