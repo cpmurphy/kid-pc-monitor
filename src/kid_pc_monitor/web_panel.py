@@ -11,7 +11,6 @@ from functools import wraps
 from ipaddress import ip_address
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlparse
 
 from flask import (
     Flask,
@@ -97,14 +96,22 @@ def _csrf_valid() -> bool:
     return bool(supplied) and secrets.compare_digest(expected, supplied)
 
 
+def is_local_path(target: str) -> bool:
+    """True for a path on this panel ("/control/x"), safe to redirect to.
+
+    Anything a browser could resolve to another site is rejected: absolute and
+    scheme-relative URLs ("//evil", "///evil"), and backslashes, which browsers
+    read as "/" ("/\\evil" is "//evil"). Control characters, which browsers
+    strip, are rejected too. (Flask's request.path is percent-decoded, so a
+    plain space is allowed.)
+    """
+    if not target.startswith("/") or target.startswith("//"):
+        return False
+    return not any(c == "\\" or ord(c) < 0x20 or ord(c) == 0x7F for c in target)
+
+
 def _safe_next_url(target: str | None) -> str:
-    if not target:
-        return url_for("index")
-    ref = urlparse(request.host_url)
-    test = urlparse(urljoin(request.host_url, target))
-    if test.scheme not in ("http", "https"):
-        return url_for("index")
-    if test.netloc and test.netloc != ref.netloc:
+    if not target or not is_local_path(target):
         return url_for("index")
     return target
 
