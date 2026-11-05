@@ -65,6 +65,13 @@ jobs:
       - name: go test
         run: cd go && go test -race ./...
 
+      # The panel uses modernc.org/sqlite; the agent must stay standard-library only.
+      - name: Agent has no third-party dependencies
+        run: |
+          cd go
+          deps=$(GOOS=windows go list -deps ./cmd/kid-pc-agent | grep -E '^[a-z0-9-]+\.[a-z]' || true)
+          if [ -n "$deps" ]; then echo "kid-pc-agent imports: $deps"; exit 1; fi
+
       - name: Cross-check against Python
         run: |
           python -m venv venv

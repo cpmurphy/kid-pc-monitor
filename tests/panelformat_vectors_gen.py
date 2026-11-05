@@ -545,6 +545,27 @@ STR_REPR_INPUTS = [
 ]
 
 
+JSON_DUMPS_INPUTS: list[Any] = [
+    None,
+    True,
+    0,
+    -12,
+    60.0,
+    1e-7,
+    1e16,
+    0.1,
+    "plain",
+    'quote " backslash \\ slash /',
+    "ctl \b\f\n\r\t \x00 \x1f \x7f",
+    "café ✓ \U0001f600",
+    "<script>&</script>",
+    [],
+    [1, 2.5, "x", None, [True]],
+    {},
+    {"b": 1, "a": {"z": [], "y": 2.0}, "é": "ü"},
+]
+
+
 def int_case(value: Any) -> dict[str, Any]:
     try:
         return {"in": value, "result": int(value)}
@@ -571,6 +592,8 @@ def pyval_vectors() -> dict[str, Any]:
         "int": [int_case(v) for v in INT_INPUTS],
         "float_repr": [{"in": f, "out": repr(f)} for f in FLOAT_REPR_INPUTS],
         "str_repr": [{"in": s, "out": repr(s)} for s in STR_REPR_INPUTS],
+        # Byte-exact json.dumps output; Go sorts dict keys, so these do too.
+        "json_dumps": [{"in": v, "out": json.dumps(v, sort_keys=True)} for v in JSON_DUMPS_INPUTS],
     }
 
 

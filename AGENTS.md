@@ -6,7 +6,7 @@
 - `scripts/` — Installers and dev launchers.
 - `tests/` — pytest; `pythonpath = ["src"]` in `pyproject.toml`.
 - `docs/` — Protocol spec (`agent-protocol.md`), FAQ, cross-user install notes.
-- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`. `go/panel/` is the in-progress port of the web panel (so far its formatting helpers).
+- `go/` — Go ports of the protocol, lock policy, state files, request dispatcher, monitoring loop, Windows platform and the agent process (`cmd/kid-pc-agent`), plus the `xcheck` / `wincheck` test tools; see `go/README.md`. `go/panel/` is the in-progress port of the web panel (so far its formatting helpers and `panel.db` store). The panel store is the only Go code with a third-party dependency (`modernc.org/sqlite`, pure Go); the agent must stay standard-library only (CI checks).
 - `testdata/` — golden vectors shared by Python and Go (generated, do not hand-edit).
 
 ## Two Components
@@ -97,6 +97,7 @@ The Python code is the reference; Go packages under `go/` mirror it and are held
 | `request_dispatcher.py` | `go/dispatcher` | `testdata/dispatcher/vectors.json` | `tests/dispatcher_vectors_gen.py` |
 | `pc_time_control.py` | `go/monitor` | `testdata/monitor/vectors.json` | `tests/monitor_vectors_gen.py` |
 | `panel_format.py`, `remote_client.py` helpers, `scan_store.dashboard_status_key` | `go/panel/format` (+ `go/panel/pyval`) | `testdata/panelformat/vectors.json` | `tests/panelformat_vectors_gen.py` |
+| `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | `go/panel/store` | `testdata/panelstore/vectors.json` | `tests/panelstore_vectors_gen.py` |
 
 Any intentional behavior change in one of those Python modules must regenerate its vectors and keep Go in step:
 
@@ -106,7 +107,7 @@ python tests/<name>_vectors_gen.py       # rewrite the vectors
 python scripts/cross_check_go.py         # live Go<->Python sessions and state-file interop
 ```
 
-`tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.22+; the Python tests do not.
+`tests/test_*_vectors.py` fail when a vectors file is stale (on every Python in the CI matrix). Only the Go parts need Go 1.26+; the Python tests do not.
 
 The web panel stores read the clock, local timezone and jitter only through `panel_clock` (`now()`, `localize()`, `uniform()`); `panel_clock.fixed(clock, tz=..., seed=...)` pins them for tests and vector generators. `go/panel/pyval` reproduces the Python value semantics the panel relies on (truthiness, `int()`, `repr`, float `repr`, `fromisoformat`); keep vector inputs to what Python 3.11–3.14 all treat the same way.
 
