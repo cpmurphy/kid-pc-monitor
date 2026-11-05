@@ -1,0 +1,79 @@
+{{define "title"}}Usage — {{.D.username}}{{end}}
+{{define "body_class"}}page-usage{{end}}
+
+{{define "stylesheets"}}
+<link rel="stylesheet" href="{{urlStatic "css/action-pages.css"}}">
+<link rel="stylesheet" href="{{urlStatic "css/usage.css"}}">
+{{end}}
+
+{{define "content"}}
+    <main class="container">
+        <a href="/" class="back-link">← All PCs</a>
+
+        <div class="page-head">
+            <h1>Usage history</h1>
+            <p class="page-meta">{{.D.username}}<span class="meta-sep">·</span>Last 7 days</p>
+        </div>
+
+        {{if not .D.pc_groups}}
+        <div class="status-message banner info">
+            No usage snapshots recorded for this user in the last 7 days.
+        </div>
+        {{else}}
+            {{range .D.pc_groups}}
+            <section class="action-group usage-pc-group">
+                <h2 class="action-title">{{.Hostname}}</h2>
+                <table class="usage-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th class="num">Used</th>
+                            <th class="num">Allowed</th>
+                            <th class="num">Extra</th>
+                            <th class="num">Left</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range $i, $day := .Days}}
+                        <tr class="{{rowClass (eq $i 0) (get $day "no_data")}}">
+                            <td class="usage-date">{{fdate (get $day "date")}}</td>
+                            {{if get $day "no_data"}}
+                            <td colspan="4" class="muted">No data</td>
+                            {{else}}
+                            <td class="num">{{fsec (get $day "accumulated_seconds")}}</td>
+                            <td class="num">
+                                {{if notnone (get $day "daily_limit")}}
+                                    {{fmin (get $day "daily_limit")}}
+                                {{else}}
+                                    <span class="muted">Not set</span>
+                                {{end}}
+                            </td>
+                            <td class="num">
+                                {{if gt0 (get $day "cumulative_extension_seconds")}}
+                                    +{{fsec (get $day "cumulative_extension_seconds")}}
+                                {{else}}
+                                    <span class="muted">—</span>
+                                {{end}}
+                            </td>
+                            <td class="num">
+                                {{if notnone (get $day "remaining_minutes")}}
+                                    {{fmin (maxzero (get $day "remaining_minutes"))}}
+                                {{else}}
+                                    <span class="muted">—</span>
+                                {{end}}
+                            </td>
+                            {{end}}
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </section>
+            {{end}}
+        {{end}}
+
+        <p class="note">
+            Daily totals come from the last recorded snapshot of each calendar day.
+            The agent resets usage at wake-up time, not midnight.
+        </p>
+    </main>
+{{end}}

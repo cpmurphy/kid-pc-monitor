@@ -58,6 +58,7 @@ Go 1.26 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
 | `panel/store/` | `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | Web panel (in progress): `panel.db` (tracked PCs, usage snapshots, reverse heartbeats), same schema and rows as Python. |
 | `panel/auth/` | `web_panel.py` (auth), `werkzeug.security` | Web panel (in progress): `web_panel_auth.json`, werkzeug scrypt/pbkdf2 hashes, signed session cookie with CSRF token and flashes, login redirect check. |
 | `panel/reverse/` | `panel_reverse_server.py` | Web panel (in progress): the reverse listener on 9998 — identify, per-agent session with queued actions and idle status refresh, session replacement, logs. |
+| `panel/web/` | `web_panel.py`, `agent_poller.py`, `templates/` | Web panel (in progress): every route, the templates rewritten for `html/template`, embedded static files (a generated copy), reverse-status recording, the registry pruner. |
 | `panel/pyval/` | | The Python value semantics the panel port needs: truthiness, `int()`, `repr`, float `repr`, `datetime.fromisoformat`. |
 | `cmd/wincheck/` | | Manual check of `winplatform` on a real host (status, lock, message, shutdown / cancel). |
 | `cmd/xcheck/` | | Test fixture for `scripts/cross_check_go.py`: a toy agent, a toy panel and state-file helpers. |
@@ -74,7 +75,7 @@ Python generates (`../testdata/*/vectors.json`, do not hand-edit) and Go must
 reproduce exactly:
 
 ```bash
-python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat, panelstore, panelauth: regenerate after an intentional Python change
+python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat, panelstore, panelauth, panelweb: regenerate after an intentional Python change
 cd go && go test ./...               # every vector must pass in Go
 python scripts/cross_check_go.py     # live Go<->Python sessions, state-file interop, reverse-server parity, and (on Windows) the real agent against the Python panel
 ```

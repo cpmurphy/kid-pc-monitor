@@ -1,0 +1,34 @@
+{{define "title"}}Log in — Kids PC Control Panel{{end}}
+{{define "body_class"}}page-login{{end}}
+
+{{define "stylesheets"}}
+<link rel="stylesheet" href="{{urlStatic "css/auth.css"}}">
+{{end}}
+
+{{/* An empty body would not override base; the no-op action does. */}}
+{{define "account_links"}}{{if false}}{{end}}{{end}}
+
+{{define "content"}}
+  <main class="auth-wrap">
+    <div class="box">
+        <h1>Log in</h1>
+        {{with .Flashes}}
+            {{range .}}
+              {{if eq .Category "error"}}<div class="err">{{.Message}}</div>{{end}}
+            {{end}}
+        {{end}}
+        <form method="post" action="{{urlLogin ""}}" autocomplete="on">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="next" value="{{.D.next}}">
+            <label for="username">Account label</label>
+            <input type="text" id="username" name="username" value="{{.PanelUsername}}"
+                   autocomplete="username" readonly>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required minlength="1" maxlength="128"
+                   autocomplete="current-password" inputmode="text">
+            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </form>
+        <p class="hint">The account label helps Safari and other browsers save this password. It is not used to log in.</p>
+    </div>
+  </main>
+{{end}}

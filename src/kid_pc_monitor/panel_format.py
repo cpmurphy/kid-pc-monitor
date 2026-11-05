@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from datetime import date, datetime, timedelta
 
+from kid_pc_monitor import panel_clock
+
 
 def format_minutes_duration(minutes: int | float | None) -> str:
     """Format a minute count as H:MM or 'Not set'."""
@@ -69,9 +71,9 @@ def format_snapshot_recorded_at(
         dt = datetime.fromisoformat(recorded_at)
     except ValueError:
         return recorded_at
-    reference = now if now is not None else datetime.now().astimezone()
+    reference = now if now is not None else panel_clock.now()
     if reference.tzinfo is None:
-        reference = reference.replace(tzinfo=datetime.now().astimezone().tzinfo)
+        reference = reference.replace(tzinfo=panel_clock.now().tzinfo)
     display_tz = reference.tzinfo
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=display_tz)

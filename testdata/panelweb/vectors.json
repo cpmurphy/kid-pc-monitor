@@ -1,0 +1,1676 @@
+{
+ "_about": "Golden web-panel HTTP vectors generated from kid_pc_monitor.web_panel by tests/panelweb_vectors_gen.py. Do not edit by hand.",
+ "tz": "-05:00",
+ "now": "2026-06-05T15:00:00-05:00",
+ "seed": [
+  {
+   "at": "2026-06-03T18:00:00-05:00",
+   "op": "save_snapshot",
+   "args": {
+    "pc_info": {
+     "hostname": "KID-PC",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "kid",
+     "daily_limit": 120,
+     "accumulated_seconds": 7200,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.10"
+    }
+   }
+  },
+  {
+   "at": "2026-06-04T20:00:00-05:00",
+   "op": "save_snapshot",
+   "args": {
+    "pc_info": {
+     "hostname": "KID-PC",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "kid",
+     "daily_limit": null,
+     "accumulated_seconds": 3000,
+     "cumulative_extension_seconds": 600,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.10"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T14:50:00-05:00",
+   "op": "record_poll_inspect",
+   "args": {
+    "ip": "192.168.1.10",
+    "pc_info": {
+     "hostname": "KID-PC",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "kid",
+     "daily_limit": 120,
+     "accumulated_seconds": 600,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.10"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T14:50:00-05:00",
+   "op": "save_poll_snapshot",
+   "args": {
+    "pc_info": {
+     "hostname": "KID-PC",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "kid",
+     "daily_limit": 120,
+     "accumulated_seconds": 5400,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "45 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.10"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T14:50:00-05:00",
+   "op": "save_snapshot",
+   "args": {
+    "pc_info": {
+     "hostname": "KID-PC",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "kid",
+     "daily_limit": 120,
+     "accumulated_seconds": 5400,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.10"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T09:00:00-05:00",
+   "op": "record_poll_inspect",
+   "args": {
+    "ip": "192.168.1.11",
+    "pc_info": {
+     "hostname": "LAPTOP",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "sib",
+     "daily_limit": 60.0,
+     "accumulated_seconds": 600,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 120.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.11"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T09:00:00-05:00",
+   "op": "save_snapshot",
+   "args": {
+    "pc_info": {
+     "hostname": "LAPTOP",
+     "status": "UNLOCKED",
+     "locked": false,
+     "current_user": "sib",
+     "daily_limit": 60.0,
+     "accumulated_seconds": 3800,
+     "cumulative_extension_seconds": 0,
+     "effective_limit_minutes": 60.0,
+     "time_remaining": "110 minutes",
+     "access_status": "Unlocked",
+     "reachable": true,
+     "ip": "192.168.1.11"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T10:00:00-05:00",
+   "op": "record_poll_inspect",
+   "args": {
+    "ip": "192.168.1.11",
+    "pc_info": {
+     "hostname": "LAPTOP",
+     "ip": "192.168.1.11",
+     "reachable": false
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T14:00:00-05:00",
+   "op": "record_poll_inspect",
+   "args": {
+    "ip": "192.168.1.12",
+    "pc_info": {
+     "hostname": "DESK",
+     "ip": "192.168.1.12",
+     "reachable": false,
+     "connection_error": "Authentication failed — the shared secret on this panel may not match the kid PC."
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T13:00:00-05:00",
+   "op": "reverse_status",
+   "args": {
+    "hostname": "TABLET",
+    "ip": "192.168.1.30",
+    "settings": {
+     "name": "TABLET",
+     "status": "UNLOCKED",
+     "current_user": null,
+     "wake_time": "07:00"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T13:30:00-05:00",
+   "op": "reverse_disconnect",
+   "args": {
+    "hostname": "TABLET",
+    "ip": "192.168.1.30"
+   }
+  },
+  {
+   "at": "2026-06-05T14:55:00-05:00",
+   "op": "reverse_status",
+   "args": {
+    "hostname": "KID-PC",
+    "ip": "192.168.1.10",
+    "settings": {
+     "name": "KID-PC",
+     "status": "UNLOCKED",
+     "current_user": "kid",
+     "daily_limit": 120,
+     "bed_time": "21:00",
+     "wake_time": "07:00",
+     "cumulative_extension": 900,
+     "accumulated_seconds": 5400,
+     "time_remaining": 45,
+     "manual_lock": true,
+     "enforcement_active": false,
+     "enforcement_reason": null,
+     "access_status": "Locked — manual lock"
+    }
+   }
+  },
+  {
+   "at": "2026-06-05T14:30:00-05:00",
+   "op": "record_poll_inspect",
+   "args": {
+    "ip": "192.168.1.13",
+    "pc_info": {
+     "hostname": "PC at 192.168.1.13",
+     "status": "LOCKED",
+     "locked": true,
+     "reachable": true
+    }
+   }
+  }
+ ],
+ "sessions": {
+  "192.168.1.21": {
+   "hostname": "NEARPC",
+   "settings": {
+    "name": "NEARPC",
+    "status": "UNLOCKED",
+    "current_user": "kid",
+    "daily_limit": 120,
+    "bed_time": "21:00",
+    "wake_time": "07:00",
+    "cumulative_extension": 900,
+    "accumulated_seconds": 7020,
+    "time_remaining": 45,
+    "manual_lock": true,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — manual lock"
+   },
+   "logs": [],
+   "truncated": false
+  },
+  "192.168.1.10": {
+   "hostname": "KID-PC",
+   "settings": {
+    "name": "KID-PC",
+    "status": "UNLOCKED",
+    "current_user": "kid",
+    "daily_limit": 120,
+    "bed_time": "21:00",
+    "wake_time": "07:00",
+    "cumulative_extension": 900,
+    "accumulated_seconds": 5400,
+    "time_remaining": 45,
+    "manual_lock": true,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — manual lock"
+   },
+   "logs": [
+    "2026-06-05 14:00:00 INFO Monitoring kid",
+    "<b>not html</b> & more"
+   ],
+   "truncated": true
+  },
+  "192.168.1.20": {
+   "hostname": "OLDAGENT",
+   "settings": {
+    "name": "OLDAGENT",
+    "status": "UNLOCKED",
+    "current_user": "kid",
+    "daily_limit": 120,
+    "bed_time": "21:00",
+    "wake_time": "07:00",
+    "cumulative_extension": 900,
+    "accumulated_seconds": 6642,
+    "time_remaining": 45,
+    "manual_lock": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": null
+   },
+   "logs_error": "unknown_action: unknown action: 'get_logs'"
+  }
+ },
+ "panel_username": "Kid PC Monitor",
+ "dynamic_cache_control": "private, no-cache, no-store, must-revalidate, max-age=0",
+ "scenarios": [
+  {
+   "name": "open_panel",
+   "auth": null,
+   "requests": [
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/agent/v1/discover",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "reverse_port": 9998,
+       "service": "kid-pc-monitor-panel",
+       "version": 1
+      }
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.10\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>KID-PC</h1><p class=\"page-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </p></div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:55:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Quick actions</h2><div class=\"btn-row\"><button type=\"button\" class=\"btn btn-primary btn-lock\" data-action=\"lock\">Lock now</button><button type=\"button\" class=\"btn btn-danger btn-shutdown\" data-action=\"shutdown\">Shut down</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Extra time</h2><p class=\"note\">Adds time for today only. The daily allowance isn't changed.</p><div class=\"quick-limit-row\"><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"15\">+15 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"30\">+30 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"60\">+1 hour</button></div><div class=\"field-row\"><input type=\"number\" id=\"extension-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"Other amount (minutes)\" aria-label=\"Extra minutes\"><button type=\"button\" class=\"btn btn-secondary btn-limit\" data-action=\"grant-extension\">Add</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Send a message</h2><div class=\"field-row\"><input type=\"text\" id=\"message-text\" placeholder=\"Shown on the kid's screen\" aria-label=\"Message\"><button type=\"button\" class=\"btn btn-secondary btn-message\" data-action=\"send-message\">Send</button></div></section></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/kid-pc",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.10\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>KID-PC</h1><p class=\"page-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </p></div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:55:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Quick actions</h2><div class=\"btn-row\"><button type=\"button\" class=\"btn btn-primary btn-lock\" data-action=\"lock\">Lock now</button><button type=\"button\" class=\"btn btn-danger btn-shutdown\" data-action=\"shutdown\">Shut down</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Extra time</h2><p class=\"note\">Adds time for today only. The daily allowance isn't changed.</p><div class=\"quick-limit-row\"><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"15\">+15 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"30\">+30 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"60\">+1 hour</button></div><div class=\"field-row\"><input type=\"number\" id=\"extension-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"Other amount (minutes)\" aria-label=\"Extra minutes\"><button type=\"button\" class=\"btn btn-secondary btn-limit\" data-action=\"grant-extension\">Add</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Send a message</h2><div class=\"field-row\"><input type=\"text\" id=\"message-text\" placeholder=\"Shown on the kid's screen\" aria-label=\"Message\"><button type=\"button\" class=\"btn btn-secondary btn-message\" data-action=\"send-message\">Send</button></div></section></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.10",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.10\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>KID-PC</h1><p class=\"page-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </p></div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:55:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Quick actions</h2><div class=\"btn-row\"><button type=\"button\" class=\"btn btn-primary btn-lock\" data-action=\"lock\">Lock now</button><button type=\"button\" class=\"btn btn-danger btn-shutdown\" data-action=\"shutdown\">Shut down</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Extra time</h2><p class=\"note\">Adds time for today only. The daily allowance isn't changed.</p><div class=\"quick-limit-row\"><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"15\">+15 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"30\">+30 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"60\">+1 hour</button></div><div class=\"field-row\"><input type=\"number\" id=\"extension-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"Other amount (minutes)\" aria-label=\"Extra minutes\"><button type=\"button\" class=\"btn btn-secondary btn-limit\" data-action=\"grant-extension\">Add</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Send a message</h2><div class=\"field-row\"><input type=\"text\" id=\"message-text\" placeholder=\"Shown on the kid's screen\" aria-label=\"Message\"><button type=\"button\" class=\"btn btn-secondary btn-message\" data-action=\"send-message\">Send</button></div></section></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/LAPTOP",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control LAPTOP</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.11\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>LAPTOP</h1><p class=\"page-meta\"> sib<span class=\"meta-sep\">·</span>192.168.1.11 </p></div><div class=\"status-message banner snapshot\"> Showing a recorded snapshot from 9:00am, not live data. </div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T10:00:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-success\">Unlocked</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:03</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">1:50</span><span class=\"usage-label\">left</span></div></div><div class=\"meter over\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"100\"><span class=\"meter-fill\" style=\"width: 100.0%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 1:00 </dd></div><div><dt>Extra today</dt><dd><span class=\"muted\">—</span></dd></div><div><dt>Bedtime</dt><dd><span class=\"muted\">Not set</span></dd></div><div><dt>Wake-up</dt><dd><span class=\"muted\">Unknown</span></dd></div></dl><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/sib\">Usage history</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.12",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control DESK</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.12\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>DESK</h1><p class=\"page-meta\"> 192.168.1.12 </p></div><div class=\"status-message banner warning\"> Authentication failed — the shared secret on this panel may not match the kid PC. </div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:00:00-05:00\"></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.13",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control PC at 192.168.1.13</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.13\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>PC at 192.168.1.13</h1><p class=\"page-meta\"> 192.168.1.13 </p></div><div class=\"status-message banner info\"> Agent not connected — the PC may be off, signed out, or the agent stopped. It will reappear when the kid is signed in and the agent reconnects. </div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:30:00-05:00\"></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.20",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control OLDAGENT</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.20\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>OLDAGENT</h1><p class=\"page-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.20 </p></div><div id=\"today-stats\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-success\">Unlocked</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:51</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"82\"><span class=\"meter-fill\" style=\"width: 82.0%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.20\">Daily settings</a><a href=\"/logs/192.168.1.20\">Agent log</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Quick actions</h2><div class=\"btn-row\"><button type=\"button\" class=\"btn btn-primary btn-lock\" data-action=\"lock\">Lock now</button><button type=\"button\" class=\"btn btn-danger btn-shutdown\" data-action=\"shutdown\">Shut down</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Extra time</h2><p class=\"note\">Adds time for today only. The daily allowance isn't changed.</p><div class=\"quick-limit-row\"><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"15\">+15 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"30\">+30 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"60\">+1 hour</button></div><div class=\"field-row\"><input type=\"number\" id=\"extension-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"Other amount (minutes)\" aria-label=\"Extra minutes\"><button type=\"button\" class=\"btn btn-secondary btn-limit\" data-action=\"grant-extension\">Add</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Send a message</h2><div class=\"field-row\"><input type=\"text\" id=\"message-text\" placeholder=\"Shown on the kid's screen\" aria-label=\"Message\"><button type=\"button\" class=\"btn btn-secondary btn-message\" data-action=\"send-message\">Send</button></div></section></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/TABLET",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control TABLET</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.30\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>TABLET</h1><p class=\"page-meta\"> 192.168.1.30 </p></div><div class=\"status-message banner snapshot\"> Showing a recorded snapshot from 1:00pm, not live data. </div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T13:30:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-success\">Unlocked</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">0 min</span><span class=\"usage-label\">used</span></div></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd><span class=\"muted\">Not set</span></dd></div><div><dt>Extra today</dt><dd><span class=\"muted\">—</span></dd></div><div><dt>Bedtime</dt><dd><span class=\"muted\">Not set</span></dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.21/stats",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:57</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter near\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"87\"><span class=\"meter-fill\" style=\"width: 86.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.21\">Daily settings</a><a href=\"/logs/192.168.1.21\">Agent log</a></nav></section>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logs/192.168.1.21",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Agent log — NEARPC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/logs.css\"></head><body class=\"page-logs\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/control/NEARPC\" class=\"back-link\">← NEARPC</a><div class=\"page-head\"><h1>Agent log</h1><p class=\"page-meta\">NEARPC<span class=\"meta-sep\">·</span>192.168.1.21</p></div><div class=\"log-toolbar\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-top\">Top</button><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-bottom\">Bottom</button><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-refresh\">Refresh</button></div><pre class=\"agent-log-view\" id=\"agent-log\" tabindex=\"0\">(log file is empty)</pre></main><script type=\"module\" src=\"/static/js/logs.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/NOPE",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "No connected PC found for NOPE. PCs appear here after the agent connects to this panel."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/10.9.9.9",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "No connected PC found for 10.9.9.9. PCs appear here after the agent connects to this panel."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC/poll-meta",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "poll_interval_sec": 60,
+       "updated_at": "2026-06-05T14:55:00-05:00"
+      }
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.20/poll-meta",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "poll_interval_sec": 60,
+       "updated_at": null
+      }
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/NOPE/poll-meta",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>404 Not Found</title><h1>Not Found</h1><p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC/stats",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC/stats?source=poll",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/LAPTOP/stats",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-success\">Unlocked</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:03</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">1:50</span><span class=\"usage-label\">left</span></div></div><div class=\"meter over\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"100\"><span class=\"meter-fill\" style=\"width: 100.0%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 1:00 </dd></div><div><dt>Extra today</dt><dd><span class=\"muted\">—</span></dd></div><div><dt>Bedtime</dt><dd><span class=\"muted\">Not set</span></dd></div><div><dt>Wake-up</dt><dd><span class=\"muted\">Unknown</span></dd></div></dl><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/sib\">Usage history</a></nav></section>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/LAPTOP/stats?source=poll",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-success\">Unlocked</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:03</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">1:50</span><span class=\"usage-label\">left</span></div></div><div class=\"meter over\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"100\"><span class=\"meter-fill\" style=\"width: 100.0%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 1:00 </dd></div><div><dt>Extra today</dt><dd><span class=\"muted\">—</span></dd></div><div><dt>Bedtime</dt><dd><span class=\"muted\">Not set</span></dd></div><div><dt>Wake-up</dt><dd><span class=\"muted\">Unknown</span></dd></div></dl><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/sib\">Usage history</a></nav></section>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/192.168.1.12/stats?source=poll",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": ""
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/NOPE/stats",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>404 Not Found</title><h1>Not Found</h1><p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logs/192.168.1.10",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Agent log — KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/logs.css\"></head><body class=\"page-logs\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/control/KID-PC\" class=\"back-link\">← KID-PC</a><div class=\"page-head\"><h1>Agent log</h1><p class=\"page-meta\">KID-PC<span class=\"meta-sep\">·</span>192.168.1.10</p></div><p class=\"note\">Showing the most recent lines that fit in one request. Older lines are omitted.</p><div class=\"log-toolbar\"><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-top\">Top</button><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-bottom\">Bottom</button><button type=\"button\" class=\"btn btn-secondary btn-sm\" id=\"log-refresh\">Refresh</button></div><pre class=\"agent-log-view\" id=\"agent-log\" tabindex=\"0\">2026-06-05 14:00:00 INFO Monitoring kid &lt;b&gt;not html&lt;/b&gt; &amp; more</pre></main><script type=\"module\" src=\"/static/js/logs.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logs/192.168.1.11",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Agent log — LAPTOP</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/logs.css\"></head><body class=\"page-logs\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/control/LAPTOP\" class=\"back-link\">← LAPTOP</a><div class=\"page-head\"><h1>Agent log</h1><p class=\"page-meta\">LAPTOP<span class=\"meta-sep\">·</span>192.168.1.11</p></div><div class=\"status-message banner error\"> PC is not connected. Wait for the agent to reconnect, then open logs again. </div></main><script type=\"module\" src=\"/static/js/logs.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logs/192.168.1.20",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Agent log — OLDAGENT</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/logs.css\"></head><body class=\"page-logs\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/control/OLDAGENT\" class=\"back-link\">← OLDAGENT</a><div class=\"page-head\"><h1>Agent log</h1><p class=\"page-meta\">OLDAGENT<span class=\"meta-sep\">·</span>192.168.1.20</p></div><div class=\"status-message banner error\"> unknown_action: unknown action: 'get_logs' </div></main><script type=\"module\" src=\"/static/js/logs.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logs/10.9.9.9",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Agent log — PC at 10.9.9.9</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/logs.css\"></head><body class=\"page-logs\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/control/PC%20at%2010.9.9.9\" class=\"back-link\">← PC at 10.9.9.9</a><div class=\"page-head\"><h1>Agent log</h1><p class=\"page-meta\">PC at 10.9.9.9<span class=\"meta-sep\">·</span>10.9.9.9</p></div><div class=\"status-message banner error\"> PC is not connected. Wait for the agent to reconnect, then open logs again. </div></main><script type=\"module\" src=\"/static/js/logs.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/daily_settings/192.168.1.10",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Daily settings — KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/daily-settings.css\"></head><body class=\"page-daily\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.10\"><a href=\"/control/KID-PC\" class=\"back-link\">← KID-PC</a><div class=\"page-head\"><h1>Daily settings</h1><p class=\"page-meta\"> These apply every day and take effect immediately on KID-PC. </p></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Daily allowance</h2><p class=\"hint\">Screen-time cap per day, in minutes. Leave it unset for no cap.</p><div class=\"field-row\"><input type=\"number\" id=\"daily-limit-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"e.g. 120\" aria-label=\"Daily allowance in minutes\" value=\"120\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-daily-limit\">Save</button></div><div class=\"setting-footer\"><button type=\"button\" class=\"btn btn-text danger btn-clear\" data-action=\"clear-daily-limit\">Remove daily allowance</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Bedtime</h2><p class=\"hint\">The PC locks at this time until wake-up.</p><div class=\"field-row\"><input type=\"time\" id=\"bed-time\" aria-label=\"Bedtime\" value=\"21:00\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-bed-time\">Save</button></div><div class=\"setting-footer\"><button type=\"button\" class=\"btn btn-text danger btn-clear\" data-action=\"clear-bed-time\">Remove bedtime</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Wake-up time</h2><p class=\"hint\">Bedtime locks lift here, and daily usage resets.</p><div class=\"field-row\"><input type=\"time\" id=\"wake-time\" aria-label=\"Wake-up time\" value=\"07:00\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-wake-time\">Save</button></div></section></main><script type=\"module\" src=\"/static/js/daily-settings.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/daily_settings/192.168.1.11",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Daily settings — LAPTOP</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/daily-settings.css\"></head><body class=\"page-daily\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.11\"><a href=\"/control/LAPTOP\" class=\"back-link\">← LAPTOP</a><div class=\"page-head\"><h1>Daily settings</h1><p class=\"page-meta\"> These apply every day and take effect immediately on LAPTOP. </p></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Daily allowance</h2><p class=\"hint\">Screen-time cap per day, in minutes. Leave it unset for no cap.</p><div class=\"field-row\"><input type=\"number\" id=\"daily-limit-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"e.g. 120\" aria-label=\"Daily allowance in minutes\" value=\"60.0\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-daily-limit\">Save</button></div><div class=\"setting-footer\"><button type=\"button\" class=\"btn btn-text danger btn-clear\" data-action=\"clear-daily-limit\">Remove daily allowance</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Bedtime</h2><p class=\"hint\">The PC locks at this time until wake-up.</p><div class=\"field-row\"><input type=\"time\" id=\"bed-time\" aria-label=\"Bedtime\" value=\"21:00\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-bed-time\">Save</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Wake-up time</h2><p class=\"hint\">Bedtime locks lift here, and daily usage resets.</p><div class=\"field-row\"><input type=\"time\" id=\"wake-time\" aria-label=\"Wake-up time\" value=\"07:00\"><button type=\"button\" class=\"btn btn-primary btn-save\" data-action=\"save-wake-time\">Save</button></div></section></main><script type=\"module\" src=\"/static/js/daily-settings.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/daily_settings/192.168.1.12",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><p class=\"flash flash-error\">Authentication failed — the shared secret on this panel may not match the kid PC.</p><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/daily_settings/NOPE",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><p class=\"flash flash-error\">No connected PC found for NOPE. PCs appear here after the agent connects to this panel.</p><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/kid",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Usage — kid</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/usage.css\"></head><body class=\"page-usage\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>Usage history</h1><p class=\"page-meta\">kid<span class=\"meta-sep\">·</span>Last 7 days</p></div><section class=\"action-group usage-pc-group\"><h2 class=\"action-title\">KID-PC</h2><table class=\"usage-table\"><thead><tr><th>Date</th><th class=\"num\">Used</th><th class=\"num\">Allowed</th><th class=\"num\">Extra</th><th class=\"num\">Left</th></tr></thead><tbody><tr class=\"is-today\"><td class=\"usage-date\">Fri Jun 5</td><td class=\"num\">1:30</td><td class=\"num\"> 2:00 </td><td class=\"num\"> +15 min </td><td class=\"num\"> 45 min </td></tr><tr class=\"\"><td class=\"usage-date\">Thu Jun 4</td><td class=\"num\">50 min</td><td class=\"num\"><span class=\"muted\">Not set</span></td><td class=\"num\"> +10 min </td><td class=\"num\"> 1:50 </td></tr><tr class=\"\"><td class=\"usage-date\">Wed Jun 3</td><td class=\"num\">2:00</td><td class=\"num\"> 2:00 </td><td class=\"num\"><span class=\"muted\">—</span></td><td class=\"num\"> 1:50 </td></tr><tr class=\"no-data\"><td class=\"usage-date\">Tue Jun 2</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Mon Jun 1</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Sun May 31</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Sat May 30</td><td colspan=\"4\" class=\"muted\">No data</td></tr></tbody></table></section><p class=\"note\"> Daily totals come from the last recorded snapshot of each calendar day. The agent resets usage at wake-up time, not midnight. </p></main></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/sib",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Usage — sib</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/usage.css\"></head><body class=\"page-usage\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>Usage history</h1><p class=\"page-meta\">sib<span class=\"meta-sep\">·</span>Last 7 days</p></div><section class=\"action-group usage-pc-group\"><h2 class=\"action-title\">LAPTOP</h2><table class=\"usage-table\"><thead><tr><th>Date</th><th class=\"num\">Used</th><th class=\"num\">Allowed</th><th class=\"num\">Extra</th><th class=\"num\">Left</th></tr></thead><tbody><tr class=\"is-today\"><td class=\"usage-date\">Fri Jun 5</td><td class=\"num\">1:03</td><td class=\"num\"> 1:00 </td><td class=\"num\"><span class=\"muted\">—</span></td><td class=\"num\"> 1:50 </td></tr><tr class=\"no-data\"><td class=\"usage-date\">Thu Jun 4</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Wed Jun 3</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Tue Jun 2</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Mon Jun 1</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Sun May 31</td><td colspan=\"4\" class=\"muted\">No data</td></tr><tr class=\"no-data\"><td class=\"usage-date\">Sat May 30</td><td colspan=\"4\" class=\"muted\">No data</td></tr></tbody></table></section><p class=\"note\"> Daily totals come from the last recorded snapshot of each calendar day. The agent resets usage at wake-up time, not midnight. </p></main></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/nobody",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Usage — nobody</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/usage.css\"></head><body class=\"page-usage\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>Usage history</h1><p class=\"page-meta\">nobody<span class=\"meta-sep\">·</span>Last 7 days</p></div><div class=\"status-message banner info\"> No usage snapshots recorded for this user in the last 7 days. </div><p class=\"note\"> Daily totals come from the last recorded snapshot of each calendar day. The agent resets usage at wake-up time, not midnight. </p></main></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/a/b c",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Usage — a/b c</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/usage.css\"></head><body class=\"page-usage\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Add password</a></nav></div></header><main class=\"container\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>Usage history</h1><p class=\"page-meta\">a/b c<span class=\"meta-sep\">·</span>Last 7 days</p></div><div class=\"status-message banner info\"> No usage snapshots recorded for this user in the last 7 days. </div><p class=\"note\"> Daily totals come from the last recorded snapshot of each calendar day. The agent resets usage at wake-up time, not midnight. </p></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "lock"
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>400 Bad Request</title><h1>Bad Request</h1><p>The browser (or proxy) sent a request that this server could not understand.</p>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "lock"
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "lock var=None val=None tail=None",
+       "success": true
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "extend_time",
+      "minutes": 30
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "extend var=None val=30 tail=None",
+       "success": true
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "extend_time",
+      "minutes": "x"
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "Invalid value for extend_time: invalid literal for int() with base 10: 'x'",
+       "success": false
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "set_daily_limit",
+      "minutes": ""
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "clear var=daily_limit val=None tail=None",
+       "success": true
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "10.9.9.9",
+      "action": "lock"
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "PC is not connected. Wait for the agent to reconnect, then try again.",
+       "success": false
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "action": "lock"
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "Missing ip or action",
+       "success": false
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": ""
+     },
+     "csrf": "header",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "Missing ip or action",
+       "success": false
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "form": {
+      "ip": "192.168.1.10",
+      "action": "lock"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "response": "Missing ip or action",
+       "success": false
+      }
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/action",
+     "json": {
+      "ip": "192.168.1.10",
+      "action": "lock"
+     },
+     "headers": {
+      "X-CSRF-Token": "wrong"
+     },
+     "response": {
+      "status": 400,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>400 Bad Request</title><h1>Bad Request</h1><p>The browser (or proxy) sent a request that this server could not understand.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/action",
+     "response": {
+      "status": 405,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0",
+       "Allow": "OPTIONS, POST"
+      },
+      "html": "<!doctype html><html lang=en><title>405 Method Not Allowed</title><h1>Method Not Allowed</h1><p>The method is not allowed for the requested URL.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/nonexistent",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>404 Not Found</title><h1>Not Found</h1><p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/nonexistent",
+     "response": {
+      "status": 400,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>400 Bad Request</title><h1>Bad Request</h1><p>The browser (or proxy) sent a request that this server could not understand.</p>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/control/KID-PC",
+     "csrf": "form",
+     "response": {
+      "status": 405,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0",
+       "Allow": "GET, HEAD, OPTIONS"
+      },
+      "html": "<!doctype html><html lang=en><title>405 Method Not Allowed</title><h1>Method Not Allowed</h1><p>The method is not allowed for the requested URL.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC/",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>404 Not Found</title><h1>Not Found</h1><p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/static/css/panel.css",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/css; charset=utf-8",
+       "Cache-Control": "no-cache"
+      },
+      "sha256": "3c8ec012e84abcc5d85bccd37a3233c6bdc2eab26aa480557fc37d4ba5a004b6",
+      "length": 9611
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/static/js/core.js",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/javascript; charset=utf-8",
+       "Cache-Control": "no-cache"
+      },
+      "sha256": "772ecee053b338ec2f4474d67e14e63cbda517835321092557d9c73f0db05d7e",
+      "length": 6539
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/static/nope.css",
+     "response": {
+      "status": 404,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8"
+      },
+      "html": "<!doctype html><html lang=en><title>404 Not Found</title><h1>Not Found</h1><p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logout",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/set-password",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Add password — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-password\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><a class=\"back-link\" href=\"/\">← Back</a><h1>Add password protection</h1><form method=\"post\" action=\"/set-password\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><label for=\"username\">Account label (for saving in your browser)</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">New password (at least 8 characters)</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><label for=\"password_confirm\">Confirm password</label><input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Save password</button></form><p class=\"hint\">Please do <em>not</em> use your Windows password here.</p><p class=\"hint\">The account label can be anything. Only the password is used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "password": "short",
+      "password_confirm": "short"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Add password — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-password\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><a class=\"back-link\" href=\"/\">← Back</a><h1>Add password protection</h1><div class=\"err\">Password must be at least 8 characters.</div><form method=\"post\" action=\"/set-password\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><label for=\"username\">Account label (for saving in your browser)</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">New password (at least 8 characters)</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><label for=\"password_confirm\">Confirm password</label><input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Save password</button></form><p class=\"hint\">Please do <em>not</em> use your Windows password here.</p><p class=\"hint\">The account label can be anything. Only the password is used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "password": "longenough1",
+      "password_confirm": "different1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Add password — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-password\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><a class=\"back-link\" href=\"/\">← Back</a><h1>Add password protection</h1><div class=\"err\">Passwords do not match.</div><form method=\"post\" action=\"/set-password\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><label for=\"username\">Account label (for saving in your browser)</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">New password (at least 8 characters)</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><label for=\"password_confirm\">Confirm password</label><input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Save password</button></form><p class=\"hint\">Please do <em>not</em> use your Windows password here.</p><p class=\"hint\">The account label can be anything. Only the password is used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "password": "longenough1",
+      "password_confirm": "longenough1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Change password</a><a href=\"/logout\">Log out</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><p class=\"flash flash-success\">Password saved.</p><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Control KID-PC</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/action-pages.css\"><link rel=\"stylesheet\" href=\"/static/css/control.css\"></head><body class=\"page-control\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Change password</a><a href=\"/logout\">Log out</a></nav></div></header><main class=\"container\" data-ip=\"192.168.1.10\"><a href=\"/\" class=\"back-link\">← All PCs</a><div class=\"page-head\"><h1>KID-PC</h1><p class=\"page-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </p></div><div id=\"today-stats\" data-poll-updated-at=\"2026-06-05T14:55:00-05:00\"><section class=\"action-group\"><div class=\"card-head\"><h2 class=\"action-title\">Today</h2><span class=\"pill pill-danger\">Locked — manual lock</span></div><div class=\"usage-summary\"><div class=\"usage-figure\"><span class=\"usage-value\">1:30</span><span class=\"usage-label\">used</span></div><div class=\"usage-figure end\"><span class=\"usage-value\">45 min</span><span class=\"usage-label\">left</span></div></div><div class=\"meter\" role=\"progressbar\" aria-label=\"Allowance used\" aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"67\"><span class=\"meter-fill\" style=\"width: 66.7%\"></span></div><dl class=\"stat-grid\"><div><dt>Daily allowance</dt><dd> 2:00 </dd></div><div><dt>Extra today</dt><dd> +15 min </dd></div><div><dt>Bedtime</dt><dd> 21:00 </dd></div><div><dt>Wake-up</dt><dd> 07:00 </dd></div></dl><div class=\"inline-alert\"><span>Manual lock is on</span><button type=\"button\" class=\"btn btn-danger btn-sm\" data-action=\"clear-manual-lock\">Clear</button></div><nav class=\"card-links\" aria-label=\"More for this PC\"><a href=\"/usage/kid\">Usage history</a><a href=\"/daily_settings/192.168.1.10\">Daily settings</a><a href=\"/logs/192.168.1.10\">Agent log</a></nav></section></div><div id=\"status-message\" class=\"status-message\" role=\"status\" aria-live=\"polite\"></div><section class=\"action-group\"><h2 class=\"action-title\">Quick actions</h2><div class=\"btn-row\"><button type=\"button\" class=\"btn btn-primary btn-lock\" data-action=\"lock\">Lock now</button><button type=\"button\" class=\"btn btn-danger btn-shutdown\" data-action=\"shutdown\">Shut down</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Extra time</h2><p class=\"note\">Adds time for today only. The daily allowance isn't changed.</p><div class=\"quick-limit-row\"><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"15\">+15 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"30\">+30 min</button><button type=\"button\" class=\"quick-limit\" data-action=\"quick-extend\" data-minutes=\"60\">+1 hour</button></div><div class=\"field-row\"><input type=\"number\" id=\"extension-minutes\" min=\"1\" inputmode=\"numeric\" placeholder=\"Other amount (minutes)\" aria-label=\"Extra minutes\"><button type=\"button\" class=\"btn btn-secondary btn-limit\" data-action=\"grant-extension\">Add</button></div></section><section class=\"action-group\"><h2 class=\"action-title\">Send a message</h2><div class=\"field-row\"><input type=\"text\" id=\"message-text\" placeholder=\"Shown on the kid's screen\" aria-label=\"Message\"><button type=\"button\" class=\"btn btn-secondary btn-message\" data-action=\"send-message\">Send</button></div></section></main><script type=\"module\" src=\"/static/js/control.js\"></script></body></html>"
+     }
+    }
+   ],
+   "password_set_after": true
+  },
+  {
+   "name": "password_protected",
+   "auth": {
+    "secret_key": "ssssssssssssssssssssssssssssssss",
+    "password_hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd"
+   },
+   "requests": [
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/login?next=/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/login?next=/\">/login?next=/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/control/KID-PC",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/login?next=/control/KID-PC",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/login?next=/control/KID-PC\">/login?next=/control/KID-PC</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/usage/a b",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/login?next=/usage/a+b",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/login?next=/usage/a+b\">/login?next=/usage/a+b</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/agent/v1/discover",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "application/json",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "json": {
+       "reverse_port": 9998,
+       "service": "kid-pc-monitor-panel",
+       "version": 1
+      }
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/set-password",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/login?next=/set-password",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/login?next=/set-password\">/login?next=/set-password</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login?next=/control/KID-PC",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"/control/KID-PC\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login?next=//evil.example/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "form": {
+      "password": "wrong",
+      "next": "/control/KID-PC"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><div class=\"err\">Incorrect password.</div><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "form": {
+      "password": "supersecret1",
+      "next": "/\\evil.example/"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logout",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login?next=/control/KID-PC",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"/control/KID-PC\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "form": {
+      "password": "supersecret1",
+      "next": "/control/KID-PC"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/control/KID-PC",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/control/KID-PC\">/control/KID-PC</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Change password</a><a href=\"/logout\">Log out</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/set-password",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Change password — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-password\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><a class=\"back-link\" href=\"/\">← Back</a><h1>Change password</h1><form method=\"post\" action=\"/set-password\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><label for=\"username\">Account label (for saving in your browser)</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"current_password\">Current password</label><input type=\"password\" id=\"current_password\" name=\"current_password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><label for=\"password\">New password (at least 8 characters)</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><label for=\"password_confirm\">Confirm password</label><input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Update password</button></form><p class=\"hint\">Please do <em>not</em> use your Windows password here.</p><p class=\"hint\">The account label can be anything. Only the password is used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "current_password": "wrong",
+      "password": "newpassword1",
+      "password_confirm": "newpassword1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Change password — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-password\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><a class=\"back-link\" href=\"/\">← Back</a><h1>Change password</h1><div class=\"err\">Current password is incorrect.</div><form method=\"post\" action=\"/set-password\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><label for=\"username\">Account label (for saving in your browser)</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"current_password\">Current password</label><input type=\"password\" id=\"current_password\" name=\"current_password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><label for=\"password\">New password (at least 8 characters)</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><label for=\"password_confirm\">Confirm password</label><input type=\"password\" id=\"password_confirm\" name=\"password_confirm\" required minlength=\"8\" maxlength=\"128\" autocomplete=\"new-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Update password</button></form><p class=\"hint\">Please do <em>not</em> use your Windows password here.</p><p class=\"hint\">The account label can be anything. Only the password is used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/set-password",
+     "form": {
+      "current_password": "supersecret1",
+      "password": "newpassword1",
+      "password_confirm": "newpassword1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Change password</a><a href=\"/logout\">Log out</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><p class=\"flash flash-success\">Password saved.</p><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/logout",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/login?next=/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/login?next=/\">/login?next=/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/login",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "form": {
+      "password": "supersecret1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Log in — Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/auth.css\"></head><body class=\"page-login\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a></div></header><main class=\"auth-wrap\"><div class=\"box\"><h1>Log in</h1><div class=\"err\">Incorrect password.</div><form method=\"post\" action=\"/login\" autocomplete=\"on\"><input type=\"hidden\" name=\"csrf_token\" value=\"CSRF\"><input type=\"hidden\" name=\"next\" value=\"\"><label for=\"username\">Account label</label><input type=\"text\" id=\"username\" name=\"username\" value=\"Kid PC Monitor\" autocomplete=\"username\" readonly><label for=\"password\">Password</label><input type=\"password\" id=\"password\" name=\"password\" required minlength=\"1\" maxlength=\"128\" autocomplete=\"current-password\" inputmode=\"text\"><button type=\"submit\" class=\"btn btn-primary btn-block\">Log in</button></form><p class=\"hint\">The account label helps Safari and other browsers save this password. It is not used to log in.</p></div></main></body></html>"
+     }
+    },
+    {
+     "method": "POST",
+     "path": "/login",
+     "form": {
+      "password": "newpassword1"
+     },
+     "csrf": "form",
+     "response": {
+      "status": 302,
+      "headers": {
+       "Location": "/",
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!doctype html><html lang=en><title>Redirecting...</title><h1>Redirecting...</h1><p>You should be redirected automatically to the target URL: <a href=\"/\">/</a>. If not, click the link."
+     }
+    },
+    {
+     "method": "GET",
+     "path": "/",
+     "response": {
+      "status": 200,
+      "headers": {
+       "Content-Type": "text/html; charset=utf-8",
+       "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+       "Pragma": "no-cache",
+       "Expires": "0"
+      },
+      "html": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><meta name=\"csrf-token\" content=\"CSRF\"><meta name=\"color-scheme\" content=\"light dark\"><title>Kids PC Control Panel</title><link rel=\"stylesheet\" href=\"/static/css/panel.css\"><link rel=\"stylesheet\" href=\"/static/css/home.css\"></head><body class=\"page-home\"><header class=\"app-header\"><div class=\"app-header-inner\"><a class=\"brand\" href=\"/\"><span class=\"brand-mark\" aria-hidden=\"true\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"12\" rx=\"2\"/><path d=\"M8 20h8M12 16v4\"/></svg></span> Kids PC Control Panel </a><nav class=\"account-links\" aria-label=\"Account\"><a href=\"/set-password\">Change password</a><a href=\"/logout\">Log out</a></nav></div></header><main class=\"container\" id=\"home-dashboard\"><div class=\"page-head with-meta\"><h1>PCs</h1><p class=\"page-meta\">Updated 2:55pm</p></div><ul class=\"pc-list\"><li><a class=\"pc-card\" href=\"/control/KID-PC\"><div class=\"pc-card-main\"><div class=\"pc-name\">KID-PC</div><div class=\"pc-meta\"> kid<span class=\"meta-sep\">·</span>192.168.1.10 </div><div class=\"pc-usage\">1:30 used today<span class=\"meta-sep\">·</span>45 min left</div></div><div class=\"pc-card-side\"><span class=\"pill pill-success\">Online</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/LAPTOP\"><div class=\"pc-card-main\"><div class=\"pc-name\">LAPTOP</div><div class=\"pc-meta\"> 192.168.1.11 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/DESK\"><div class=\"pc-card-main\"><div class=\"pc-name\">DESK</div><div class=\"pc-meta\"> 192.168.1.12 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-warning\">Can't control</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card\" href=\"/control/PC%20at%20192.168.1.13\"><div class=\"pc-card-main\"><div class=\"pc-name\">PC at 192.168.1.13</div><div class=\"pc-meta\"> 192.168.1.13 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-danger\">Locked</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li><li><a class=\"pc-card offline\" href=\"/control/TABLET\"><div class=\"pc-card-main\"><div class=\"pc-name\">TABLET</div><div class=\"pc-meta\"> 192.168.1.30 </div></div><div class=\"pc-card-side\"><span class=\"pill pill-neutral\" title=\"The agent is not connected — the PC may be off, signed out, or the agent stopped.\">Not connected</span><svg class=\"chevron\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></div></a></li></ul></main><script type=\"module\" src=\"/static/js/home.js\"></script></body></html>"
+     }
+    }
+   ],
+   "password_set_after": true
+  }
+ ]
+}

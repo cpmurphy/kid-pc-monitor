@@ -1,0 +1,38 @@
+{{define "title"}}Agent log — {{str .D.hostname}}{{end}}
+{{define "body_class"}}page-logs{{end}}
+
+{{define "stylesheets"}}
+<link rel="stylesheet" href="{{urlStatic "css/action-pages.css"}}">
+<link rel="stylesheet" href="{{urlStatic "css/logs.css"}}">
+{{end}}
+
+{{define "content"}}
+    <main class="container">
+        <a href="{{urlControl (or .D.hostname .D.ip)}}" class="back-link">← {{str (or .D.hostname .D.ip)}}</a>
+
+        <div class="page-head">
+            <h1>Agent log</h1>
+            <p class="page-meta">{{str .D.hostname}}<span class="meta-sep">·</span>{{.D.ip}}</p>
+        </div>
+
+        {{if .D.error_message}}
+        <div class="status-message banner error">
+            {{.D.error_message}}
+        </div>
+        {{else}}
+        {{if .D.truncated}}
+        <p class="note">Showing the most recent lines that fit in one request. Older lines are omitted.</p>
+        {{end}}
+        <div class="log-toolbar">
+            <button type="button" class="btn btn-secondary btn-sm" id="log-top">Top</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="log-bottom">Bottom</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="log-refresh">Refresh</button>
+        </div>
+        <pre class="agent-log-view" id="agent-log" tabindex="0">{{.D.log_text}}</pre>
+        {{end}}
+    </main>
+{{end}}
+
+{{define "scripts"}}
+<script type="module" src="{{urlStatic "js/logs.js"}}"></script>
+{{end}}
