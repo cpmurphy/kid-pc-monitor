@@ -52,6 +52,8 @@ Go 1.22 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
 | `state/` | `agent_state.py` | Settings and runtime state files: strict validation, corrupt-file quarantine and `.bak` restore, wake-time rollover, legacy migration, ProgramData bootstrap. |
 | `secrets/` | `secrets_store.py` | Reads the installer's Fernet-encrypted secrets, including the shared secret. |
 | `netinfo/` | `network.py` | Primary IPv4 without contacting external hosts. |
+| `panel/format/` | `panel_format.py`, `remote_client.py`, `scan_store.py` | Web panel (in progress): display formatting, agent settings → PC info, panel action → request fields, connection-error text, dashboard status. |
+| `panel/pyval/` | | The Python value semantics the panel port needs: truthiness, `int()`, `repr`, float `repr`, `datetime.fromisoformat`. |
 | `cmd/wincheck/` | | Manual check of `winplatform` on a real host (status, lock, message, shutdown / cancel). |
 | `cmd/xcheck/` | | Test fixture for `scripts/cross_check_go.py`: a toy agent, a toy panel and state-file helpers. |
 
@@ -67,7 +69,7 @@ Python generates (`../testdata/*/vectors.json`, do not hand-edit) and Go must
 reproduce exactly:
 
 ```bash
-python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor: regenerate after an intentional Python change
+python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat: regenerate after an intentional Python change
 cd go && go test ./...               # every vector must pass in Go
 python scripts/cross_check_go.py     # live Go<->Python sessions, state-file interop, and (on Windows) the real agent against the Python panel
 ```
