@@ -1,0 +1,2876 @@
+{
+ "_about": "Golden web-panel formatting vectors generated from kid_pc_monitor.panel_format, remote_client and scan_store by tests/panelformat_vectors_gen.py. Do not edit by hand.",
+ "format_minutes_duration": [
+  {
+   "in": null,
+   "out": "Not set"
+  },
+  {
+   "in": 0,
+   "out": "0 min"
+  },
+  {
+   "in": 1,
+   "out": "1 min"
+  },
+  {
+   "in": 59,
+   "out": "59 min"
+  },
+  {
+   "in": 60,
+   "out": "1:00"
+  },
+  {
+   "in": 61,
+   "out": "1:01"
+  },
+  {
+   "in": 90,
+   "out": "1:30"
+  },
+  {
+   "in": 120.4,
+   "out": "2:00"
+  },
+  {
+   "in": 0.49,
+   "out": "0 min"
+  },
+  {
+   "in": 0.5,
+   "out": "0 min"
+  },
+  {
+   "in": 1.5,
+   "out": "2 min"
+  },
+  {
+   "in": 2.5,
+   "out": "2 min"
+  },
+  {
+   "in": 59.5,
+   "out": "1:00"
+  },
+  {
+   "in": 60.49,
+   "out": "1:00"
+  },
+  {
+   "in": 89.99999,
+   "out": "1:30"
+  },
+  {
+   "in": 1440,
+   "out": "24:00"
+  },
+  {
+   "in": -5,
+   "out": "-1:55"
+  },
+  {
+   "in": -60,
+   "out": "-1:00"
+  },
+  {
+   "in": -61,
+   "out": "-2:59"
+  },
+  {
+   "in": -0.5,
+   "out": "0 min"
+  },
+  {
+   "in": -1.5,
+   "out": "-1:58"
+  }
+ ],
+ "format_seconds_duration": [
+  {
+   "in": 0,
+   "out": "0 min"
+  },
+  {
+   "in": 29,
+   "out": "0 min"
+  },
+  {
+   "in": 30,
+   "out": "0 min"
+  },
+  {
+   "in": 31,
+   "out": "1 min"
+  },
+  {
+   "in": 59,
+   "out": "1 min"
+  },
+  {
+   "in": 60,
+   "out": "1 min"
+  },
+  {
+   "in": 89,
+   "out": "1 min"
+  },
+  {
+   "in": 90,
+   "out": "2 min"
+  },
+  {
+   "in": 150,
+   "out": "2 min"
+  },
+  {
+   "in": 3599,
+   "out": "1:00"
+  },
+  {
+   "in": 3600,
+   "out": "1:00"
+  },
+  {
+   "in": 5400,
+   "out": "1:30"
+  },
+  {
+   "in": 7260.5,
+   "out": "2:01"
+  },
+  {
+   "in": -30,
+   "out": "0 min"
+  },
+  {
+   "in": -90,
+   "out": "-1:58"
+  },
+  {
+   "in": 86400,
+   "out": "24:00"
+  }
+ ],
+ "format_usage_date": [
+  {
+   "in": "2026-10-19",
+   "out": "Mon Oct 19"
+  },
+  {
+   "in": "2026-10-06",
+   "out": "Tue Oct 6"
+  },
+  {
+   "in": "2026-01-01",
+   "out": "Thu Jan 1"
+  },
+  {
+   "in": "2024-02-29",
+   "out": "Thu Feb 29"
+  },
+  {
+   "in": "2026-12-31",
+   "out": "Thu Dec 31"
+  },
+  {
+   "in": "20261019",
+   "out": "Mon Oct 19"
+  },
+  {
+   "in": "not-a-date",
+   "out": "not-a-date"
+  },
+  {
+   "in": "",
+   "out": ""
+  },
+  {
+   "in": "2026-13-01",
+   "out": "2026-13-01"
+  },
+  {
+   "in": "2026-02-30",
+   "out": "2026-02-30"
+  },
+  {
+   "in": "2026-10-1",
+   "out": "2026-10-1"
+  },
+  {
+   "in": " 2026-10-19",
+   "out": " 2026-10-19"
+  }
+ ],
+ "parse_remaining_minutes": [
+  {
+   "in": null,
+   "out": null
+  },
+  {
+   "in": true,
+   "out": null
+  },
+  {
+   "in": false,
+   "out": null
+  },
+  {
+   "in": 0,
+   "out": 0.0
+  },
+  {
+   "in": 45,
+   "out": 45.0
+  },
+  {
+   "in": 45.5,
+   "out": 45.5
+  },
+  {
+   "in": -3,
+   "out": -3.0
+  },
+  {
+   "in": "90 minutes",
+   "out": 90.0
+  },
+  {
+   "in": "90 minute",
+   "out": 90.0
+  },
+  {
+   "in": "90 mins",
+   "out": 90.0
+  },
+  {
+   "in": "90 min",
+   "out": 90.0
+  },
+  {
+   "in": "90",
+   "out": 90.0
+  },
+  {
+   "in": " 90 ",
+   "out": 90.0
+  },
+  {
+   "in": "90minutes",
+   "out": 90.0
+  },
+  {
+   "in": "\t7 min ",
+   "out": 7.0
+  },
+  {
+   "in": "90 minutes\n",
+   "out": 90.0
+  },
+  {
+   "in": "-5 minutes",
+   "out": -5.0
+  },
+  {
+   "in": "1.5 minutes",
+   "out": 1.5
+  },
+  {
+   "in": "0 minutes",
+   "out": 0.0
+  },
+  {
+   "in": "007 minutes",
+   "out": 7.0
+  },
+  {
+   "in": "90 Minutes",
+   "out": null
+  },
+  {
+   "in": "90 minutess",
+   "out": null
+  },
+  {
+   "in": "90 m",
+   "out": null
+  },
+  {
+   "in": "1e3",
+   "out": null
+  },
+  {
+   "in": ".5",
+   "out": null
+  },
+  {
+   "in": "5.",
+   "out": null
+  },
+  {
+   "in": "+5",
+   "out": null
+  },
+  {
+   "in": "- 5",
+   "out": null
+  },
+  {
+   "in": "No limits set",
+   "out": null
+  },
+  {
+   "in": "",
+   "out": null
+  },
+  {
+   "in": "   ",
+   "out": null
+  },
+  {
+   "in": "٣ minutes",
+   "out": 3.0
+  },
+  {
+   "in": " 12 min",
+   "out": 12.0
+  },
+  {
+   "in": [],
+   "out": null
+  },
+  {
+   "in": {},
+   "out": null
+  }
+ ],
+ "format_snapshot_recorded_at": [
+  {
+   "recorded_at": null,
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": ""
+  },
+  {
+   "recorded_at": "",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": ""
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm"
+  },
+  {
+   "recorded_at": "2026-06-05T09:05:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "9:05am"
+  },
+  {
+   "recorded_at": "2026-06-05T12:00:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "12:00pm"
+  },
+  {
+   "recorded_at": "2026-06-05T00:07:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "12:07am"
+  },
+  {
+   "recorded_at": "2026-06-05T23:59:59-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "11:59pm"
+  },
+  {
+   "recorded_at": "2026-06-04T15:30:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm yesterday"
+  },
+  {
+   "recorded_at": "2026-06-01T15:30:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm Jun 1"
+  },
+  {
+   "recorded_at": "2026-05-31T08:00:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "8:00am May 31"
+  },
+  {
+   "recorded_at": "2025-12-31T23:00:00+01:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "5:00pm Dec 31"
+  },
+  {
+   "recorded_at": "2025-12-31T22:59:00Z",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "5:59pm Dec 31"
+  },
+  {
+   "recorded_at": "2025-12-31T23:30:00Z",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "6:30pm Dec 31"
+  },
+  {
+   "recorded_at": "2025-12-30T10:00:00+01:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "4:00am Dec 30"
+  },
+  {
+   "recorded_at": "2026-06-05T22:30:00+00:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "5:30pm"
+  },
+  {
+   "recorded_at": "2026-06-05T04:30:00+00:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "11:30pm yesterday"
+  },
+  {
+   "recorded_at": "2026-06-05T20:00:00+05:30",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "9:30am"
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm"
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00.250000-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm"
+  },
+  {
+   "recorded_at": "2026-06-05 15:30:00-05:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "3:30pm"
+  },
+  {
+   "recorded_at": "2026-06-05",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "12:00am"
+  },
+  {
+   "recorded_at": "not-a-date",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "not-a-date"
+  },
+  {
+   "recorded_at": "2026-06-05T25:00:00",
+   "now": "2026-06-05T18:00:00-05:00",
+   "out": "2026-06-05T25:00:00"
+  },
+  {
+   "recorded_at": null,
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": ""
+  },
+  {
+   "recorded_at": "",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": ""
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "9:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T09:05:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "3:05pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T12:00:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "6:00pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T00:07:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "6:07am Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T23:59:59-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "5:59am Jun 6"
+  },
+  {
+   "recorded_at": "2026-06-04T15:30:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "9:30pm Jun 4"
+  },
+  {
+   "recorded_at": "2026-06-01T15:30:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "9:30pm Jun 1"
+  },
+  {
+   "recorded_at": "2026-05-31T08:00:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "2:00pm May 31"
+  },
+  {
+   "recorded_at": "2025-12-31T23:00:00+01:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "11:00pm yesterday"
+  },
+  {
+   "recorded_at": "2025-12-31T22:59:00Z",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "11:59pm yesterday"
+  },
+  {
+   "recorded_at": "2025-12-31T23:30:00Z",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "12:30am"
+  },
+  {
+   "recorded_at": "2025-12-30T10:00:00+01:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "10:00am Dec 30"
+  },
+  {
+   "recorded_at": "2026-06-05T22:30:00+00:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "11:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T04:30:00+00:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "5:30am Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T20:00:00+05:30",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "3:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "3:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05T15:30:00.250000-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "9:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05 15:30:00-05:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "9:30pm Jun 5"
+  },
+  {
+   "recorded_at": "2026-06-05",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "12:00am Jun 5"
+  },
+  {
+   "recorded_at": "not-a-date",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "not-a-date"
+  },
+  {
+   "recorded_at": "2026-06-05T25:00:00",
+   "now": "2026-01-01T00:30:00+01:00",
+   "out": "2026-06-05T25:00:00"
+  }
+ ],
+ "settings_to_pc_info": [
+  {
+   "settings": {
+    "name": "KID-PC",
+    "status": "UNLOCKED",
+    "current_user": "kid",
+    "daily_limit": 120,
+    "bed_time": "21:00",
+    "wake_time": "07:00",
+    "cumulative_extension": 900,
+    "accumulated_seconds": 3725,
+    "time_remaining": 73,
+    "manual_lock": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked"
+   },
+   "host": "192.168.1.20",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "192.168.1.20",
+    "hostname": "KID-PC",
+    "status": "UNLOCKED",
+    "locked": false,
+    "current_user": "kid",
+    "daily_limit": 120,
+    "usage_limit": 120,
+    "bed_time": "21:00",
+    "lock_times": [
+     "21:00"
+    ],
+    "wake_time": "07:00",
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 900,
+    "accumulated_seconds": 3725,
+    "effective_limit_minutes": 135.0,
+    "time_remaining": "73 minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {},
+   "host": "192.168.1.21",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "192.168.1.21",
+    "hostname": "PC at 192.168.1.21",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {},
+   "host": "192.168.1.21",
+   "hostname_fallback": "fallback-host",
+   "result": {
+    "ip": "192.168.1.21",
+    "hostname": "fallback-host",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "name": ""
+   },
+   "host": "10.0.0.2",
+   "hostname_fallback": "fallback-host",
+   "result": {
+    "ip": "10.0.0.2",
+    "hostname": "fallback-host",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "name": "",
+    "status": ""
+   },
+   "host": "10.0.0.2",
+   "hostname_fallback": "",
+   "result": {
+    "ip": "10.0.0.2",
+    "hostname": "PC at 10.0.0.2",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "LOCKED"
+   },
+   "host": "10.0.0.3",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.3",
+    "hostname": "PC at 10.0.0.3",
+    "status": "LOCKED",
+    "locked": true,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Screen locked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "LOCKED",
+    "manual_lock": true
+   },
+   "host": "10.0.0.3",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.3",
+    "hostname": "PC at 10.0.0.3",
+    "status": "LOCKED",
+    "locked": true,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": true,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — manual lock",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "UNLOCKED",
+    "manual_lock": 1
+   },
+   "host": "10.0.0.3",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.3",
+    "hostname": "PC at 10.0.0.3",
+    "status": "UNLOCKED",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": true,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — manual lock",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "UNLOCKED",
+    "manual_lock": "yes"
+   },
+   "host": "10.0.0.3",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.3",
+    "hostname": "PC at 10.0.0.3",
+    "status": "UNLOCKED",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": true,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — manual lock",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "UNLOCKED",
+    "manual_lock": ""
+   },
+   "host": "10.0.0.3",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.3",
+    "hostname": "PC at 10.0.0.3",
+    "status": "UNLOCKED",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": 60
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": 60,
+    "usage_limit": 60,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 60.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": 0
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": 0,
+    "usage_limit": 0,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 0.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": 0,
+    "cumulative_extension": 0
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": 0,
+    "usage_limit": 0,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 0.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": null,
+    "cumulative_extension": 600
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 600,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 10.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": 45,
+    "cumulative_extension": 90
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": 45,
+    "usage_limit": 45,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 90,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 46.5,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "daily_limit": 45.5,
+    "cumulative_extension": 30
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": 45.5,
+    "usage_limit": 45.5,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 30,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 46.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "cumulative_extension": -60
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": -60,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "cumulative_extension": 59.9,
+    "accumulated_seconds": 12.7
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 59,
+    "accumulated_seconds": 12,
+    "effective_limit_minutes": 0.9833333333333333,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "cumulative_extension": "120",
+    "accumulated_seconds": " 30 "
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 120,
+    "accumulated_seconds": 30,
+    "effective_limit_minutes": 2.0,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "cumulative_extension": true,
+    "accumulated_seconds": false
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 1,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": 0.016666666666666666,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "accumulated_seconds": "1_000"
+   },
+   "host": "10.0.0.4",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.4",
+    "hostname": "PC at 10.0.0.4",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 1000,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": 0
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "0 minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": -4
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "-4 minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": 12.5
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "12.5 minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": 30.0
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "30.0 minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": "No limits set"
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "No limits set minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": true
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": "True minutes",
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "time_remaining": null
+   },
+   "host": "10.0.0.5",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.5",
+    "hostname": "PC at 10.0.0.5",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "bed_time": ""
+   },
+   "host": "10.0.0.6",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.6",
+    "hostname": "PC at 10.0.0.6",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": "",
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "bed_time": "22:15",
+    "wake_time": "06:30"
+   },
+   "host": "10.0.0.6",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.6",
+    "hostname": "PC at 10.0.0.6",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": "22:15",
+    "lock_times": [
+     "22:15"
+    ],
+    "wake_time": "06:30",
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "enforcement_active": true,
+    "enforcement_reason": "bedtime"
+   },
+   "host": "10.0.0.7",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.7",
+    "hostname": "PC at 10.0.0.7",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": true,
+    "enforcement_reason": "bedtime",
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "enforcement_active": 0
+   },
+   "host": "10.0.0.7",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.7",
+    "hostname": "PC at 10.0.0.7",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "enforcement_active": "x"
+   },
+   "host": "10.0.0.7",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.7",
+    "hostname": "PC at 10.0.0.7",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": true,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "access_status": ""
+   },
+   "host": "10.0.0.8",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.8",
+    "hostname": "PC at 10.0.0.8",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "access_status": "Locked — bedtime",
+    "status": "LOCKED"
+   },
+   "host": "10.0.0.8",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.8",
+    "hostname": "PC at 10.0.0.8",
+    "status": "LOCKED",
+    "locked": true,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Locked — bedtime",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "status": "UNKNOWN",
+    "current_user": null
+   },
+   "host": "10.0.0.9",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.9",
+    "hostname": "PC at 10.0.0.9",
+    "status": "UNKNOWN",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "extra_key": "ignored",
+    "status": "UNLOCKED"
+   },
+   "host": "10.0.0.9",
+   "hostname_fallback": null,
+   "result": {
+    "ip": "10.0.0.9",
+    "hostname": "PC at 10.0.0.9",
+    "status": "UNLOCKED",
+    "locked": false,
+    "current_user": null,
+    "daily_limit": null,
+    "usage_limit": null,
+    "bed_time": null,
+    "lock_times": null,
+    "wake_time": null,
+    "manual_lock_active": false,
+    "enforcement_active": false,
+    "enforcement_reason": null,
+    "access_status": "Unlocked",
+    "cumulative_extension_seconds": 0,
+    "accumulated_seconds": 0,
+    "effective_limit_minutes": null,
+    "time_remaining": null,
+    "reachable": true
+   }
+  },
+  {
+   "settings": {
+    "cumulative_extension": "abc"
+   },
+   "host": "10.0.0.10",
+   "hostname_fallback": null,
+   "error": "ValueError"
+  },
+  {
+   "settings": {
+    "accumulated_seconds": "1.5"
+   },
+   "host": "10.0.0.10",
+   "hostname_fallback": null,
+   "error": "ValueError"
+  },
+  {
+   "settings": {
+    "accumulated_seconds": [
+     1
+    ]
+   },
+   "host": "10.0.0.10",
+   "hostname_fallback": null,
+   "error": "TypeError"
+  },
+  {
+   "settings": {
+    "daily_limit": "60"
+   },
+   "host": "10.0.0.10",
+   "hostname_fallback": null,
+   "error": "TypeError"
+  }
+ ],
+ "action_request_fields": [
+  {
+   "action_name": "lock",
+   "payload": null,
+   "result": {
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "lock",
+   "payload": {
+    "minutes": "ignored"
+   },
+   "result": {
+    "action": "lock",
+    "var": null,
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "shutdown",
+   "payload": {},
+   "result": {
+    "action": "shutdown",
+    "var": null,
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "message",
+   "payload": {
+    "message": "Dinner is ready"
+   },
+   "result": {
+    "action": "message",
+    "var": null,
+    "val": "Dinner is ready",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "message",
+   "payload": {},
+   "result": {
+    "action": "message",
+    "var": null,
+    "val": "",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "message",
+   "payload": {
+    "message": ""
+   },
+   "result": {
+    "action": "message",
+    "var": null,
+    "val": "",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "message",
+   "payload": {
+    "message": 42
+   },
+   "result": {
+    "action": "message",
+    "var": null,
+    "val": 42,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "message",
+   "payload": {
+    "message": null
+   },
+   "result": {
+    "action": "message",
+    "var": null,
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": 30
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 30,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "15"
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 15,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": " 15 "
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 15,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "+15"
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 15,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "-15"
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": -15,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "1_5"
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 15,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": 30.9
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 30,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": -2.5
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": -2,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": true
+   },
+   "result": {
+    "action": "extend",
+    "var": null,
+    "val": 1,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "abc"
+   },
+   "error": "Invalid value for extend_time: invalid literal for int() with base 10: 'abc'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "1.5"
+   },
+   "error": "Invalid value for extend_time: invalid literal for int() with base 10: '1.5'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": ""
+   },
+   "error": "Invalid value for extend_time: invalid literal for int() with base 10: ''"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": "it's"
+   },
+   "error": "Invalid value for extend_time: invalid literal for int() with base 10: \"it's\""
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": null
+   },
+   "error": "Invalid value for extend_time: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": [
+     5
+    ]
+   },
+   "error": "Invalid value for extend_time: int() argument must be a string, a bytes-like object or a real number, not 'list'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {
+    "minutes": {
+     "n": 5
+    }
+   },
+   "error": "Invalid value for extend_time: int() argument must be a string, a bytes-like object or a real number, not 'dict'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": {},
+   "error": "Invalid value for extend_time: 'minutes'"
+  },
+  {
+   "action_name": "extend_time",
+   "payload": null,
+   "error": "Invalid value for extend_time: 'minutes'"
+  },
+  {
+   "action_name": "clear_manual_lock",
+   "payload": null,
+   "result": {
+    "action": "clear",
+    "var": "manual_lock",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "clear_extensions",
+   "payload": null,
+   "result": {
+    "action": "clear",
+    "var": "cumulative_extension",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": 90
+   },
+   "result": {
+    "action": "set",
+    "var": "daily_limit",
+    "val": 90,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": "90"
+   },
+   "result": {
+    "action": "set",
+    "var": "daily_limit",
+    "val": 90,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": ""
+   },
+   "result": {
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": null
+   },
+   "result": {
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {},
+   "result": {
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": 0
+   },
+   "result": {
+    "action": "set",
+    "var": "daily_limit",
+    "val": 0,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_daily_limit",
+   "payload": {
+    "minutes": "x"
+   },
+   "error": "Invalid value for set_daily_limit: invalid literal for int() with base 10: 'x'"
+  },
+  {
+   "action_name": "set_bed_time",
+   "payload": {
+    "time": "21:30"
+   },
+   "result": {
+    "action": "set",
+    "var": "bed_time",
+    "val": "21:30",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_bed_time",
+   "payload": {},
+   "result": {
+    "action": "set",
+    "var": "bed_time",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "clear_bed_time",
+   "payload": null,
+   "result": {
+    "action": "clear",
+    "var": "bed_time",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "clear_lock_times",
+   "payload": null,
+   "result": {
+    "action": "clear",
+    "var": "bed_time",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_wake_time",
+   "payload": {
+    "time": "07:00"
+   },
+   "result": {
+    "action": "set",
+    "var": "wake_time",
+    "val": "07:00",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "set_wake_time",
+   "payload": {
+    "time": ""
+   },
+   "result": {
+    "action": "set",
+    "var": "wake_time",
+    "val": "",
+    "tail": null
+   }
+  },
+  {
+   "action_name": "clear_usage_limit",
+   "payload": null,
+   "result": {
+    "action": "clear",
+    "var": "daily_limit",
+    "val": null,
+    "tail": null
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": null,
+   "result": {
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "tail": 500
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": {
+    "tail": 50
+   },
+   "result": {
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "tail": 50
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": {
+    "tail": "20"
+   },
+   "result": {
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "tail": 20
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": {
+    "tail": 0
+   },
+   "result": {
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "tail": 500
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": {
+    "tail": ""
+   },
+   "result": {
+    "action": "get_logs",
+    "var": null,
+    "val": null,
+    "tail": 500
+   }
+  },
+  {
+   "action_name": "get_logs",
+   "payload": {
+    "tail": "many"
+   },
+   "error": "Invalid value for get_logs: invalid literal for int() with base 10: 'many'"
+  },
+  {
+   "action_name": "unlock",
+   "payload": null,
+   "error": "Invalid value for unlock: 'unlock'"
+  },
+  {
+   "action_name": "",
+   "payload": null,
+   "error": "Invalid value for : ''"
+  },
+  {
+   "action_name": "LOCK",
+   "payload": null,
+   "error": "Invalid value for LOCK: 'LOCK'"
+  },
+  {
+   "action_name": "bogus's",
+   "payload": {},
+   "error": "Invalid value for bogus's: \"bogus's\""
+  }
+ ],
+ "format_agent_connection_error": [
+  {
+   "in": "",
+   "out": "Could not communicate with the agent."
+  },
+  {
+   "in": "   ",
+   "out": "Could not communicate with the agent."
+  },
+  {
+   "in": "timed out",
+   "out": "timed out"
+  },
+  {
+   "in": "stale_timestamp: timestamp outside allowed window",
+   "out": "This PC's clock is out of sync (common after sleep or pausing a VM). Correct the date and time on that computer, then try again."
+  },
+  {
+   "in": "Timestamp outside allowed window (skew 75s)",
+   "out": "This PC's clock is out of sync (common after sleep or pausing a VM). Correct the date and time on that computer, then try again."
+  },
+  {
+   "in": "No shared secret is configured. Re-run the installer to set the panel/agent shared secret on this machine.",
+   "out": "No shared secret is configured on this computer. Re-run the installer on the kid PC and web panel host."
+  },
+  {
+   "in": "authentication_failed: signature did not verify",
+   "out": "Authentication failed — the shared secret on this panel may not match the kid PC. Re-run the installers with the same secret."
+  },
+  {
+   "in": "AUTHENTICATION_FAILED",
+   "out": "Authentication failed — the shared secret on this panel may not match the kid PC. Re-run the installers with the same secret."
+  },
+  {
+   "in": "Signature did not verify",
+   "out": "Authentication failed — the shared secret on this panel may not match the kid PC. Re-run the installers with the same secret."
+  },
+  {
+   "in": "Cannot reach agent at 10.0.0.5:9999: [Errno 111] Connection refused",
+   "out": "[Errno 111] Connection refused"
+  },
+  {
+   "in": "Cannot reach agent at 10.0.0.5:9999: timestamp outside allowed window",
+   "out": "This PC's clock is out of sync (common after sleep or pausing a VM). Correct the date and time on that computer, then try again."
+  },
+  {
+   "in": "cannot reach agent at 10.0.0.5: ",
+   "out": "cannot reach agent at 10.0.0.5:"
+  },
+  {
+   "in": "Cannot reach agent at 10.0.0.5: Cannot reach agent at x: boom",
+   "out": "boom"
+  },
+  {
+   "in": "cannot reach agent at host",
+   "out": "cannot reach agent at host"
+  },
+  {
+   "in": "Agent said: nope",
+   "out": "Agent said: nope"
+  },
+  {
+   "in": "  padded message  ",
+   "out": "padded message"
+  },
+  {
+   "in": "Ünïcode: ERROR",
+   "out": "Ünïcode: ERROR"
+  }
+ ],
+ "dashboard_status_key": [
+  {
+   "in": {},
+   "out": "online"
+  },
+  {
+   "in": {
+    "reachable": true
+   },
+   "out": "online"
+  },
+  {
+   "in": {
+    "reachable": false
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "reachable": null
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "reachable": 0
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "reachable": "yes"
+   },
+   "out": "online"
+  },
+  {
+   "in": {
+    "locked": true
+   },
+   "out": "locked"
+  },
+  {
+   "in": {
+    "locked": 1
+   },
+   "out": "locked"
+  },
+  {
+   "in": {
+    "locked": ""
+   },
+   "out": "online"
+  },
+  {
+   "in": {
+    "reachable": false,
+    "locked": true
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "agent_not_running": true
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "agent_not_running": true,
+    "reachable": true
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "connection_error": "boom",
+    "reachable": false
+   },
+   "out": "cant_control"
+  },
+  {
+   "in": {
+    "connection_error": "",
+    "reachable": false
+   },
+   "out": "not_connected"
+  },
+  {
+   "in": {
+    "connection_error": "",
+    "locked": true
+   },
+   "out": "locked"
+  },
+  {
+   "in": {
+    "connection_error": "boom",
+    "locked": true,
+    "reachable": true
+   },
+   "out": "cant_control"
+  }
+ ],
+ "pyval": {
+  "datetime_fromisoformat": [
+   {
+    "in": "2026-06-05T15:30:00-05:00",
+    "out": "2026-06-05T15:30:00-05:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00+05:30",
+    "out": "2026-06-05T15:30:00+05:30"
+   },
+   {
+    "in": "2026-06-05T15:30:00+00:00",
+    "out": "2026-06-05T15:30:00+00:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00-00:00",
+    "out": "2026-06-05T15:30:00+00:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00Z",
+    "out": "2026-06-05T15:30:00+00:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "2026-06-05 15:30:00",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "2026-06-05x15:30:00",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "2026-06-05T15:30",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "2026-06-05T15",
+    "out": "2026-06-05T15:00:00"
+   },
+   {
+    "in": "2026-06-05T1530",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "2026-06-05T153000",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "20260605T153000",
+    "out": "2026-06-05T15:30:00"
+   },
+   {
+    "in": "20260605T153000-0500",
+    "out": "2026-06-05T15:30:00-05:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00.5",
+    "out": "2026-06-05T15:30:00.500000"
+   },
+   {
+    "in": "2026-06-05T15:30:00,25",
+    "out": "2026-06-05T15:30:00.250000"
+   },
+   {
+    "in": "2026-06-05T15:30:00.123456",
+    "out": "2026-06-05T15:30:00.123456"
+   },
+   {
+    "in": "2026-06-05T15:30:00.1234567",
+    "out": "2026-06-05T15:30:00.123456"
+   },
+   {
+    "in": "2026-06-05T15:30:00.123-05:00",
+    "out": "2026-06-05T15:30:00.123000-05:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00+05",
+    "out": "2026-06-05T15:30:00+05:00"
+   },
+   {
+    "in": "2026-06-05T15:30:00+0530",
+    "out": "2026-06-05T15:30:00+05:30"
+   },
+   {
+    "in": "2026-06-05T15:30:00+05:30:15",
+    "out": "2026-06-05T15:30:00+05:30:15"
+   },
+   {
+    "in": "2026-06-05T15:30:00-23:59",
+    "out": "2026-06-05T15:30:00-23:59"
+   },
+   {
+    "in": "2026-06-05",
+    "out": "2026-06-05T00:00:00"
+   },
+   {
+    "in": "20260605",
+    "out": "2026-06-05T00:00:00"
+   },
+   {
+    "in": "2026-W23",
+    "out": "2026-06-01T00:00:00"
+   },
+   {
+    "in": "2026-W23-5",
+    "out": "2026-06-05T00:00:00"
+   },
+   {
+    "in": "2026W235",
+    "out": "2026-06-05T00:00:00"
+   },
+   {
+    "in": "2026-W23-5T10:00",
+    "out": "2026-06-05T10:00:00"
+   },
+   {
+    "in": "2020-W53-7",
+    "out": "2021-01-03T00:00:00"
+   },
+   {
+    "in": "2026-02-28T23:59:59",
+    "out": "2026-02-28T23:59:59"
+   },
+   {
+    "in": "2024-02-29T00:00:00",
+    "out": "2024-02-29T00:00:00"
+   },
+   {
+    "in": "2026-02-29T00:00:00",
+    "out": null
+   },
+   {
+    "in": "2026-13-01T00:00:00",
+    "out": null
+   },
+   {
+    "in": "0000-01-01T00:00:00",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:30:00.",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:3000",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:30:60",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T25:00",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:30:00Zx",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:30:00+24:00",
+    "out": null
+   },
+   {
+    "in": "2026-06-05T15:30:00+",
+    "out": null
+   },
+   {
+    "in": "2026-6-5T15:30",
+    "out": null
+   },
+   {
+    "in": " 2026-06-05",
+    "out": null
+   },
+   {
+    "in": "2026-06-05 ",
+    "out": null
+   },
+   {
+    "in": "not-a-date",
+    "out": null
+   },
+   {
+    "in": "",
+    "out": null
+   },
+   {
+    "in": "2026-06",
+    "out": null
+   }
+  ],
+  "date_fromisoformat": [
+   {
+    "in": "2026-10-19",
+    "out": "2026-10-19"
+   },
+   {
+    "in": "20261019",
+    "out": "2026-10-19"
+   },
+   {
+    "in": "2026-W42-1",
+    "out": "2026-10-12"
+   },
+   {
+    "in": "2026-W42",
+    "out": "2026-10-12"
+   },
+   {
+    "in": "2026W421",
+    "out": "2026-10-12"
+   },
+   {
+    "in": "2026W42",
+    "out": "2026-10-12"
+   },
+   {
+    "in": "2024-02-29",
+    "out": "2024-02-29"
+   },
+   {
+    "in": "2026-02-29",
+    "out": null
+   },
+   {
+    "in": "2026-00-10",
+    "out": null
+   },
+   {
+    "in": "2026-10-19T00:00",
+    "out": null
+   },
+   {
+    "in": "2026-1019",
+    "out": null
+   },
+   {
+    "in": "2026-10-1",
+    "out": null
+   },
+   {
+    "in": "",
+    "out": null
+   },
+   {
+    "in": "abcdefgh",
+    "out": null
+   }
+  ],
+  "int": [
+   {
+    "in": null,
+    "error": "TypeError",
+    "message": "int() argument must be a string, a bytes-like object or a real number, not 'NoneType'"
+   },
+   {
+    "in": true,
+    "result": 1
+   },
+   {
+    "in": false,
+    "result": 0
+   },
+   {
+    "in": 0,
+    "result": 0
+   },
+   {
+    "in": -7,
+    "result": -7
+   },
+   {
+    "in": 12.9,
+    "result": 12
+   },
+   {
+    "in": -12.9,
+    "result": -12
+   },
+   {
+    "in": 1000000000000000.0,
+    "result": 1000000000000000
+   },
+   {
+    "in": "42",
+    "result": 42
+   },
+   {
+    "in": " 42\n",
+    "result": 42
+   },
+   {
+    "in": "+42",
+    "result": 42
+   },
+   {
+    "in": "-42",
+    "result": -42
+   },
+   {
+    "in": "1_000",
+    "result": 1000
+   },
+   {
+    "in": "1__000",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '1__000'"
+   },
+   {
+    "in": "_1",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '_1'"
+   },
+   {
+    "in": "1_",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '1_'"
+   },
+   {
+    "in": "٤٢",
+    "result": 42
+   },
+   {
+    "in": "4 2",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '4 2'"
+   },
+   {
+    "in": "4.2",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '4.2'"
+   },
+   {
+    "in": "",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: ''"
+   },
+   {
+    "in": "-",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '-'"
+   },
+   {
+    "in": "0x10",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: '0x10'"
+   },
+   {
+    "in": "it's",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: \"it's\""
+   },
+   {
+    "in": "say \"hi\"",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: 'say \"hi\"'"
+   },
+   {
+    "in": "tab\tnewline\n",
+    "error": "ValueError",
+    "message": "invalid literal for int() with base 10: 'tab\\tnewline\\n'"
+   },
+   {
+    "in": [],
+    "error": "TypeError",
+    "message": "int() argument must be a string, a bytes-like object or a real number, not 'list'"
+   },
+   {
+    "in": {},
+    "error": "TypeError",
+    "message": "int() argument must be a string, a bytes-like object or a real number, not 'dict'"
+   }
+  ],
+  "float_repr": [
+   {
+    "in": 0.0,
+    "out": "0.0"
+   },
+   {
+    "in": -0.0,
+    "out": "-0.0"
+   },
+   {
+    "in": 1.0,
+    "out": "1.0"
+   },
+   {
+    "in": 30.0,
+    "out": "30.0"
+   },
+   {
+    "in": 0.1,
+    "out": "0.1"
+   },
+   {
+    "in": 1.5,
+    "out": "1.5"
+   },
+   {
+    "in": -2.25,
+    "out": "-2.25"
+   },
+   {
+    "in": 0.0001,
+    "out": "0.0001"
+   },
+   {
+    "in": 1e-05,
+    "out": "1e-05"
+   },
+   {
+    "in": 1.5e-07,
+    "out": "1.5e-07"
+   },
+   {
+    "in": 123456789.125,
+    "out": "123456789.125"
+   },
+   {
+    "in": 1000000000000000.0,
+    "out": "1000000000000000.0"
+   },
+   {
+    "in": 1e+16,
+    "out": "1e+16"
+   },
+   {
+    "in": 1.2345e+16,
+    "out": "1.2345e+16"
+   },
+   {
+    "in": 1e+22,
+    "out": "1e+22"
+   },
+   {
+    "in": 2.5e-300,
+    "out": "2.5e-300"
+   },
+   {
+    "in": 0.3333333333333333,
+    "out": "0.3333333333333333"
+   },
+   {
+    "in": 1.6666666666666667,
+    "out": "1.6666666666666667"
+   }
+  ],
+  "str_repr": [
+   {
+    "in": "",
+    "out": "''"
+   },
+   {
+    "in": "abc",
+    "out": "'abc'"
+   },
+   {
+    "in": "it's",
+    "out": "\"it's\""
+   },
+   {
+    "in": "say \"hi\"",
+    "out": "'say \"hi\"'"
+   },
+   {
+    "in": "both ' and \"",
+    "out": "'both \\' and \"'"
+   },
+   {
+    "in": "back\\slash",
+    "out": "'back\\\\slash'"
+   },
+   {
+    "in": "tab\tcr\rnl\n",
+    "out": "'tab\\tcr\\rnl\\n'"
+   },
+   {
+    "in": "bell\u0007 del",
+    "out": "'bell\\x07 del\\x7f'"
+   },
+   {
+    "in": "café ✓",
+    "out": "'café ✓'"
+   },
+   {
+    "in": "nbsp zwsp​",
+    "out": "'nbsp\\xa0zwsp\\u200b'"
+   },
+   {
+    "in": "😀",
+    "out": "'😀'"
+   }
+  ]
+ }
+}
