@@ -7,6 +7,7 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from kid_pc_monitor import panel_clock
 from kid_pc_monitor.panel_db import connect
 
 STALE_TRACKED_HOURS = 12
@@ -59,7 +60,7 @@ def _payload_from_row(row: sqlite3.Row) -> dict[str, Any]:
 
 def record_poll_inspect(ip: str, pc_info: dict[str, Any], *, when: datetime | None = None) -> None:
     """Update tracked registry from a reverse status update (coalesce by dashboard status)."""
-    now = when or datetime.now().astimezone()
+    now = when or panel_clock.now()
     payload = {**pc_info, "ip": ip}
     payload_json = json.dumps(payload, default=_json_default)
     hostname = _payload_hostname(payload)
@@ -171,7 +172,7 @@ def get_scan_pc_by_hostname(hostname: str) -> dict[str, Any] | None:
 def _parse_db_datetime(value: str) -> datetime:
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.astimezone()
+        dt = panel_clock.localize(dt)
     return dt
 
 
@@ -303,7 +304,7 @@ def prune_stale_tracked_ips(*, max_age_hours: float | None = None) -> list[str]:
     max_age = timedelta(
         hours=max_age_hours if max_age_hours is not None else _stale_tracked_hours()
     )
-    cutoff = datetime.now().astimezone() - max_age
+    cutoff = panel_clock.now() - max_age
     pruned: list[str] = []
 
     with connect() as conn:

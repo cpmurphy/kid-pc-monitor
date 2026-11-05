@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from kid_pc_monitor import panel_clock
 from kid_pc_monitor.panel_db import connect, get_meta, set_meta
 from kid_pc_monitor.panel_format import parse_remaining_minutes
 from kid_pc_monitor.scan_store import (
@@ -21,11 +22,11 @@ TRIM_INTERVAL_DAYS = 7
 
 
 def _local_today() -> date:
-    return datetime.now().astimezone().date()
+    return panel_clock.now().date()
 
 
 def _snapshot_date_str(when: datetime | None = None) -> str:
-    dt = when or datetime.now().astimezone()
+    dt = when or panel_clock.now()
     return dt.date().isoformat()
 
 
@@ -44,7 +45,7 @@ def save_snapshot(pc_info: dict[str, Any]) -> None:
         return
 
     ip = pc_info.get("ip") or ""
-    now = datetime.now().astimezone()
+    now = panel_clock.now()
     snapshot_date = _snapshot_date_str(now)
     recorded_at = now.isoformat(timespec="seconds")
     payload_json = json.dumps(pc_info)
@@ -75,7 +76,7 @@ def save_poll_snapshot(pc_info: dict[str, Any]) -> None:
         return
     hostname = pc_info.get("hostname") or f"PC at {ip}"
     username = _snapshot_username(pc_info)
-    now = datetime.now().astimezone()
+    now = panel_clock.now()
     snapshot_date = _snapshot_date_str(now)
     recorded_at = now.isoformat(timespec="seconds")
     payload = {**pc_info, "ip": ip, "hostname": hostname}
@@ -113,7 +114,7 @@ def _dedupe_by_hostname(
     Keeps the IP with the most recent successful contact, breaking ties on how
     controllable the PC currently looks.
     """
-    epoch = datetime.fromtimestamp(0).astimezone()
+    epoch = datetime.fromtimestamp(0, UTC)
     best_ip_for_host: dict[str, str] = {}
 
     def sort_key(ip: str) -> tuple[datetime, int, str]:
@@ -156,7 +157,7 @@ def get_dashboard_pcs() -> tuple[dict[str, dict[str, Any]], datetime | None]:
             info = {**payload, "ip": ip, "snapshot_recorded_at": recorded_at}
             poll_time = datetime.fromisoformat(recorded_at)
             if poll_time.tzinfo is None:
-                poll_time = poll_time.astimezone()
+                poll_time = panel_clock.localize(poll_time)
             if last_poll_at is None or poll_time > last_poll_at:
                 last_poll_at = poll_time
         else:
@@ -287,12 +288,12 @@ def maybe_trim_old_rows(*, conn: sqlite3.Connection | None = None) -> None:
 
 
 def _trim_old_rows(conn: sqlite3.Connection) -> None:
-    now = datetime.now().astimezone()
+    now = panel_clock.now()
     last_trim_raw = get_meta(conn, META_LAST_TRIM_AT)
     if last_trim_raw:
         last_trim = datetime.fromisoformat(last_trim_raw)
         if last_trim.tzinfo is None:
-            last_trim = last_trim.astimezone()
+            last_trim = panel_clock.localize(last_trim)
         if now - last_trim < timedelta(days=TRIM_INTERVAL_DAYS):
             return
 
