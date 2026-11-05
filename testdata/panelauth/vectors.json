@@ -1,0 +1,682 @@
+{
+ "_about": "Golden web-panel auth vectors generated from werkzeug.security and kid_pc_monitor.web_panel by tests/panelauth_vectors_gen.py. Do not edit by hand.",
+ "constants": {
+  "auth_file": "web_panel_auth.json",
+  "min_secret_key_length": 16
+ },
+ "generate_password_hash": [
+  {
+   "method": "scrypt",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "scrypt:32768:8:1$abcdefghijklmnop$d9ad1675b67bb8f3ca1079c7da73943066c095aefde23108a182a020a83d6b81f0bd1bb72593298881d3b214c4df67e3b50d7b177f651da0c70bf99626e82cf0"
+  },
+  {
+   "method": "scrypt:32768:8:1",
+   "salt": "Z9y8X7w6V5u4T3s2",
+   "password": "supersecret1",
+   "hash": "scrypt:32768:8:1$Z9y8X7w6V5u4T3s2$28ae001e0e2f9498497c3d5b7143b3b02dc9842f682356a0f7baf5de7ac117db748c9c852a0fd16fb13c0368f0ba8b3bf0301ba5415fa12b7b24268f2c96ef7f"
+  },
+  {
+   "method": "scrypt:16384:8:1",
+   "salt": "saltsaltsaltsalt",
+   "password": "supersecret1",
+   "hash": "scrypt:16384:8:1$saltsaltsaltsalt$266212702c2b245b40efddece56acdf2c30821e612b8458392d3bc171b5b4da654896415765f41750b147f8487ef1b23de3186ba43eed9224cadccd776d64b55"
+  },
+  {
+   "method": "scrypt:16384:8:1",
+   "salt": "saltsaltsaltsalt",
+   "password": "",
+   "hash": "scrypt:16384:8:1$saltsaltsaltsalt$b888bf927b1fa1bbb89555d10d3ad4735b693f9188e51335ac5c51ecb051e65c0b2a79c6dd19325c58c03a1bd735d2e67a90b35a3fd1989267b946ace9ff6f96"
+  },
+  {
+   "method": "scrypt:16384:8:1",
+   "salt": "saltsaltsaltsalt",
+   "password": "pässwörd ✓",
+   "hash": "scrypt:16384:8:1$saltsaltsaltsalt$4b3a064596f1e9894a0ddcb1ca3aec13fa7109ed03d10a889cb66ee37921bf5ca97a9767264b1c8cf3743ae603cf272e97aa17357e9904664abd58ac2008adb4"
+  },
+  {
+   "method": "scrypt:16384:8:1",
+   "salt": "saltsaltsaltsalt",
+   "password": "with $ and : inside",
+   "hash": "scrypt:16384:8:1$saltsaltsaltsalt$d2325fd7e489bf4b5e4fa3b3467f3a5c914f3557bc2d724c7e55a5da1fd6c2f859ba583e48915ad7f5b92a4fecf85419c3424e6f05a591f022016097f3cf017f"
+  },
+  {
+   "method": "scrypt:16384:8:1",
+   "salt": "saltsaltsaltsalt",
+   "password": " padded ",
+   "hash": "scrypt:16384:8:1$saltsaltsaltsalt$becf7f50aab460750aa542d1b140ffabb027ba099108adb2ebbaf15473a8c9cd1bc6c6a7608c756204e2ffc1e2c3bb7a50214a431e1fc0b99570ea86ca39e032"
+  },
+  {
+   "method": "scrypt:1024:1:1",
+   "salt": "s",
+   "password": "supersecret1",
+   "hash": "scrypt:1024:1:1$s$3152888bb5766cf0667ae640e5585ecfdb657d5eea935d623c30b8a402ad14e68a97b52db7cc882976078c102950e84c9db66bfd1ed3914730527577d19b1646"
+  },
+  {
+   "method": "scrypt:1024:1:1",
+   "salt": "s",
+   "password": "",
+   "hash": "scrypt:1024:1:1$s$c6d08070e225f68ca5e8be19e6eda92f0e98176090ae118a8a86f59609072de121c8fb6712309a3f890b19dbe5c7f9cecea5399a71938972fc729e97eb72dc51"
+  },
+  {
+   "method": "scrypt:1024:1:1",
+   "salt": "s",
+   "password": "pässwörd ✓",
+   "hash": "scrypt:1024:1:1$s$f0fa89e73cb2529b33722e48b4c5d74b1d4191decbb30442a98a7a42f61928e38cdf8bf0539f89030d0ba29c17cc38239ece16a6058ce97a5333742a20826b9b"
+  },
+  {
+   "method": "scrypt:1024:1:1",
+   "salt": "s",
+   "password": "with $ and : inside",
+   "hash": "scrypt:1024:1:1$s$b5d2b5346e23782ee67e687e85eb991542b5f1b8834b6140bb1cf0e59577db780de17151cab9ce28d8fab1ab29ad402c1a355231d2e85ebc9127ca8a7c964b90"
+  },
+  {
+   "method": "scrypt:1024:1:1",
+   "salt": "s",
+   "password": " padded ",
+   "hash": "scrypt:1024:1:1$s$7b10cddcf60efda8c9f4048e2d05385f017cd88b4baef970bbbf2bcd3212227a8a87c1e7c3f02a592688d8d9d5da3804a13f06a0d1c356416d7ad85ff7895e77"
+  },
+  {
+   "method": "scrypt:2048:2:2",
+   "salt": "0123456789ABCDEF",
+   "password": "supersecret1",
+   "hash": "scrypt:2048:2:2$0123456789ABCDEF$d8aaca3ae87eb09591e813c7cb8f4c1de0e3f025cd3f64628f870dcab8844d87326b45b6fd7816989f3ab1ef482654c7e89bca90decf655e22c6d9cdcfde2b05"
+  },
+  {
+   "method": "scrypt:2048:2:2",
+   "salt": "0123456789ABCDEF",
+   "password": "",
+   "hash": "scrypt:2048:2:2$0123456789ABCDEF$62c24b7bf3b0a9bb3a0dc5fa3ff2707557d95cebe36bb6f54523b2b4d2427b99453853194709caa3a7474e0d48241efcb85e7188240168ee294ad6b50c37a743"
+  },
+  {
+   "method": "scrypt:2048:2:2",
+   "salt": "0123456789ABCDEF",
+   "password": "pässwörd ✓",
+   "hash": "scrypt:2048:2:2$0123456789ABCDEF$16aa4f951951c638be215c1d244a8c47e2beef01060374e001c928863869f765d9ef6b1bb46796eb00874181f667fea5f5d56480ae208a33da93ae03f429bec6"
+  },
+  {
+   "method": "scrypt:2048:2:2",
+   "salt": "0123456789ABCDEF",
+   "password": "with $ and : inside",
+   "hash": "scrypt:2048:2:2$0123456789ABCDEF$f9026acfbae4daf1eb76c7b361d01ee92d498d3026aa41fb8cdbac4759931a8307f9c33b611fb3e66a090b1c8862cb332fc2b27bb4a32ec5560d7af30bf3d3f9"
+  },
+  {
+   "method": "scrypt:2048:2:2",
+   "salt": "0123456789ABCDEF",
+   "password": " padded ",
+   "hash": "scrypt:2048:2:2$0123456789ABCDEF$522fec4e473ee27ba3d31866b66787e4f748ed8c17cfe5470a2eff4980eec6de4604f1cb088ef60d4884fc817d67bb3667f8be859b3d1a4c754b1b2ebe84130e"
+  },
+  {
+   "method": "pbkdf2:sha256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6"
+  },
+  {
+   "method": "pbkdf2:sha256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$505a9fb27ca34d86cbd3808c9d10783af7be0b62f852a29e48c71acadfafe978"
+  },
+  {
+   "method": "pbkdf2:sha256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$f24a42de107421f25b29c058627652f55b21d93d45d8a1c61820310b2ceeb4d8"
+  },
+  {
+   "method": "pbkdf2:sha256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$64e688aff7872a1a868888d5bcc4cef48da8f11d3328ecd58c378fcb23aca558"
+  },
+  {
+   "method": "pbkdf2:sha256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$43529b3e775d2349802f8ca5e55c414e6727b74dc7a34ec8420cbc58f2a1aa7a"
+  },
+  {
+   "method": "pbkdf2:sha256:600000",
+   "salt": "Pq2Rs3Tu4Vw5Xy6Z",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha256:600000$Pq2Rs3Tu4Vw5Xy6Z$99462b1ce10a5098ed4317f5575a837ae6c0302bdbf433e96b8a07c756e5728a"
+  },
+  {
+   "method": "pbkdf2:sha1:2000",
+   "salt": "ABCDEFGHIJKLMNOP",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha1:2000$ABCDEFGHIJKLMNOP$021f1797011d0bf96c1545800cc9d83856334f51"
+  },
+  {
+   "method": "pbkdf2:sha1:2000",
+   "salt": "ABCDEFGHIJKLMNOP",
+   "password": "",
+   "hash": "pbkdf2:sha1:2000$ABCDEFGHIJKLMNOP$a737971f9f98f2e587dee039aef1f35d9489ba8c"
+  },
+  {
+   "method": "pbkdf2:sha1:2000",
+   "salt": "ABCDEFGHIJKLMNOP",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha1:2000$ABCDEFGHIJKLMNOP$5cfabca9bf30d5faa3750b7becea1c6b1946ffca"
+  },
+  {
+   "method": "pbkdf2:sha1:2000",
+   "salt": "ABCDEFGHIJKLMNOP",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha1:2000$ABCDEFGHIJKLMNOP$1892e6620c3baa0ac68554b5f18856c9e71335af"
+  },
+  {
+   "method": "pbkdf2:sha1:2000",
+   "salt": "ABCDEFGHIJKLMNOP",
+   "password": " padded ",
+   "hash": "pbkdf2:sha1:2000$ABCDEFGHIJKLMNOP$db405acb642456b403e96ee34f1c249cdbf6bd03"
+  },
+  {
+   "method": "pbkdf2:sha512:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha512:1000$abcdefghijklmnop$d6c4945168e6f245b75f4bce2d3c45284975ed401cb06c53fcdd632b7888605cd5834a21f5a3e699a41528a6c6954d34c045e6e29ac9b25176186a9d01c4b9ad"
+  },
+  {
+   "method": "pbkdf2:sha512:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:sha512:1000$abcdefghijklmnop$7e1bc188c83f8a3393e23d4504d18b19eeefe9c6030d9f9642ec704a064f1dfc6fcf5ed0440087cfdbd032d3820401f3ad59d5f5bca1d3805ea682963829c71c"
+  },
+  {
+   "method": "pbkdf2:sha512:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha512:1000$abcdefghijklmnop$eefd49a92647e006a443789cf05ddaf41240524fa7aa77f4d44f3c0b5775ca793a77526e9315f62c89da0ea88b1b74fa6980d677570b41625bdd6152239f7c82"
+  },
+  {
+   "method": "pbkdf2:sha512:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha512:1000$abcdefghijklmnop$8612a390f25dc4b7d4c8b22ee60bfa04f6d864977ce1531cbd04f28b5b7436de20b41ac9b7ec4798548df2f8d191955eeb74844818af01d9ef92d8837b06f813"
+  },
+  {
+   "method": "pbkdf2:sha512:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:sha512:1000$abcdefghijklmnop$474b5f591769e730c9c1d96d9bedd8003bff39a4cfd958596bc213bfb7ad918954cac2f35182f84a931a60e44f5568fd8d36125cd9dbf6f2a7c61ae0dac25f0b"
+  },
+  {
+   "method": "pbkdf2:sha224:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha224:1000$abcdefghijklmnop$cb95c158b99aa08f950d066d21cd348fd56c6d48c94077890dff80b8"
+  },
+  {
+   "method": "pbkdf2:sha224:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:sha224:1000$abcdefghijklmnop$af7924a8f2d535b3e5bb621132d9bb959e951f44c59fb4383bf1d0b6"
+  },
+  {
+   "method": "pbkdf2:sha224:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha224:1000$abcdefghijklmnop$8c8fe99ac23653fcd3ea9bf8ae9632ce559cc1fa4c2453c1a3ced6e8"
+  },
+  {
+   "method": "pbkdf2:sha224:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha224:1000$abcdefghijklmnop$c343597b6d46486dec856d059d5721115a3a6e0dfb0ba01c0f039963"
+  },
+  {
+   "method": "pbkdf2:sha224:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:sha224:1000$abcdefghijklmnop$f3ac9966f4c1e6cec7f6f8481bc6457ce8000037bf838f0149750be8"
+  },
+  {
+   "method": "pbkdf2:sha384:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha384:1000$abcdefghijklmnop$d659b52407bb62a7e89e45792a0a77bdf57253096c9cb66f1bc8a8a02627fcaad9374486b16ee861ea5c496abdc1fa52"
+  },
+  {
+   "method": "pbkdf2:sha384:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:sha384:1000$abcdefghijklmnop$53aa4f999653049ed7cd00f1bca058692c19a15d627586c76f7abb2376e6887555e9de0b0641d3a9c392705016407b51"
+  },
+  {
+   "method": "pbkdf2:sha384:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha384:1000$abcdefghijklmnop$f00dd27c9a491af5c7fc957790cd402ceb72851a3d4830f9d7762bd5ee4ae815aab616ec9dad69563ac4310635019a30"
+  },
+  {
+   "method": "pbkdf2:sha384:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha384:1000$abcdefghijklmnop$956c96e0caa6bbfdbdf9a1c9def58c4be8683bae340d7d0551451684f206a82258c65ad5636836f0aed6d8b90517d0e5"
+  },
+  {
+   "method": "pbkdf2:sha384:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:sha384:1000$abcdefghijklmnop$897268d7be98949bbcd312ead5f3dcfed82ec329fe91aa347cd0ec6de75ee02ede06b4285855a39cf7d6f4332f5c98c1"
+  },
+  {
+   "method": "pbkdf2:sha3_256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:sha3_256:1000$abcdefghijklmnop$ea625f6739732d540d7f37f87aa375921849af65b2349eab1ca04265326515f5"
+  },
+  {
+   "method": "pbkdf2:sha3_256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:sha3_256:1000$abcdefghijklmnop$e9fcb6b72bf5b0669bb1469b71f940f39eb9aa4c9cedb69fbf41277e268d56b5"
+  },
+  {
+   "method": "pbkdf2:sha3_256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:sha3_256:1000$abcdefghijklmnop$e6e962867ffd7d6727fedb4d0f94c10168645f818cb8151c8e71e8a74a00dc0c"
+  },
+  {
+   "method": "pbkdf2:sha3_256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:sha3_256:1000$abcdefghijklmnop$e16235aa688a4740fb6974eb5015072f73c69c410e002416e1043a2ab0881d5d"
+  },
+  {
+   "method": "pbkdf2:sha3_256:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:sha3_256:1000$abcdefghijklmnop$f15781209eb5cfc076964e7122360501fd424e4e0caad85ac1869a47fc10dfc0"
+  },
+  {
+   "method": "pbkdf2:md5:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "supersecret1",
+   "hash": "pbkdf2:md5:1000$abcdefghijklmnop$5c8b4cba0641458060a960d5f9bd7611"
+  },
+  {
+   "method": "pbkdf2:md5:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "",
+   "hash": "pbkdf2:md5:1000$abcdefghijklmnop$03a08246f974c2946308c3e9cdd597d8"
+  },
+  {
+   "method": "pbkdf2:md5:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "pässwörd ✓",
+   "hash": "pbkdf2:md5:1000$abcdefghijklmnop$a098b88bc2b134b010fd9f951dbe086f"
+  },
+  {
+   "method": "pbkdf2:md5:1000",
+   "salt": "abcdefghijklmnop",
+   "password": "with $ and : inside",
+   "hash": "pbkdf2:md5:1000$abcdefghijklmnop$1ba52dce2978c859309b056e6f106050"
+  },
+  {
+   "method": "pbkdf2:md5:1000",
+   "salt": "abcdefghijklmnop",
+   "password": " padded ",
+   "hash": "pbkdf2:md5:1000$abcdefghijklmnop$776fe1dae0fa9dcae83020b330f354e8"
+  }
+ ],
+ "check_password_hash": [
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": true
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret2",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "Supersecret1",
+   "result": false
+  },
+  {
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6",
+   "password": "supersecret1",
+   "result": true
+  },
+  {
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6",
+   "password": "supersecret1 ",
+   "result": false
+  },
+  {
+   "hash": "scrypt:32768:8:1$abcdefghijklmnop$bcb67251feeb2a12eef9ba0e6e6395a28c3942e6e5882f5bd99eb388a62faf3eb88d65aecd6cfe2a791493be10101e9aca2f03ac96c5bb9d1e47e7a074ac3138",
+   "password": "pässwörd ✓",
+   "result": true
+  },
+  {
+   "hash": "scrypt:32768:8:1$abcdefghijklmnop$bcb67251feeb2a12eef9ba0e6e6395a28c3942e6e5882f5bd99eb388a62faf3eb88d65aecd6cfe2a791493be10101e9aca2f03ac96c5bb9d1e47e7a074ac3138",
+   "password": "passwörd ✓",
+   "result": false
+  },
+  {
+   "hash": "pbkdf2:sha1:1000$x$y$88d5235e1f8d8428952f1ecad734249b85f58c55",
+   "password": "pw",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18EEA07CD267F2A584AE54226B6C7B93E90977E539D6E138A160633939673959D20D830DCEAF0E49767F77180D80DEC432BEE3FEDC0BE23D5C1D804CE5D96FCD",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96f",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd00",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnopx$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "pbkdf2:sha256:1000$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6$extra",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1$abcdefghijklmnop",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1:1abcdefghijklmnop18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "$$",
+   "password": "",
+   "result": "error"
+  },
+  {
+   "hash": "scrypt$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": false
+  },
+  {
+   "hash": "scrypt:1024:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "scrypt:1024:1:x$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "scrypt:1000:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "scrypt:128:1:1$abcdefghijklmnop$195a8b144f48e22d7325211a65afd58866e5259f40f6564abe6307a126f9f08b2001914aaffafc85f88c4deb2bc1e0dc6142da7b32605a1a2ab1bc0a71ed5953",
+   "password": "pw",
+   "result": true
+  },
+  {
+   "hash": "scrypt:64:1:1$abcdefghijklmnop$4eccfcbb127efde01b55beeb2b13a6a2d24ed7f2b1fa60c7f0e8d44b09af73c0d96a9121cd1db469a7b6d10f92cd597192f7286e294909f817fa9ceddcac50e9",
+   "password": "pw",
+   "result": "error"
+  },
+  {
+   "hash": "scrypt: 1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": true
+  },
+  {
+   "hash": "pbkdf2:sha256:1000:9$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "pbkdf2:sha256:abc$abcdefghijklmnop$a79c87377a4e828edc089ec0ce903f1e332577bece3cad05be97ab64a45702b6",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "md5$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "plain$abcdefghijklmnop$supersecret1",
+   "password": "supersecret1",
+   "result": "error"
+  },
+  {
+   "hash": "SCRYPT:1024:1:1$abcdefghijklmnop$18eea07cd267f2a584ae54226b6c7b93e90977e539d6e138a160633939673959d20d830dceaf0e49767f77180d80dec432bee3fedc0be23d5c1d804ce5d96fcd",
+   "password": "supersecret1",
+   "result": "error"
+  }
+ ],
+ "auth_record": [
+  {
+   "text": "{\"secret_key\": \"cccccccccccccccccccccccccccccccc\", \"password_hash\": \"scrypt:32768:8:1$a$b\"}",
+   "password_hash": "scrypt:32768:8:1$a$b",
+   "secret_key": "cccccccccccccccccccccccccccccccc"
+  },
+  {
+   "text": "{\"password_hash\": \"scrypt:32768:8:1$a$b\"}",
+   "password_hash": "scrypt:32768:8:1$a$b",
+   "secret_key": null
+  },
+  {
+   "text": "{\"secret_key\": \"short\", \"password_hash\": \"x\"}",
+   "password_hash": "x",
+   "secret_key": null
+  },
+  {
+   "text": "{\"secret_key\": \"kkkkkkkkkkkkkkkk\"}",
+   "password_hash": null,
+   "secret_key": "kkkkkkkkkkkkkkkk"
+  },
+  {
+   "text": "{\"secret_key\": \"kkkkkkkkkkkkkkk\", \"password_hash\": \"\"}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{\"secret_key\": \"ééééééééééééééé✓\", \"password_hash\": \"h\"}",
+   "password_hash": "h",
+   "secret_key": "ééééééééééééééé✓"
+  },
+  {
+   "text": "{\"secret_key\": 1234567890123456789, \"password_hash\": 5}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{\"hash\": \"scrypt:abc\", \"salt\": \"aaaaaaaaaaaaaaaa\"}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{\"password_hash\": null, \"secret_key\": null}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "[]",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "null",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "\"\"",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "not json",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{\"password_hash\": \"h\", \"password_hash\": \"\"}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "{\"password_hash\": \"h\",}",
+   "password_hash": null,
+   "secret_key": null
+  },
+  {
+   "text": "﻿{\"password_hash\": \"h\"}",
+   "password_hash": null,
+   "secret_key": null
+  }
+ ],
+ "save_record": [
+  {
+   "secret_key": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "password_hash": "scrypt:32768:8:1$abcdefghijklmnop$0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+   "text": "{\n  \"secret_key\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"password_hash\": \"scrypt:32768:8:1$abcdefghijklmnop$0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f\"\n}"
+  },
+  {
+   "secret_key": "ffffffffffffffff",
+   "password_hash": "pbkdf2:sha256:1000$s$00",
+   "text": "{\n  \"secret_key\": \"ffffffffffffffff\",\n  \"password_hash\": \"pbkdf2:sha256:1000$s$00\"\n}"
+  },
+  {
+   "secret_key": "quo\"te\\ ✓ key 123",
+   "password_hash": "h",
+   "text": "{\n  \"secret_key\": \"quo\\\"te\\\\ \\u2713 key 123\",\n  \"password_hash\": \"h\"\n}"
+  }
+ ],
+ "is_local_path": [
+  {
+   "in": "/",
+   "out": true
+  },
+  {
+   "in": "/control/192.168.1.1",
+   "out": true
+  },
+  {
+   "in": "/usage/kid name",
+   "out": true
+  },
+  {
+   "in": "/usage/kïd",
+   "out": true
+  },
+  {
+   "in": "/control/x?next=//evil",
+   "out": true
+  },
+  {
+   "in": "/a/../b",
+   "out": true
+  },
+  {
+   "in": "",
+   "out": false
+  },
+  {
+   "in": "control/x",
+   "out": false
+  },
+  {
+   "in": "//evil.example/",
+   "out": false
+  },
+  {
+   "in": "///evil.example/",
+   "out": false
+  },
+  {
+   "in": "/\\evil.example/",
+   "out": false
+  },
+  {
+   "in": "\\\\evil.example/",
+   "out": false
+  },
+  {
+   "in": "/control\\x",
+   "out": false
+  },
+  {
+   "in": "/\t/evil.example/",
+   "out": false
+  },
+  {
+   "in": "/a\nb",
+   "out": false
+  },
+  {
+   "in": "/ab",
+   "out": false
+  },
+  {
+   "in": "/a\u0000",
+   "out": false
+  },
+  {
+   "in": " /x",
+   "out": false
+  },
+  {
+   "in": "https://evil.example/",
+   "out": false
+  },
+  {
+   "in": "http://localhost/control/x",
+   "out": false
+  },
+  {
+   "in": "javascript:alert(1)",
+   "out": false
+  },
+  {
+   "in": "/%2F%2Fevil.example",
+   "out": true
+  },
+  {
+   "in": "/　x",
+   "out": true
+  }
+ ]
+}

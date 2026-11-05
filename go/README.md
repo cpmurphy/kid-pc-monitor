@@ -4,8 +4,8 @@ A complete Go port of the Kid PC Monitor kid-side agent: one Windows
 executable, `kid-pc-agent.exe`, that does everything the Python agent does
 (enforcement, the reverse connection to the parent panel, logging) and needs no
 Python on the kid's PC. The agent uses only the standard library; the
-in-progress web panel port under `panel/` adds `modernc.org/sqlite` (pure Go),
-which the agent never imports (CI checks this).
+in-progress web panel port under `panel/` adds `modernc.org/sqlite` (pure Go) and
+`golang.org/x/crypto`, which the agent never imports (CI checks this).
 
 It is a drop-in replacement: it reads and writes the same `daily_settings.json`,
 `state.json`, `pc_control.log` and encrypted shared secret, speaks the same v3
@@ -56,6 +56,7 @@ Go 1.26 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
 | `netinfo/` | `network.py` | Primary IPv4 without contacting external hosts. |
 | `panel/format/` | `panel_format.py`, `remote_client.py`, `scan_store.py` | Web panel (in progress): display formatting, agent settings → PC info, panel action → request fields, connection-error text, dashboard status. |
 | `panel/store/` | `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | Web panel (in progress): `panel.db` (tracked PCs, usage snapshots, reverse heartbeats), same schema and rows as Python. |
+| `panel/auth/` | `web_panel.py` (auth), `werkzeug.security` | Web panel (in progress): `web_panel_auth.json`, werkzeug scrypt/pbkdf2 hashes, signed session cookie with CSRF token and flashes, login redirect check. |
 | `panel/pyval/` | | The Python value semantics the panel port needs: truthiness, `int()`, `repr`, float `repr`, `datetime.fromisoformat`. |
 | `cmd/wincheck/` | | Manual check of `winplatform` on a real host (status, lock, message, shutdown / cancel). |
 | `cmd/xcheck/` | | Test fixture for `scripts/cross_check_go.py`: a toy agent, a toy panel and state-file helpers. |
@@ -72,7 +73,7 @@ Python generates (`../testdata/*/vectors.json`, do not hand-edit) and Go must
 reproduce exactly:
 
 ```bash
-python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat, panelstore: regenerate after an intentional Python change
+python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat, panelstore, panelauth: regenerate after an intentional Python change
 cd go && go test ./...               # every vector must pass in Go
 python scripts/cross_check_go.py     # live Go<->Python sessions, state-file interop, and (on Windows) the real agent against the Python panel
 ```
