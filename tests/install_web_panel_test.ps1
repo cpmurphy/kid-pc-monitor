@@ -117,7 +117,7 @@ try {
     Check 'downloaded exe is temporary' $viaRelease.Temporary $true
     Write-Host "install refuses an exe that does not run"
     Check 'broken exe refused' (Throws { Install-PanelExe $viaRelease }) $true
-    Check 'staging file removed' (Test-Path -LiteralPath ((Get-InstalledPanelPath) + '.new')) $false
+    Check 'staging file removed' (Test-Path -LiteralPath (Get-StagingPanelPath)) $false
     Remove-Item -LiteralPath $viaRelease.Path -Force
     $script:Download = $false
 
@@ -131,6 +131,7 @@ try {
         Check 'installed exe runs' ((& $installed version) -ne $null) $true
         $again = Install-PanelExe $resolved
         Check 'reinstall replaces it' (Test-Path -LiteralPath $again) $true
+        Check 'no staging file left' (Test-Path -LiteralPath (Get-StagingPanelPath)) $false
 
         Write-Host "shared secret through the exe"
         $output = "kid-pc-secret-1`nkid-pc-secret-1`n" | & $installed set-secret
