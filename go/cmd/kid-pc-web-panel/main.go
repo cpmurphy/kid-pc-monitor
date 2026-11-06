@@ -354,12 +354,18 @@ func lineReader(in io.Reader, out io.Writer) func(prompt string) (string, error)
 		}
 	}
 	br := bufio.NewReader(in)
+	first := true
 	return func(prompt string) (string, error) {
 		fmt.Fprint(out, prompt)
 		line, err := br.ReadString('\n')
 		fmt.Fprintln(out)
 		if err != nil && line == "" {
 			return "", err
+		}
+		if first {
+			// Windows PowerShell can start piped text with a UTF-8 BOM.
+			line = strings.TrimPrefix(line, "\ufeff")
+			first = false
 		}
 		return strings.TrimRight(line, "\r\n"), nil
 	}

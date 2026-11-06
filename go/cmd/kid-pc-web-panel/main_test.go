@@ -66,3 +66,15 @@ func TestOpenLogRollsOverLargeFile(t *testing.T) {
 		t.Fatalf("new log = %q", b)
 	}
 }
+
+// Windows PowerShell can pipe text with a UTF-8 BOM and CRLF line ends.
+func TestSetSecretPipedFromWindowsPowerShell(t *testing.T) {
+	t.Setenv("KID_PC_MONITOR_SECRETS_DIR", t.TempDir())
+	var out bytes.Buffer
+	if err := setSecret(strings.NewReader("\ufeffkid-pc-secret-1\r\nkid-pc-secret-1\r\n"), &out, false); err != nil {
+		t.Fatalf("%v\n%s", err, out.String())
+	}
+	if got, _ := secrets.LoadSharedSecret(); got != "kid-pc-secret-1" {
+		t.Fatalf("stored %q", got)
+	}
+}
