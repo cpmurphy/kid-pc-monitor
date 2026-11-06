@@ -135,7 +135,9 @@ try {
 
         Write-Host "shared secret through the exe"
         $output = "kid-pc-secret-1`nkid-pc-secret-1`n" | & $installed set-secret
-        Check 'set-secret succeeded' $LASTEXITCODE 0
+        $setSecretExit = $LASTEXITCODE
+        Check 'set-secret succeeded' $setSecretExit 0
+        if ($setSecretExit -ne 0) { Write-Host ($output | Out-String) }
         Check 'secret file written' (Test-Path -LiteralPath (Join-Path $env:KID_PC_MONITOR_SECRETS_DIR 'panel-agent-shared-secret.enc')) $true
         $reuse = '' | & $installed set-secret
         Check 'second run reuses it' (($reuse | Out-String) -match 'Reusing existing shared secret') $true
