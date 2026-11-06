@@ -228,12 +228,18 @@ function Stop-PanelTask {
         Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
+# Where Install-PanelExe tries the new exe before replacing the installed one.
+# It must end in .exe: Windows runs nothing else.
+function Get-StagingPanelPath {
+    return (Join-Path $InstallDir 'kid-pc-web-panel.new.exe')
+}
+
 # Copy the resolved exe into $InstallDir via a temporary name, check that it
 # runs, then replace the installed one. Returns the installed path.
 function Install-PanelExe($Resolved) {
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
     $target = Get-InstalledPanelPath
-    $staging = "$target.new"
+    $staging = Get-StagingPanelPath
     Copy-Item -LiteralPath $Resolved.Path -Destination $staging -Force
     $runs = $false
     try {
