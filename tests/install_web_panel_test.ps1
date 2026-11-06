@@ -103,6 +103,14 @@ try {
     Check 'task runs it in the background' $cmd.Argument 'serve -background'
     Check 'task works in the config folder' $cmd.WorkingDirectory $script:ConfigDir
 
+    Write-Host "file retries"
+    $script:tries = 0
+    Invoke-FileRetry { $script:tries++; if ($script:tries -lt 3) { throw 'still locked' } } -DelayMs 10
+    Check 'retried until it worked' $script:tries 3
+    $script:tries = 0
+    Check 'gives up after the last attempt' (Throws { Invoke-FileRetry { $script:tries++; throw 'locked' } -Attempts 4 -DelayMs 10 }) $true
+    Check 'tried every attempt' $script:tries 4
+
     Write-Host "resolve the exe"
     $script:PanelExe = Join-Path $work 'missing.exe'
     Check 'missing -PanelExe refused' (Throws { Resolve-PanelExe }) $true
@@ -145,6 +153,32 @@ try {
             $env:PYTHONPATH = Join-Path $repo 'src'
             $read = "from kid_pc_monitor import secrets_store; print(secrets_store.load_secret('panel-agent-shared-secret'))" | & $Python - 2>&1
             Check 'Python reads the secret the Go panel stored' (($read | Out-String).Trim()) 'kid-pc-secret-1'
+        }
+
+        Write-Host "stop a running panel, then remove its exe straight away"
+        $savedLocalAppData = $env:LOCALAPPDATA
+        $env:LOCALAPPDATA = Split-Path -Parent $script:ConfigDir
+        $env:KID_PC_MONITOR_HOST = '127.0.0.1'
+        $env:KID_PC_MONITOR_PORT = '18465'
+        $env:KID_PC_MONITOR_REVERSE_PORT = '18466'
+        try {
+            $panel = Start-Process -FilePath $installed -ArgumentList 'serve' -PassThru -WindowStyle Hidden
+            $up = $false
+            for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+                try {
+                    Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:18465/agent/v1/discover' | Out-Null
+                    $up = $true
+                } catch { Start-Sleep -Milliseconds 250 }
+            }
+            Check 'panel started' $up $true
+            Check 'running panel found' (@(Get-PanelProcesses).Count) 1
+            Stop-PanelTask
+            Check 'panel exited before Stop-PanelTask returned' $panel.HasExited $true
+            Check 'exe removable at once' (Throws { Remove-Item -LiteralPath $installed -Force -ErrorAction Stop }) $false
+        } finally {
+            if ($panel -and -not $panel.HasExited) { $panel | Stop-Process -Force -ErrorAction SilentlyContinue }
+            $env:LOCALAPPDATA = $savedLocalAppData
+            Remove-Item Env:KID_PC_MONITOR_HOST, Env:KID_PC_MONITOR_PORT, Env:KID_PC_MONITOR_REVERSE_PORT -ErrorAction SilentlyContinue
         }
     }
 } finally {
