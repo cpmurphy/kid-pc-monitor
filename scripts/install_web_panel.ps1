@@ -218,14 +218,38 @@ function Get-InstalledPanelPath {
     return Join-Path $InstallDir $PanelExeName
 }
 
+# The installed panel's running processes (the task's, or one started by
+# hand): each keeps the exe locked until it has exited.
+function Get-PanelProcesses {
+    $installed = Get-InstalledPanelPath
+    return @(Get-Process -Name 'kid-pc-web-panel' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -and ($_.Path -eq $installed) })
+}
+
+# Stop the task and any installed panel process, and wait until they have
+# exited: Stop-ScheduledTask and Stop-Process return before that, and the exe
+# cannot be replaced or deleted while a process still runs it.
 function Stop-PanelTask {
+    $running = Get-PanelProcesses
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($task) { Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue }
-    # A panel started by hand (or the task's process) keeps the exe locked.
-    $installed = Get-InstalledPanelPath
-    Get-Process -Name 'kid-pc-web-panel' -ErrorAction SilentlyContinue |
-        Where-Object { $_.Path -and ($_.Path -eq $installed) } |
-        Stop-Process -Force -ErrorAction SilentlyContinue
+    $running = @($running) + @(Get-PanelProcesses)
+    $running | Stop-Process -Force -ErrorAction SilentlyContinue
+    $running | Wait-Process -Timeout 15 -ErrorAction SilentlyContinue
+}
+
+# Run a file operation, retrying for a few seconds while Windows still holds
+# the file (a process that has just exited, or an antivirus scan).
+function Invoke-FileRetry([scriptblock]$Action, [int]$Attempts = 20, [int]$DelayMs = 250) {
+    for ($i = 1; ; $i++) {
+        try {
+            & $Action
+            return
+        } catch {
+            if ($i -ge $Attempts) { throw }
+            Start-Sleep -Milliseconds $DelayMs
+        }
+    }
 }
 
 # Where Install-PanelExe tries the new exe before replacing the installed one.
@@ -252,7 +276,7 @@ function Install-PanelExe($Resolved) {
         Remove-Item -LiteralPath $staging -Force -ErrorAction SilentlyContinue
         throw "The panel executable does not run on this PC."
     }
-    Move-Item -LiteralPath $staging -Destination $target -Force
+    Invoke-FileRetry { Move-Item -LiteralPath $staging -Destination $target -Force -ErrorAction Stop }
     Write-Host "Installed $target ($panelVersion)"
     return $target
 }
@@ -382,7 +406,7 @@ function Remove-Panel {
     Remove-FirewallRules
     $installed = Get-InstalledPanelPath
     if (Test-Path -LiteralPath $installed) {
-        Remove-Item -LiteralPath $installed -Force
+        Invoke-FileRetry { Remove-Item -LiteralPath $installed -Force -ErrorAction Stop }
         Write-Host "Removed $installed."
     }
     Write-Host "Kept $ConfigDir (panel.db, password, log) and the shared secret."
