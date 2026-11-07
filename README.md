@@ -222,12 +222,20 @@ For the Go web panel, re-run its installer (`install_web_panel.ps1`, or
 
 ## 📸 Screenshots
 
-<p>
-  <img src="screenshots/main-control-panel.png" alt="Main control panel" width="260" valign="top">
-  <img src="screenshots/individual-pc.png" alt="View of an individual PC" width="260" valign="top">
-  <img src="screenshots/daily-settings.png" alt="Daily settings" width="260" valign="top">
-  <img src="screenshots/usage.png" alt="Usage history" width="260" valign="top">
-</p>
+<table>
+  <tr>
+    <td valign="top" width="33%">
+      <img src="screenshots/main-control-panel.png" alt="Main control panel" width="260"><br><br>
+      <img src="screenshots/usage.png" alt="Usage history" width="260">
+    </td>
+    <td valign="top" width="33%">
+      <img src="screenshots/individual-pc.png" alt="View of an individual PC" width="260">
+    </td>
+    <td valign="top" width="33%">
+      <img src="screenshots/daily-settings.png" alt="Daily settings" width="260">
+    </td>
+  </tr>
+</table>
 
 ## Prerequisites
 
