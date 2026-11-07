@@ -23,7 +23,7 @@ func scriptPath(t *testing.T) string {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	return filepath.Join(filepath.Dir(file), "..", "..", "..", "scripts", "install_web_panel_linux.sh")
+	return filepath.Join(filepath.Dir(file), "..", "..", "scripts", "install_web_panel_linux.sh")
 }
 
 func writeExecutable(t *testing.T, path, body string) {

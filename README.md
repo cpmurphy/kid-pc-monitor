@@ -251,15 +251,6 @@ sudo ufw allow 5000/tcp
 sudo ufw allow 9998/tcp
 ```
 
-<details>
-<summary>Agent discovery (Technical Details)</summary>
-Agents first try `KID_PC_MONITOR_PANEL_URL` if set, then their cached panel URL,
-then scan their local `/24` for the web panel discovery endpoint on TCP 5000.
-They open reverse control on the `reverse_port` advertised by discovery
-(default 9998). The panel never dials kid PCs; connected agents appear in the
-UI as they call home.
-</details>
-
 ## Installation
 
 Installation is in two parts.  You install the agent on the kid's PC (as
@@ -445,7 +436,7 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 ### "Lock status not updating"
 - Restart the agent: in an administrator PowerShell, `Stop-ScheduledTask KidPCMonitor; Start-ScheduledTask KidPCMonitor` (it runs only while the child is signed in).
 - Read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` in the child's profile.
-- `go run ./cmd/wincheck status` (from `go/`, with Go installed) shows what the lock detection sees.
+- `go run ./cmd/wincheck status` (from a checkout, with Go installed) shows what the lock detection sees.
 
 ## 🛡️ Security Notes
 
@@ -461,12 +452,7 @@ Parents and developers welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
-The programs are Go (`go/`, see [go/README.md](go/README.md)). Behavior that
-has to stay compatible with existing installs is pinned by the frozen vectors
-in `testdata/`. **Publishing a release:** push a version tag (`git tag v1.2.0`
-then `git push origin v1.2.0`). `.github/workflows/release.yml` runs CI, then
-attaches the agent and web-panel binaries, `install_agent.ps1`,
-`install_web_panel.ps1` and `SHA256SUMS` to that tag's release.
+How to build, test, and publish a release is in [docs/TECH.md](docs/TECH.md).
 
 ### Recent Improvements
 - ✅ **Single programs** — The kid's PC and the parent panel are compiled Go programs. Released builds, checksum-verified installs, locked-down agent folder, enforcement from the first second of logon

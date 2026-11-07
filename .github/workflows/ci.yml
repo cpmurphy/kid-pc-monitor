@@ -34,7 +34,7 @@ jobs:
         run: |
           # Anything not matched here counts as code. When the diff can't be
           # computed (release tag, new branch, rewritten history) run everything.
-          docs_only='^([^/]+\.md|docs/.*|screenshots/.*|go/README\.md)$'
+          docs_only='^([^/]+\.md|docs/.*|screenshots/.*)$'
           code=true
           if [ "$EVENT" = pull_request ] || [ "$REF" = refs/heads/main ]; then
             if files=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null) && [ -n "$files" ]; then
@@ -55,20 +55,19 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go/go.mod
+          go-version-file: go.mod
 
       - name: gofmt
-        run: test -z "$(gofmt -l go)"
+        run: test -z "$(gofmt -l .)"
 
       - name: go vet
-        run: cd go && go vet ./...
+        run: go vet ./...
 
       - name: go test
-        run: cd go && go test -race ./...
+        run: go test -race ./...
 
       - name: Build the web panel for every release target
         run: |
-          cd go
           for target in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
             CGO_ENABLED=0 GOOS="${target%/*}" GOARCH="${target#*/}" go build -trimpath -o /dev/null ./cmd/kid-pc-web-panel
           done
@@ -76,7 +75,6 @@ jobs:
       # The panel uses modernc.org/sqlite; the agent must stay standard-library only.
       - name: Agent has no third-party dependencies
         run: |
-          cd go
           deps=$(GOOS=windows go list -deps ./cmd/kid-pc-agent | grep -E '^[a-z0-9-]+\.[a-z]' || true)
           if [ -n "$deps" ]; then echo "kid-pc-agent imports: $deps"; exit 1; fi
 
@@ -91,18 +89,15 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go/go.mod
+          go-version-file: go.mod
 
       - name: go vet
-        working-directory: go
         run: go vet ./...
 
       - name: go test
-        working-directory: go
         run: go test ./...
 
       - name: Build the agent as releases do
-        working-directory: go
         run: go build -trimpath -buildvcs=false -ldflags "-H=windowsgui -s -w" -o kid-pc-agent.exe ./cmd/kid-pc-agent
 
       - name: Installer tests (Windows PowerShell 5.1)
@@ -110,12 +105,11 @@ jobs:
         run: .\tests\install_agent_test.ps1
 
       - name: Build the web panel as releases do
-        working-directory: go
         run: go build -trimpath -buildvcs=false -ldflags "-s -w" -o kid-pc-web-panel.exe ./cmd/kid-pc-web-panel
 
       - name: Web panel installer tests (Windows PowerShell 5.1)
         shell: powershell
-        run: .\tests\install_web_panel_test.ps1 -PanelExe .\go\kid-pc-web-panel.exe
+        run: .\tests\install_web_panel_test.ps1 -PanelExe .\kid-pc-web-panel.exe
 
   # Single required check for branch rules / Dependabot auto-merge. Skipped
   # test jobs pass only when `changes` itself succeeded and found no code.

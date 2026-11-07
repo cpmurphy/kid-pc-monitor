@@ -201,9 +201,9 @@ install_go_panel() {
             echo "Error: Panel binary not found: ${GO_BINARY_ARG}" >&2
             status=1
         fi
-    elif [[ -z "$GO_VERSION_ARG" ]] && command -v go >/dev/null 2>&1 && [[ -f "${REPO_ROOT}/go/go.mod" ]]; then
+    elif [[ -z "$GO_VERSION_ARG" ]] && command -v go >/dev/null 2>&1 && [[ -f "${REPO_ROOT}/go.mod" ]]; then
         echo "Building the Go panel with $(command -v go) ..."
-        (cd "${REPO_ROOT}/go" && go build -trimpath -buildvcs=false -o "$tmp" ./cmd/kid-pc-web-panel) || status=$?
+        (cd "${REPO_ROOT}" && go build -trimpath -buildvcs=false -o "$tmp" ./cmd/kid-pc-web-panel) || status=$?
     else
         (download_go_panel "$tmp") || status=$?
     fi
