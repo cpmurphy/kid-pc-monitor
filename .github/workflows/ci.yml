@@ -12,7 +12,43 @@ permissions:
   contents: read
 
 jobs:
+  # Decides whether the change touches anything the tests exercise. The
+  # workflow always runs (no paths-ignore) so the required `ci` check always
+  # reports; for documentation-only changes the test jobs are skipped instead.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          # Anything not matched here counts as code. When the diff can't be
+          # computed (release tag, new branch, rewritten history) run everything.
+          docs_only='^([^/]+\.md|docs/.*|screenshots/.*|go/README\.md)$'
+          code=true
+          if [ "$EVENT" = pull_request ] || [ "$REF" = refs/heads/main ]; then
+            if files=$(git diff --name-only "$BASE" "$HEAD" 2>/dev/null) && [ -n "$files" ]; then
+              echo "$files"
+              if ! echo "$files" | grep -qvE "$docs_only"; then
+                code=false
+              fi
+            fi
+          fi
+          echo "code=$code" | tee -a "$GITHUB_OUTPUT"
+
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -44,6 +80,8 @@ jobs:
 
   # Go protocol port: golden vectors + live cross-check against the Python side.
   go:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -89,6 +127,8 @@ jobs:
   # The Windows-only Go code (winplatform, the agent itself), the installer's
   # functions, and the real agent against the Python panel (cross-check D).
   go-windows:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -134,15 +174,25 @@ jobs:
       - name: Cross-check against Python
         run: .\venv\Scripts\python.exe scripts/cross_check_go.py
 
-  # Single required check for branch rules / Dependabot auto-merge.
+  # Single required check for branch rules / Dependabot auto-merge. Skipped
+  # test jobs pass only when `changes` itself succeeded and found no code.
   ci:
-    needs: [test, go, go-windows]
+    needs: [changes, test, go, go-windows]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: All jobs passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          TEST: ${{ needs.test.result }}
+          GO: ${{ needs.go.result }}
+          GO_WINDOWS: ${{ needs.go-windows.result }}
         run: |
-          if [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.go.result }}" != "success" ] || [ "${{ needs.go-windows.result }}" != "success" ]; then
-            echo "test: ${{ needs.test.result }}, go: ${{ needs.go.result }}, go-windows: ${{ needs.go-windows.result }}"
-            exit 1
-          fi
+          echo "changes: $CHANGES (code=$CODE), test: $TEST, go: $GO, go-windows: $GO_WINDOWS"
+          if [ "$CHANGES" != success ]; then exit 1; fi
+          ok=success
+          if [ "$CODE" = false ]; then ok=skipped; fi
+          for r in "$TEST" "$GO" "$GO_WINDOWS"; do
+            if [ "$r" != "$ok" ]; then exit 1; fi
+          done
