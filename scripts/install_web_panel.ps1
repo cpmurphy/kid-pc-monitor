@@ -12,7 +12,7 @@ either from a checkout or on its own (it is attached to every GitHub release):
     powershell -ExecutionPolicy Bypass -File install_web_panel.ps1
 
 With no switches it shows a menu (install / remove). Installing:
-  - gets kid-pc-web-panel.exe: -PanelExe if given, else a build from go/ when
+  - gets kid-pc-web-panel.exe: -PanelExe if given, else a build from this checkout when
     Go and the sources are present, else the GitHub release's exe for this
     PC's architecture (checked against the release's SHA256SUMS);
   - copies it to %LOCALAPPDATA%\kid-pc-monitor\bin;
@@ -99,7 +99,7 @@ function Find-GoTool {
 }
 
 function Test-GoSources {
-    return Test-Path -LiteralPath (Join-Path $RepoRoot 'go\cmd\kid-pc-web-panel')
+    return Test-Path -LiteralPath (Join-Path $RepoRoot 'cmd\kid-pc-web-panel')
 }
 
 # The release asset suffix for this Windows: amd64 or arm64.
@@ -186,7 +186,7 @@ function Get-VerifiedReleaseAsset([string]$Tag, [string]$Name, [string]$Extensio
     return $path
 }
 
-# The kid-pc-web-panel.exe to install: -PanelExe; else a build from go/ when
+# The kid-pc-web-panel.exe to install: -PanelExe; else a build from this checkout when
 # Go and the sources are here (and -Download was not given); else the
 # released exe. Returns @{ Path; Temporary } (Temporary files are deleted
 # after copying).
@@ -201,7 +201,7 @@ function Resolve-PanelExe {
     if (-not $Download -and -not $Version -and $go -and (Test-GoSources)) {
         $out = New-TempPath '.exe'
         Write-Host "`nBuilding the Go web panel with $go ..."
-        Push-Location (Join-Path $RepoRoot 'go')
+        Push-Location $RepoRoot
         try {
             & $go build -trimpath -buildvcs=false -ldflags '-s -w' -o $out ./cmd/kid-pc-web-panel
             if ($LASTEXITCODE -ne 0) { throw "go build failed (exit code $LASTEXITCODE)." }

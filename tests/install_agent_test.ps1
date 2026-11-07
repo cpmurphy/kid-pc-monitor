@@ -151,7 +151,7 @@ try {
     Write-Host "secrets"
     $key = Get-FernetKey
     Check 'key matches Python' (ConvertTo-Base64Url $key) 'qUqA0U6WzA-GgRiReFTkIGQJvDcJGqpYhxFpUg4w_sI='
-    # Made by secrets_store (see go/secrets/secrets_test.go).
+    # Made by secrets_store (see secrets/secrets_test.go).
     $pyToken = 'gAAAAABp6t5AAAECAwQFBgcICQoLDA0OD_OFRh0TKmlE6CdoPCuWAwWGZ0ejHt5aU4hnXhhPx_X-d52027H8ltcRJYONXFCy9DxO4VCHyxyxDkVBrFgcstM='
     Check 'decrypts a Python token' (Unprotect-Fernet $key $pyToken) 'correct horse battery staple'
     $secret = 'PS-made secret ' + [char]0xFC + 'n' + [char]0xEF + ' ' + [char]0x2713

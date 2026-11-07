@@ -17,7 +17,7 @@ import (
 type obj = map[string]any
 
 func vectorsPath() string {
-	return filepath.Join("..", "..", "testdata", "protocol", "vectors.json")
+	return filepath.Join("..", "testdata", "protocol", "vectors.json")
 }
 
 func loadVectors(t *testing.T) obj {

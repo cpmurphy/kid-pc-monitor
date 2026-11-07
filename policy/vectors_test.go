@@ -16,7 +16,7 @@ type obj = map[string]any
 
 func loadVectors(t *testing.T) obj {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join("..", "..", "testdata", "policy", "vectors.json"))
+	raw, err := os.ReadFile(filepath.Join("..", "testdata", "policy", "vectors.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

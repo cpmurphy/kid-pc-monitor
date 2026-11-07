@@ -9,7 +9,7 @@ stand-in for GitHub), copying an old auth file, the task command, and - with
 -PanelExe, a real kid-pc-web-panel.exe - installing it into a temporary folder
 and storing the shared secret through it.
 
-    powershell -ExecutionPolicy Bypass -File tests\install_web_panel_test.ps1 [-PanelExe go\kid-pc-web-panel.exe]
+    powershell -ExecutionPolicy Bypass -File tests\install_web_panel_test.ps1 [-PanelExe kid-pc-web-panel.exe]
 
 Keep this file ASCII-only, like the installer.
 #>

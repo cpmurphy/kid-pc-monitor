@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Kid PC Monitor agent installer for the Go agent (go/cmd/kid-pc-agent).
+Kid PC Monitor agent installer for the Go agent (cmd/kid-pc-agent).
 
 .DESCRIPTION
 Installs the compiled Go agent. The kid's PC needs neither Python nor Git.
@@ -12,7 +12,7 @@ a checkout or on its own (it is attached to every GitHub release):
     powershell -ExecutionPolicy Bypass -File install_agent.ps1
 
 With no switches it shows a menu (install / remove). It:
-  - gets kid-pc-agent.exe: -AgentExe if given, else a build from go/ when Go
+  - gets kid-pc-agent.exe: -AgentExe if given, else a build from this checkout when Go
     1.26+ and the sources are present, else the GitHub release's exe for this
     PC's architecture (checked against the release's SHA256SUMS);
   - copies it to %ProgramData%\KidPCMonitor, removes the Python agent's
@@ -273,7 +273,7 @@ function Find-GoTool {
 }
 
 function Test-GoSources {
-    return Test-Path -LiteralPath (Join-Path $RepoRoot 'go\go.mod')
+    return Test-Path -LiteralPath (Join-Path $RepoRoot 'go.mod')
 }
 
 # The release asset suffix for this Windows: amd64 or arm64.
@@ -385,7 +385,7 @@ function Test-ReleaseMode {
     return -not ((Find-GoTool) -and (Test-GoSources))
 }
 
-# The kid-pc-agent.exe to install: -AgentExe; else a build from go/ when Go and
+# The kid-pc-agent.exe to install: -AgentExe; else a build from this checkout when Go and
 # the sources are here (and -Download was not given); else the released exe.
 # Returns @{ Path; Temporary; Version; Installer }: Temporary files are deleted
 # after copying, Version is recorded in version.txt, and Installer (when set)
@@ -405,7 +405,7 @@ function Resolve-AgentExe([string]$Tag) {
     $go = Find-GoTool
     $out = New-TempPath '.exe'
     Write-Host "`nBuilding the Go agent with $go ..."
-    Push-Location (Join-Path $RepoRoot 'go')
+    Push-Location $RepoRoot
     try {
         & $go build -trimpath -buildvcs=false -ldflags '-H=windowsgui -s -w' -o $out ./cmd/kid-pc-agent
         if ($LASTEXITCODE -ne 0) { throw "go build failed (exit code $LASTEXITCODE)." }

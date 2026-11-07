@@ -1,13 +1,13 @@
 # Reading the Go Source: A Newcomer's Guide
 
-This guide is a map of the Go code under [`go/`](../go). It covers what each
+This guide is a map of the Go code in this repository. It covers what each
 package does, how the packages fit together, which Go language and
 standard-library features they use (and why), and where the code is subtle
 enough that you should slow down before changing it.
 
 It does not repeat the package-level docs. Every package has a doc comment
 (usually in `doc.go`) that is the authoritative description, and
-[`go/README.md`](../go/README.md) has the package table and build commands.
+[TECH.md](TECH.md) has the package table and build commands.
 Read this guide first for orientation, then read those.
 
 > **One rule to keep in mind:** this code was ported from a Python program
@@ -73,13 +73,13 @@ HMAC-SHA256) is specified in [`docs/agent-protocol.md`](agent-protocol.md).
 ## 2. Two programs, one module
 
 Everything lives in a single Go module named `kidpcmonitor`
-([`go/go.mod`](../go/go.mod)), so imports look like `kidpcmonitor/protocol`.
+([`go.mod`](../go.mod)), so imports look like `kidpcmonitor/protocol`.
 
 | Executable | Runs on | Purpose |
 |---|---|---|
-| [`cmd/kid-pc-agent`](../go/cmd/kid-pc-agent) | Windows only | Kid-side agent: enforcement loop + reverse client. |
-| [`cmd/kid-pc-web-panel`](../go/cmd/kid-pc-web-panel) | Windows, Linux, macOS | Parent panel: HTTP UI on 5000 + reverse listener on 9998. |
-| [`cmd/wincheck`](../go/cmd/wincheck) | Windows only | Manual test tool for `winplatform` on a real host. |
+| [`cmd/kid-pc-agent`](../cmd/kid-pc-agent) | Windows only | Kid-side agent: enforcement loop + reverse client. |
+| [`cmd/kid-pc-web-panel`](../cmd/kid-pc-web-panel) | Windows, Linux, macOS | Parent panel: HTTP UI on 5000 + reverse listener on 9998. |
+| [`cmd/wincheck`](../cmd/wincheck) | Windows only | Manual test tool for `winplatform` on a real host. |
 
 There is an important constraint between the two halves. **The agent must
 build from the standard library only.** Only the panel may use third-party
@@ -157,7 +157,7 @@ Two things to notice:
 
 ### 4.1 What runs, and on which goroutine
 
-[`cmd/kid-pc-agent/main.go`](../go/cmd/kid-pc-agent/main.go) wires the pieces
+[`cmd/kid-pc-agent/main.go`](../cmd/kid-pc-agent/main.go) wires the pieces
 together and starts three goroutines. One `context.Context`, created by
 `signal.NotifyContext`, is the stop signal for all of them.
 
@@ -184,20 +184,20 @@ unusual part of that locking.
 
 | Package | Role | Start reading at |
 |---|---|---|
-| `agent` | Finds the panel (env var, then `panel_url.txt` cache, then a scan of the local /24), dials 9998 with TLS fallback, and loops reading frames. Also implements a Python-compatible rotating log on top of `log/slog`. | [`agent/reverse.go`](../go/agent/reverse.go) `ConnectOnce`, `serve` |
-| `protocol` | Frames (`ReadFrame`/`WriteFrame`), the KDL tokenizer, parser and serializer, HMAC signing, and `HandleRequest`, which turns one request body into one signed response and never fails. | [`protocol/server.go`](../go/protocol/server.go) |
-| `dispatcher` | Validates fields ("1–1440 minutes", "HH:MM") and maps an action to calls on the `Control` interface, then builds the response nodes. | [`dispatcher/dispatcher.go`](../go/dispatcher/dispatcher.go) `Dispatch` |
-| `monitor` | Owns the in-memory state. `Step()` runs four independent phases each second: tick usage, send warnings, enforce lock, persist. | [`monitor/monitor.go`](../go/monitor/monitor.go) `Step`, `Run` |
-| `policy` | Pure functions: should the PC be locked now, and how many minutes remain? No clock, no I/O. | [`policy/policy.go`](../go/policy/policy.go) `LockDecision` |
-| `state` | Reads and writes `daily_settings.json` and `state.json` with strict validation, quarantine of corrupt files, and `.bak` restore. | [`state/store.go`](../go/state/store.go) `Load` |
-| `winplatform` | Lock detection (WTS session flags, with a LogonUI.exe fallback), `LockWorkStation`, message boxes, `shutdown.exe`. | [`winplatform/windows.go`](../go/winplatform/windows.go) |
-| `secrets` | Decrypts the installer's Fernet-encrypted shared secret (AES-CBC + HMAC, PBKDF2 key), implemented by hand on the standard library. | [`secrets/secrets.go`](../go/secrets/secrets.go) |
-| `netinfo` | Finds the primary IPv4 address with a UDP "connect" that sends no packets. | [`netinfo/netinfo.go`](../go/netinfo/netinfo.go) |
+| `agent` | Finds the panel (env var, then `panel_url.txt` cache, then a scan of the local /24), dials 9998 with TLS fallback, and loops reading frames. Also implements a Python-compatible rotating log on top of `log/slog`. | [`agent/reverse.go`](../agent/reverse.go) `ConnectOnce`, `serve` |
+| `protocol` | Frames (`ReadFrame`/`WriteFrame`), the KDL tokenizer, parser and serializer, HMAC signing, and `HandleRequest`, which turns one request body into one signed response and never fails. | [`protocol/server.go`](../protocol/server.go) |
+| `dispatcher` | Validates fields ("1–1440 minutes", "HH:MM") and maps an action to calls on the `Control` interface, then builds the response nodes. | [`dispatcher/dispatcher.go`](../dispatcher/dispatcher.go) `Dispatch` |
+| `monitor` | Owns the in-memory state. `Step()` runs four independent phases each second: tick usage, send warnings, enforce lock, persist. | [`monitor/monitor.go`](../monitor/monitor.go) `Step`, `Run` |
+| `policy` | Pure functions: should the PC be locked now, and how many minutes remain? No clock, no I/O. | [`policy/policy.go`](../policy/policy.go) `LockDecision` |
+| `state` | Reads and writes `daily_settings.json` and `state.json` with strict validation, quarantine of corrupt files, and `.bak` restore. | [`state/store.go`](../state/store.go) `Load` |
+| `winplatform` | Lock detection (WTS session flags, with a LogonUI.exe fallback), `LockWorkStation`, message boxes, `shutdown.exe`. | [`winplatform/windows.go`](../winplatform/windows.go) |
+| `secrets` | Decrypts the installer's Fernet-encrypted shared secret (AES-CBC + HMAC, PBKDF2 key), implemented by hand on the standard library. | [`secrets/secrets.go`](../secrets/secrets.go) |
+| `netinfo` | Finds the primary IPv4 address with a UDP "connect" that sends no packets. | [`netinfo/netinfo.go`](../netinfo/netinfo.go) |
 
 ### 4.3 State files never get silently thrown away
 
 The `state` package's recovery logic is easiest to follow as a flowchart
-([`state/store.go:196`](../go/state/store.go#L196) `readValidated`):
+([`state/store.go:196`](../state/store.go#L196) `readValidated`):
 
 ```mermaid
 flowchart TD
@@ -213,7 +213,7 @@ flowchart TD
 ```
 
 Every `Save` refreshes `.bak`, but only from a file that itself validates
-(`writeJSON`, [`state/store.go:131`](../go/state/store.go#L131)). It then
+(`writeJSON`, [`state/store.go:131`](../state/store.go#L131)). It then
 writes `name.json.tmp` and `os.Rename`s it into place, so a crash in the
 middle of a write never leaves a half-written file.
 
@@ -221,7 +221,7 @@ middle of a write never leaves a half-written file.
 
 ## 5. The web panel (parent's machine)
 
-[`cmd/kid-pc-web-panel/main.go`](../go/cmd/kid-pc-web-panel/main.go) `serve()`
+[`cmd/kid-pc-web-panel/main.go`](../cmd/kid-pc-web-panel/main.go) `serve()`
 builds the object graph below and runs an `http.Server` on 5000 and a
 `reverse.Server` on 9998 in the same process.
 
@@ -244,12 +244,12 @@ flowchart LR
 
 | Package | Role | Start reading at |
 |---|---|---|
-| `panel/web` | The whole Flask app re-done on `net/http`: a hand-written router that matches werkzeug's 404/405 behaviour, buffered responses, CSRF, cache headers, templates. | [`panel/web/web.go:222`](../go/panel/web/web.go#L222) `ServeHTTP` |
-| `panel/reverse` | Accepts agent connections, identifies each with an unnamed `get settings`, keeps a per-hostname `Session`, and serializes parent actions onto it. | [`panel/reverse/server.go`](../go/panel/reverse/server.go) `handle`, [`session.go`](../go/panel/reverse/session.go) |
-| `panel/store` | `panel.db`: same schema, SQL and timestamp strings as the Python panel, so either panel can take over the other's database. | [`panel/store/store.go`](../go/panel/store/store.go) `Open`, `tx` |
-| `panel/auth` | werkzeug-compatible scrypt/pbkdf2 password hashes, an HMAC-signed session cookie, and the safe-redirect check for `?next=`. | [`panel/auth/session.go`](../go/panel/auth/session.go), [`hash.go`](../go/panel/auth/hash.go) |
-| `panel/format` | Pure display helpers ("1 h 30 min"), agent settings → dashboard PC-info, and panel action → protocol fields. | [`panel/format/pcinfo.go`](../go/panel/format/pcinfo.go) |
-| `panel/pyval` | Python semantics on `any` values: truthiness, `int()`, `str()`, `repr(float)`, `datetime.fromisoformat`. | [`panel/pyval/pyval.go`](../go/panel/pyval/pyval.go) |
+| `panel/web` | The whole Flask app re-done on `net/http`: a hand-written router that matches werkzeug's 404/405 behaviour, buffered responses, CSRF, cache headers, templates. | [`panel/web/web.go:222`](../panel/web/web.go#L222) `ServeHTTP` |
+| `panel/reverse` | Accepts agent connections, identifies each with an unnamed `get settings`, keeps a per-hostname `Session`, and serializes parent actions onto it. | [`panel/reverse/server.go`](../panel/reverse/server.go) `handle`, [`session.go`](../panel/reverse/session.go) |
+| `panel/store` | `panel.db`: same schema, SQL and timestamp strings as the Python panel, so either panel can take over the other's database. | [`panel/store/store.go`](../panel/store/store.go) `Open`, `tx` |
+| `panel/auth` | werkzeug-compatible scrypt/pbkdf2 password hashes, an HMAC-signed session cookie, and the safe-redirect check for `?next=`. | [`panel/auth/session.go`](../panel/auth/session.go), [`hash.go`](../panel/auth/hash.go) |
+| `panel/format` | Pure display helpers ("1 h 30 min"), agent settings → dashboard PC-info, and panel action → protocol fields. | [`panel/format/pcinfo.go`](../panel/format/pcinfo.go) |
+| `panel/pyval` | Python semantics on `any` values: truthiness, `int()`, `str()`, `repr(float)`, `datetime.fromisoformat`. | [`panel/pyval/pyval.go`](../panel/pyval/pyval.go) |
 
 ---
 
@@ -319,7 +319,7 @@ What this means for you:
   `Clock func() time.Time`, `Now func() time.Time` and
   `LoadSecret func() (string, error)` on many structs. A nil field means "use
   the real thing". This is how `monitor` replays scripted scenarios
-  deterministically ([`monitor/vectors_test.go`](../go/monitor/vectors_test.go)).
+  deterministically ([`monitor/vectors_test.go`](../monitor/vectors_test.go)).
 
 ---
 
@@ -332,34 +332,34 @@ Each entry says what the feature is and points to a real use in this repo.
 
 | Feature | What it is | Where to see it |
 |---|---|---|
-| **Implicit interfaces** | A type satisfies an interface just by having the methods. There is no `implements` keyword. | `monitor.Platform` ([`monitor/monitor.go`](../go/monitor/monitor.go)) is satisfied by `winplatform.Platform` and by the test fakes. |
-| **Compile-time interface check** | `var _ I = (*T)(nil)` fails to compile if `*T` stops satisfying `I`. | [`winplatform/windows.go:23`](../go/winplatform/windows.go#L23) |
-| **Struct embedding** | An embedded field's methods are promoted onto the outer type. Used for adapters and wrappers. | `web.ReverseServer{ *reverse.Server }` ([`panel/web/reverse.go:9`](../go/panel/web/reverse.go#L9)) adds two methods and inherits `PerformAction`. `statusRecorder` embeds `http.ResponseWriter` and overrides only `WriteHeader` ([`cmd/kid-pc-web-panel/main.go:275`](../go/cmd/kid-pc-web-panel/main.go#L275)). |
-| **`any` and type switches** | `any` is `interface{}`. `switch v := x.(type)` branches on the dynamic type. This repo uses it to model Python's dynamic values. | `protocol.Value = any` (a *type alias*, note the `=`) in [`protocol/compat.go:11`](../go/protocol/compat.go#L11). `advertisedPort` in [`agent/reverse.go`](../go/agent/reverse.go). All of `panel/pyval`. |
+| **Implicit interfaces** | A type satisfies an interface just by having the methods. There is no `implements` keyword. | `monitor.Platform` ([`monitor/monitor.go`](../monitor/monitor.go)) is satisfied by `winplatform.Platform` and by the test fakes. |
+| **Compile-time interface check** | `var _ I = (*T)(nil)` fails to compile if `*T` stops satisfying `I`. | [`winplatform/windows.go:23`](../winplatform/windows.go#L23) |
+| **Struct embedding** | An embedded field's methods are promoted onto the outer type. Used for adapters and wrappers. | `web.ReverseServer{ *reverse.Server }` ([`panel/web/reverse.go:9`](../panel/web/reverse.go#L9)) adds two methods and inherits `PerformAction`. `statusRecorder` embeds `http.ResponseWriter` and overrides only `WriteHeader` ([`cmd/kid-pc-web-panel/main.go:275`](../cmd/kid-pc-web-panel/main.go#L275)). |
+| **`any` and type switches** | `any` is `interface{}`. `switch v := x.(type)` branches on the dynamic type. This repo uses it to model Python's dynamic values. | `protocol.Value = any` (a *type alias*, note the `=`) in [`protocol/compat.go:11`](../protocol/compat.go#L11). `advertisedPort` in [`agent/reverse.go`](../agent/reverse.go). All of `panel/pyval`. |
 | **Pointers as "optional"** | `*int64` / `*string` / `*TimeOfDay` where Python has `None`. `nil` means unset. | `DailySettings.BedTime`, `Control.DailyAllowance() *int64`, `ProtocolError.ReqID *string`. `protocol.Ptr(s)` is a helper because you can't take `&"literal"`. |
 | **Multiple returns and `(value, ok)`** | Go has no exceptions. Functions return `(result, error)` or `(result, ok bool)`. | `policy.MinutesUntilLock` returns `(float64, bool)` where Python returns `float \| None`. |
-| **Custom error types + `errors.As` / `errors.Is`** | Errors are values. `errors.As` unwraps a chain to find a specific type. `fmt.Errorf("…%w", err)` wraps. | `*protocol.ProtocolError` carries a wire error code ([`protocol/errors.go`](../go/protocol/errors.go)). `HandleRequest` uses `errors.As` to choose between that code and `internal_error`. |
-| **`defer`** | Runs when the function returns. Used for unlocks, closes, and cleanup. Runs in LIFO order. | `c.mu.Lock(); defer c.mu.Unlock()` throughout `monitor`. Note the four stacked defers in `reverse.Server.Serve` ([`panel/reverse/server.go:164`](../go/panel/reverse/server.go#L164)): sessions close *before* `wg.Wait()`. |
-| **`panic` / `recover`** | `recover()` inside a deferred func stops a panic. It is used here only as a safety net so one bug can't stop enforcement or the server. | `runPhase` ([`monitor/monitor.go:454`](../go/monitor/monitor.go#L454)), `ReverseClient.cycle` ([`agent/reverse.go:95`](../go/agent/reverse.go#L95)), `App.ServeHTTP`, `emitStatus`. |
+| **Custom error types + `errors.As` / `errors.Is`** | Errors are values. `errors.As` unwraps a chain to find a specific type. `fmt.Errorf("…%w", err)` wraps. | `*protocol.ProtocolError` carries a wire error code ([`protocol/errors.go`](../protocol/errors.go)). `HandleRequest` uses `errors.As` to choose between that code and `internal_error`. |
+| **`defer`** | Runs when the function returns. Used for unlocks, closes, and cleanup. Runs in LIFO order. | `c.mu.Lock(); defer c.mu.Unlock()` throughout `monitor`. Note the four stacked defers in `reverse.Server.Serve` ([`panel/reverse/server.go:164`](../panel/reverse/server.go#L164)): sessions close *before* `wg.Wait()`. |
+| **`panic` / `recover`** | `recover()` inside a deferred func stops a panic. It is used here only as a safety net so one bug can't stop enforcement or the server. | `runPhase` ([`monitor/monitor.go:454`](../monitor/monitor.go#L454)), `ReverseClient.cycle` ([`agent/reverse.go:95`](../agent/reverse.go#L95)), `App.ServeHTTP`, `emitStatus`. |
 | **Named results modified in `defer`** | A deferred closure can assign to a named return value after a panic. | `cycle(ctx) (delay time.Duration)` sets `delay = cycleFailureRetry` in its `recover` block. |
-| **Generics** | Type parameters `[T any]`. Used sparingly. | `readValidated[T any]` ([`state/store.go:196`](../go/state/store.go#L196)) handles both state files with one recovery routine. |
-| **Newer built-ins** | `min`, `max` (Go 1.21), `clear(map)` (1.21), `for range n` over an int (1.22). | `clear(c.warningsSent)` in `monitor`, `min(d, reconnectMax)` in `agent`, `for range length` in [`panel/auth/hash.go`](../go/panel/auth/hash.go). |
+| **Generics** | Type parameters `[T any]`. Used sparingly. | `readValidated[T any]` ([`state/store.go:196`](../state/store.go#L196)) handles both state files with one recovery routine. |
+| **Newer built-ins** | `min`, `max` (Go 1.21), `clear(map)` (1.21), `for range n` over an int (1.22). | `clear(c.warningsSent)` in `monitor`, `min(d, reconnectMax)` in `agent`, `for range length` in [`panel/auth/hash.go`](../panel/auth/hash.go). |
 | **Function values as fields** | Dependency injection without a framework. | `Config.Clock`, `ReverseClient.LoadSecret`, `reverse.Server.OnStatus`, the `protocol.Dispatcher` func type, and `dispatcher.Handler(c)`, which returns a closure. |
-| **Package-level initializer expressions** | `var x = func() T { … }()` runs once at program start. | `systemDir` ([`winplatform/windows.go:227`](../go/winplatform/windows.go#L227)) is computed before the lazy DLLs that depend on it. |
-| **`iota`** | Auto-incrementing constants for enums. | `tokKind` in [`protocol/kdl.go:126`](../go/protocol/kdl.go#L126). |
-| **Struct tags** | Backtick metadata read by `encoding/json` (`json:"a,omitempty"`). | `sessionData` in [`panel/auth/session.go`](../go/panel/auth/session.go) uses one-letter keys to keep the cookie short. |
+| **Package-level initializer expressions** | `var x = func() T { … }()` runs once at program start. | `systemDir` ([`winplatform/windows.go:227`](../winplatform/windows.go#L227)) is computed before the lazy DLLs that depend on it. |
+| **`iota`** | Auto-incrementing constants for enums. | `tokKind` in [`protocol/kdl.go:126`](../protocol/kdl.go#L126). |
+| **Struct tags** | Backtick metadata read by `encoding/json` (`json:"a,omitempty"`). | `sessionData` in [`panel/auth/session.go`](../panel/auth/session.go) uses one-letter keys to keep the cookie short. |
 
 ### Concurrency
 
 | Feature | What it is | Where to see it |
 |---|---|---|
 | **Goroutines** | `go f()` starts a lightweight thread. | Three in agent `main`. One per agent connection in `reverse.Server.Serve`. One per popup in `ShowMessage`. |
-| **Channels + `select`** | Typed queues. `select` waits on several of them at once. A `chan struct{}` that gets `close`d is a broadcast "done" signal. | `Session.Submit` / `Session.loop` ([`panel/reverse/session.go`](../go/panel/reverse/session.go)) are the richest example. Agent `main` uses `monitorDone`/`clientDone` to wait for shutdown. |
+| **Channels + `select`** | Typed queues. `select` waits on several of them at once. A `chan struct{}` that gets `close`d is a broadcast "done" signal. | `Session.Submit` / `Session.loop` ([`panel/reverse/session.go`](../panel/reverse/session.go)) are the richest example. Agent `main` uses `monitorDone`/`clientDone` to wait for shutdown. |
 | **Buffered vs unbuffered channels** | Unbuffered sends wait for a receiver. A buffer of 1 lets the sender continue even if nobody reads. | `s.reqs` is unbuffered, so the handoff is a rendezvous. `r.result` has capacity 1, so the session loop never blocks on a caller that has already timed out. |
 | **`context.Context`** | Cancellation and deadlines passed down the call chain. | `signal.NotifyContext` in both `main`s. `context.WithTimeout` around TLS handshakes and `shutdown.exe`. `http.NewRequestWithContext` for discovery. |
-| **`context.AfterFunc`** (Go 1.21) | Runs a callback when a context is cancelled. Useful for unblocking a blocking `Read`/`Accept` by closing the socket. | [`agent/reverse.go:167`](../go/agent/reverse.go#L167), [`panel/reverse/server.go:165`](../go/panel/reverse/server.go#L165) |
+| **`context.AfterFunc`** (Go 1.21) | Runs a callback when a context is cancelled. Useful for unblocking a blocking `Read`/`Accept` by closing the socket. | [`agent/reverse.go:167`](../agent/reverse.go#L167), [`panel/reverse/server.go:165`](../panel/reverse/server.go#L165) |
 | **`sync.Mutex` / `RWMutex`** | Locks. No re-entrancy: locking twice on one goroutine deadlocks. | `monitor.Control.mu`, `store.Store.writeMu`, `auth.Sessions.mu` (RW). |
-| **`sync.Once` / `sync.OnceValue`** | Run exactly once. `OnceValue` (1.21) also caches the return value. | `Session.closeOnce` (close `done` + conn once). `serve`'s `closeConn`. `flagsInverted` ([`winplatform/windows.go:330`](../go/winplatform/windows.go#L330)). |
+| **`sync.Once` / `sync.OnceValue`** | Run exactly once. `OnceValue` (1.21) also caches the return value. | `Session.closeOnce` (close `done` + conn once). `serve`'s `closeConn`. `flagsInverted` ([`winplatform/windows.go:330`](../winplatform/windows.go#L330)). |
 | **`sync.WaitGroup`** | Wait for a set of goroutines to finish. | `reverse.Server.Serve` waits for every session goroutine before returning. |
 | **`sync/atomic`** | Lock-free flags. | `request.abandoned atomic.Bool`, set by a timed-out caller and read by the session loop. |
 | **`time.Ticker` / `time.Timer` / `time.After`** | Periodic and one-shot timers that deliver on a channel. | `Control.Run` (1 s ticker). `Session.loop` (idle refresh timer, `Reset` after each event). The `ReverseClient.Run` back-off. |
@@ -368,18 +368,18 @@ Each entry says what the feature is and points to a real use in this repo.
 
 | Package | Why it matters here | Where |
 |---|---|---|
-| `log/slog` | Structured logging. The agent plugs in a **custom `slog.Handler`** that writes Python `logging`-format lines, so the panel's log page parses them the same way. | `pyHandler` in [`agent/logging.go:197`](../go/agent/logging.go#L197). Panel uses the stock `slog.NewTextHandler`. |
-| `syscall` + `unsafe` | Calling Win32 without cgo or `x/sys/windows`: `syscall.NewLazyDLL(...).NewProc(...).Call(uintptr...)`. | [`winplatform/windows.go`](../go/winplatform/windows.go), [`cmd/kid-pc-web-panel/console_windows.go`](../go/cmd/kid-pc-web-panel/console_windows.go) |
-| `runtime.LockOSThread` | Pins a goroutine to one OS thread. Win32 UI calls such as `MessageBox` assume thread affinity. | `ShowMessage` ([`winplatform/windows.go:141`](../go/winplatform/windows.go#L141)) |
-| `os/exec` + `SysProcAttr` | Running `shutdown.exe` with `HideWindow` / `CREATE_NO_WINDOW` so no console flashes. | `runShutdown` in [`winplatform/windows.go`](../go/winplatform/windows.go) |
-| `embed` | `//go:embed` compiles files into the binary, so the panel ships as one exe with its templates and static assets. | [`panel/web/render.go:17`](../go/panel/web/render.go#L17) |
-| `html/template` | Context-aware auto-escaping templates. The Jinja templates were rewritten for it, with a `FuncMap` of Python-ish helpers (`get`, `show`, `pyeq`…). | `funcs`, `loadTemplates` in [`panel/web/render.go`](../go/panel/web/render.go) |
-| `net/http` | `App` implements `http.Handler` directly (no router library). The `accessLog` middleware wraps it. | [`panel/web/web.go`](../go/panel/web/web.go), [`cmd/kid-pc-web-panel/main.go`](../go/cmd/kid-pc-web-panel/main.go) |
-| `database/sql` | Generic SQL API. The driver registers itself through a blank import, `_ "modernc.org/sqlite"`. | [`panel/store/store.go:39`](../go/panel/store/store.go#L39) |
+| `log/slog` | Structured logging. The agent plugs in a **custom `slog.Handler`** that writes Python `logging`-format lines, so the panel's log page parses them the same way. | `pyHandler` in [`agent/logging.go:197`](../agent/logging.go#L197). Panel uses the stock `slog.NewTextHandler`. |
+| `syscall` + `unsafe` | Calling Win32 without cgo or `x/sys/windows`: `syscall.NewLazyDLL(...).NewProc(...).Call(uintptr...)`. | [`winplatform/windows.go`](../winplatform/windows.go), [`cmd/kid-pc-web-panel/console_windows.go`](../cmd/kid-pc-web-panel/console_windows.go) |
+| `runtime.LockOSThread` | Pins a goroutine to one OS thread. Win32 UI calls such as `MessageBox` assume thread affinity. | `ShowMessage` ([`winplatform/windows.go:141`](../winplatform/windows.go#L141)) |
+| `os/exec` + `SysProcAttr` | Running `shutdown.exe` with `HideWindow` / `CREATE_NO_WINDOW` so no console flashes. | `runShutdown` in [`winplatform/windows.go`](../winplatform/windows.go) |
+| `embed` | `//go:embed` compiles files into the binary, so the panel ships as one exe with its templates and static assets. | [`panel/web/render.go:17`](../panel/web/render.go#L17) |
+| `html/template` | Context-aware auto-escaping templates. The Jinja templates were rewritten for it, with a `FuncMap` of Python-ish helpers (`get`, `show`, `pyeq`…). | `funcs`, `loadTemplates` in [`panel/web/render.go`](../panel/web/render.go) |
+| `net/http` | `App` implements `http.Handler` directly (no router library). The `accessLog` middleware wraps it. | [`panel/web/web.go`](../panel/web/web.go), [`cmd/kid-pc-web-panel/main.go`](../cmd/kid-pc-web-panel/main.go) |
+| `database/sql` | Generic SQL API. The driver registers itself through a blank import, `_ "modernc.org/sqlite"`. | [`panel/store/store.go:39`](../panel/store/store.go#L39) |
 | `crypto/*` | `hmac` + `sha256` (protocol signatures and cookies), `aes` + `cipher` (Fernet), `subtle`/`hmac.Equal` (constant-time compares), `crypto/rand` (nonces, CSRF tokens). | `protocol/auth.go`, `secrets/secrets.go`, `panel/auth/*` |
-| `crypto/tls` | Client with a fallback to `InsecureSkipVerify` for self-signed LAN panels, and a server-side `tls.Server` handshake per session. | `openReverse` ([`agent/reverse.go:358`](../go/agent/reverse.go#L358)), `reverse.Server.handle` |
-| `encoding/json` with `UseNumber` | Decodes numbers as `json.Number` (text), not `float64`, so `90` and `90.0` stay distinguishable, as they are in Python. | `DecodeDocument` ([`state/convert.go:28`](../go/state/convert.go#L28)) |
-| `bufio.Reader` + `io.ReadFull` | Read the length prefix byte by byte, then exactly *n* bytes of body. | `ReadFrame` ([`protocol/frame.go:95`](../go/protocol/frame.go#L95)) |
+| `crypto/tls` | Client with a fallback to `InsecureSkipVerify` for self-signed LAN panels, and a server-side `tls.Server` handshake per session. | `openReverse` ([`agent/reverse.go:358`](../agent/reverse.go#L358)), `reverse.Server.handle` |
+| `encoding/json` with `UseNumber` | Decodes numbers as `json.Number` (text), not `float64`, so `90` and `90.0` stay distinguishable, as they are in Python. | `DecodeDocument` ([`state/convert.go:28`](../state/convert.go#L28)) |
+| `bufio.Reader` + `io.ReadFull` | Read the length prefix byte by byte, then exactly *n* bytes of body. | `ReadFrame` ([`protocol/frame.go:95`](../protocol/frame.go#L95)) |
 
 ### Build-time features
 
@@ -387,7 +387,7 @@ Each entry says what the feature is and points to a real use in this repo.
 |---|---|---|
 | `//go:build windows` / `!windows` | File-level build constraints. A `_windows.go` filename suffix does the same thing implicitly. | `winplatform/windows.go`, `diagnostics_windows.go`; the `console_windows.go` / `console_other.go` pair gives `hideOwnConsole` a no-op on other OSes. |
 | `-ldflags "-X main.version=v1.2.3"` | Sets a package-level string variable at link time. | `var version = "dev"` in both `main.go`s. |
-| `-ldflags -H=windowsgui` | Builds a GUI-subsystem exe so the scheduled task opens no console. | See [`go/README.md`](../go/README.md#build). |
+| `-ldflags -H=windowsgui` | Builds a GUI-subsystem exe so the scheduled task opens no console. | See [TECH.md](TECH.md#build). |
 | Pure-Go cross-compile | No cgo anywhere (SQLite included), so `GOOS=windows GOARCH=arm64 go build` works from Linux. | `.github/workflows/release.yml` |
 
 ---
@@ -399,7 +399,7 @@ These are the places most likely to surprise a reader, or to break if
 
 ### 9.1 The monitor releases its lock around platform calls
 
-[`monitor/monitor.go:162`](../go/monitor/monitor.go#L162)
+[`monitor/monitor.go:162`](../monitor/monitor.go#L162)
 
 ```go
 func (c *Control) unlocked(f func()) {
@@ -439,7 +439,7 @@ stalled loop) is dropped. `delta` is computed as
 
 ### 9.4 Naive wall-clock time
 
-[`policy/policy.go:121`](../go/policy/policy.go#L121) `Wall()` rebuilds a
+[`policy/policy.go:121`](../policy/policy.go#L121) `Wall()` rebuilds a
 `time.Time` in UTC from the local calendar fields. That is deliberate: Python
 uses naive `datetime`s, so a DST change must not stretch or shrink a curfew.
 Two related rules:
@@ -460,7 +460,7 @@ server, this is the first thing that will confuse you.
 
 ### 9.6 The `Submit` / `loop` handshake
 
-[`panel/reverse/session.go:73`](../go/panel/reverse/session.go#L73)
+[`panel/reverse/session.go:73`](../panel/reverse/session.go#L73)
 
 ```mermaid
 stateDiagram-v2
@@ -489,7 +489,7 @@ Things that are easy to break here:
 
 ### 9.7 Session replacement by hostname
 
-`reverse.Server.register` ([`server.go:355`](../go/panel/reverse/server.go#L355))
+`reverse.Server.register` ([`server.go:355`](../panel/reverse/server.go#L355))
 keeps two maps, `byHost` and `byIP`. A reconnecting agent (new socket, maybe a
 new IP) replaces its old session, and the old one is closed *outside* the
 mutex. `unregister` deletes a map entry only if it still points at *this*
@@ -518,7 +518,7 @@ finish. Swapping the two lines would deadlock on shutdown. The agent's
 
 ### 9.9 Signatures cover a *re-serialization*, not the received bytes
 
-`VerifyFrame` ([`protocol/protocol.go:131`](../go/protocol/protocol.go#L131))
+`VerifyFrame` ([`protocol/protocol.go:131`](../protocol/protocol.go#L131))
 splits off the first `auth` node, serializes the *remaining parsed nodes*
 again, and checks the HMAC over that canonical text. So `Serialize` in
 `kdl.go` is part of the security boundary: any change to quoting, escaping or
@@ -529,7 +529,7 @@ codes.
 
 ### 9.10 Frame length parsing that can't overflow
 
-`frameLength` ([`protocol/frame.go:43`](../go/protocol/frame.go#L43)) strips
+`frameLength` ([`protocol/frame.go:43`](../protocol/frame.go#L43)) strips
 leading zeros and rejects anything over 6 digits *before* calling
 `strconv.Atoi`. A peer sending a million `9`s gets "frame too large", not an
 integer overflow or a huge allocation. `ReadFrame` also caps the prefix
@@ -538,7 +538,7 @@ logs it as harmless.
 
 ### 9.11 Win32 from pure Go
 
-[`winplatform/windows.go`](../go/winplatform/windows.go):
+[`winplatform/windows.go`](../winplatform/windows.go):
 
 * **DLL hijacking defense:** `user32`, `wtsapi32` and `ntdll` are loaded by
   absolute path from `GetSystemDirectoryW` (`systemDLL`), not by bare name.
@@ -551,7 +551,7 @@ logs it as harmless.
   error. `winError` turns that into a plain "X failed" message.
 * **Manual struct layout:** `parseWTSInfoEx` reads `SessionFlags` at byte
   offset 16 of the returned buffer (see the comment in
-  [`flags.go`](../go/winplatform/flags.go)). `unsafe.Slice(buf, n)` turns the
+  [`flags.go`](../winplatform/flags.go)). `unsafe.Slice(buf, n)` turns the
   C pointer into a Go slice, and `WTSFreeMemory` is deferred.
 * **Windows 7 / Server 2008 R2 report lock and unlock swapped.** The OS
   version comes from `RtlGetVersion` because `GetVersionEx` lies to programs
@@ -608,7 +608,7 @@ Matching Python exactly creates a lot of small surprises:
 
 ## 10. Suggested reading order
 
-1. [`go/README.md`](../go/README.md) and [`docs/agent-protocol.md`](agent-protocol.md): vocabulary.
+1. [TECH.md](TECH.md) and [agent-protocol.md](agent-protocol.md): vocabulary.
 2. `policy`: small, pure, no concurrency. A gentle start for Go syntax.
 3. `protocol`: `frame.go` → `kdl.go` → `auth.go` → `protocol.go` → `server.go`.
 4. `dispatcher`, then `monitor` (watch the locking: [§9.1](#91-the-monitor-releases-its-lock-around-platform-calls)).

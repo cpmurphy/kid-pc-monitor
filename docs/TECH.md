@@ -1,52 +1,50 @@
-# Go module
+# Technical notes
 
-This directory is the Kid PC Monitor module (`kidpcmonitor`): the Windows
-agent `kid-pc-agent` and the parent web panel `kid-pc-web-panel`. Both were
-ported from the original Python programs. The agent uses only the standard
-library. The panel adds `modernc.org/sqlite` (pure Go) and `golang.org/x/crypto`,
-which the agent never imports (CI checks this). `golang.org/x/term` reads the
-shared-secret prompt.
+Kid PC Monitor is one Go module, `kidpcmonitor`, at the repository root. The
+Windows agent `kid-pc-agent` and the parent web panel `kid-pc-web-panel` were
+ported from the original Python programs. Installing and using them is
+described in the [README](../README.md). This file is the layout, the build,
+and the compatibility detail that is not needed to run the system.
+
+A longer walk through the source is in [go-source-guide.md](go-source-guide.md).
+The wire protocol is in [agent-protocol.md](agent-protocol.md).
+
+## Dependencies
+
+The agent uses only the standard library. The panel adds `modernc.org/sqlite`
+(pure Go) and `golang.org/x/crypto`, which the agent never imports (CI checks
+this). `golang.org/x/term` reads the shared-secret prompt.
 
 The agent reads and writes the same `daily_settings.json`, `state.json`,
 `pc_control.log` and encrypted shared secret as an older Python agent, speaks
 the same v3 protocol, and runs from the same `KidPCMonitor` scheduled task.
 The panel reads the same `panel.db`, password file and secret.
 
-## Install
-
-From an administrator PowerShell on the kid's PC:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
-```
-
-The installer builds the agent from this directory if Go is installed, and
-otherwise downloads it from the latest GitHub release (checked against
-`SHA256SUMS`). It replaces a Python agent in place, keeping its schedule and
-secret. See the [README](../README.md) for the options.
-
 ## Build
 
+Go 1.26 or later. From the repository root:
+
 ```bash
-cd go
 go build -ldflags -H=windowsgui -o kid-pc-agent.exe ./cmd/kid-pc-agent
 ```
 
 `-H=windowsgui` makes it a GUI-subsystem program so the scheduled task opens no
 console window (the Python agent uses `pythonw.exe` for the same reason).
-Release builds add `-trimpath -s -w` and `-X main.version=<tag>`; pushing a `v*`
-tag publishes amd64 and arm64 builds (`.github/workflows/release.yml`).
+Release builds add `-trimpath -s -w` and `-X main.version=<tag>`. Pushing a
+`v*` tag publishes amd64 and arm64 builds (`.github/workflows/release.yml`).
 
-Go 1.26 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
-`cmd/wincheck` also builds and tests on Linux and macOS.
+Everything except `winplatform`, `cmd/kid-pc-agent` and `cmd/wincheck` also
+builds and tests on Linux and macOS.
 
-## Web panel
+`cmd/wincheck` is a manual check of lock detection on a real Windows host
+(`go run ./cmd/wincheck status`).
 
-`cmd/kid-pc-web-panel` is the parent web panel. It reads the same `panel.db`,
-`web_panel_auth.json`, TLS files and shared secret as the original Python panel:
+### Web panel
+
+`cmd/kid-pc-web-panel` reads the same `panel.db`, `web_panel_auth.json`, TLS
+files and shared secret as the original Python panel:
 
 ```bash
-cd go
 go build -o kid-pc-web-panel ./cmd/kid-pc-web-panel
 ./kid-pc-web-panel set-secret   # once, unless an installer already stored it
 ./kid-pc-web-panel              # serves http(s)://0.0.0.0:5000 and TCP 9998
@@ -55,10 +53,12 @@ go build -o kid-pc-web-panel ./cmd/kid-pc-web-panel
 Release builds are published for Windows, Linux and macOS (amd64 and arm64).
 `scripts/install_web_panel.ps1` (Windows) and
 `scripts/install_web_panel_linux.sh install` set it up as a background
-task or service (`install --go` is the same command). `serve -background`
-hides the console Windows creates for a scheduled task and logs to
-`config_dir/web_panel.log`. A session cookie from the original Python panel
-does not carry over, so log in once after replacing that install.
+task or service (`install --go` is the same command). From a checkout with Go
+installed, those installers build this module; otherwise they download the
+release and check `SHA256SUMS`. `serve -background` hides the console Windows
+creates for a scheduled task and logs to `config_dir/web_panel.log`. A session
+cookie from the original Python panel does not carry over, so log in once
+after replacing that install.
 
 ## Packages
 
@@ -89,20 +89,38 @@ How a request flows: `agent.ReverseClient` reads a frame from the panel,
 drives `monitor.Control`; the monitor talks to Windows through
 `winplatform.Platform` and persists through `state.Store`.
 
-## Golden vectors
+## Discovery
 
-Each ported package is held to frozen vectors in `../testdata/*/vectors.json`.
-They were generated from the original Python implementation and are now the
-checked-in contract: change a file in the same commit as the Go behavior.
-There is no generator.
+Agents dial out. They try `KID_PC_MONITOR_PANEL_URL` if set, then their cached
+panel URL, then scan their local `/24` for the web panel discovery endpoint
+on TCP 5000. They open reverse control on the `reverse_port` advertised by
+discovery (default 9998). The panel never dials kid PCs; connected agents
+appear in the UI as they call home. HTTP `/agent/v1/discover` on port 5000 is
+bootstrap only.
+
+## Tests
 
 ```bash
-cd go && go test ./...    # every vector must pass
+go test ./...          # every vector must pass; -race in CI on Linux
+gofmt -l .
+go vet ./...
+go test ./policy/ -v   # one package
 ```
 
+Each ported package is held to frozen vectors in `testdata/*/vectors.json`.
+They were generated from the original Python implementation and are now the
+checked-in contract: change a file in the same commit as the Go behavior.
+There is no generator. `vectors_test.go` files replay those vectors. A CSS or
+JS edit under `panel/web/static/` also updates the SHA-256 recorded in
+`testdata/panelweb/vectors.json`.
+
+`panel/pyval` is how the panel reads JSON and `panel.db` rows the original
+Python panel wrote. Keep new vector inputs to values those rules treat stably.
+
 The secret store is tested against tokens produced by the original Python
-code. `tests/install_agent_test.ps1` checks the PowerShell installer, including
-that it still removes leftover Python agent files.
+code. `tests/install_agent_test.ps1` and `tests/install_web_panel_test.ps1`
+check the PowerShell installers (no admin rights). The Linux installer is
+tested from `cmd/kid-pc-web-panel/install_linux_test.go`.
 
 ## Differences from the Python agent
 
@@ -134,3 +152,10 @@ reply := protocol.HandleRequest(body, secret, hostname, time.Now().Unix(), dispa
 ```
 
 Timestamps are passed in explicitly (`now`) so tests are deterministic.
+
+## Publishing a release
+
+Push a version tag (`git tag v1.2.0` then `git push origin v1.2.0`).
+`.github/workflows/release.yml` runs CI, then attaches the agent and
+web-panel binaries, `install_agent.ps1`, `install_web_panel.ps1` and
+`SHA256SUMS` to that tag's release.
