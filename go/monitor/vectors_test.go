@@ -20,8 +20,8 @@ import (
 	"kidpcmonitor/state"
 )
 
-// The golden vectors are generated from the Python implementation by
-// tests/monitor_vectors_gen.py. Each scenario is replayed here against a fake
+// The golden vectors are the checked-in contract, originally generated from
+// the Python implementation. Each scenario is replayed here against a fake
 // clock and platform; after every step the platform calls, log lines, changed
 // state files and in-memory state must match.
 

@@ -1,7 +1,7 @@
 //go:build windows
 
-// Command kid-pc-agent is the kid-side agent, a port of
-// src/kid_pc_monitor/pc_control.py: it logs to
+// Command kid-pc-agent is the kid-side agent, a port of the original
+// Python pc_control.py: it logs to
 // %LOCALAPPDATA%\KidPCMonitor\pc_control.log (size-rotated), enforces the
 // daily limits with the monitoring loop, and keeps a reverse connection open
 // to the parent panel until it is interrupted.

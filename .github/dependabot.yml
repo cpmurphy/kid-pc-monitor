@@ -1,20 +1,10 @@
 version: 2
 updates:
-  - package-ecosystem: pip
-    directory: /
+  - package-ecosystem: gomod
+    directory: /go
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    groups:
-      lint-and-types:
-        patterns:
-          - ruff
-          - basedpyright
-          - pre-commit
-      testing:
-        patterns:
-          - pytest
-          - pytest-*
 
   - package-ecosystem: github-actions
     directory: /

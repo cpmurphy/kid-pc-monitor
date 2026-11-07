@@ -3,8 +3,9 @@
 Kid PC Monitor agent installer for the Go agent (go/cmd/kid-pc-agent).
 
 .DESCRIPTION
-A PowerShell port of scripts/install.py that installs the compiled Go agent
-instead of the Python one, so the kid's PC needs neither Python nor Git. Run it
+Installs the compiled Go agent. The kid's PC needs neither Python nor Git.
+If a Python agent from an older install is already in ProgramData, this
+replaces its task and removes its files, keeping the schedule and secret. Run it
 from an elevated Windows PowerShell 5.1 (or PowerShell 7) prompt, either from
 a checkout or on its own (it is attached to every GitHub release):
 
@@ -18,8 +19,8 @@ With no switches it shows a menu (install / remove). It:
     files from there, and restricts the folder to SYSTEM and Administrators
     (full control) plus the monitored account (read + execute);
   - saves the daily schedule to ProgramData and to the child's profile;
-  - stores the panel <-> agent shared secret (Fernet-encrypted, readable by
-    the Python and Go agents and the web panel);
+  - stores the panel <-> agent shared secret (Fernet-encrypted, the same
+    format an older Python agent wrote, so a replaced install keeps working);
   - registers the KidPCMonitor logon task (replacing a Python agent's task)
     and starts it;
   - keeps version.txt, a copy of this installer and update.cmd next to the

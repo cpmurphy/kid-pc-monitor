@@ -1,5 +1,5 @@
 {
- "_about": "Golden agent-state vectors generated from kid_pc_monitor.agent_state by tests/state_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden agent-state vectors, originally generated from the Python agent_state implementation. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "effective_allowance": [
   {
    "allowance": null,

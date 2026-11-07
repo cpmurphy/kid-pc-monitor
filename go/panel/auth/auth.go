@@ -2,11 +2,10 @@
 // (web_panel_auth.json), werkzeug-compatible password hashes, the signed
 // session cookie with its CSRF token, and the login "next" redirect check.
 //
-// The auth file, hashes and redirect check follow the Python panel
-// (web_panel.py, werkzeug.security), so a password set in either panel
-// logs in to the other. The Python implementation is the reference:
-// testdata/panelauth/vectors.json is generated from it
-// (tests/panelauth_vectors_gen.py) and vectors_test.go checks every case.
+// The auth file, hashes and redirect check follow the original Python panel
+// (web_panel.py, werkzeug.security), so a password set there still logs in
+// here. testdata/panelauth/vectors.json is the checked-in contract from that
+// port and vectors_test.go checks every case.
 //
 // # Known differences from the Python implementation
 //

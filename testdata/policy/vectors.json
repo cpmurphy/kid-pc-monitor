@@ -1,5 +1,5 @@
 {
- "_about": "Golden lock-policy vectors generated from kid_pc_monitor.lock_policy by tests/policy_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden lock-policy vectors, originally generated from the Python lock_policy implementation. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "default_wake_time": "07:00",
  "should_monitor_user": [
   {

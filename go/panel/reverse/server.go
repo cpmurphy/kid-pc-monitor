@@ -8,9 +8,8 @@
 // parent actions or, after StatusRefresh without one, another "get settings".
 // Any failure ends the session; the agent reconnects.
 //
-// It is checked against the Python server by scripts/cross_check_go.py,
-// which runs the same Python agent and the same script of actions through
-// both and compares every result.
+// Behavior that has to match the original Python listener is covered by
+// server_test.go and by the panelweb golden vectors.
 //
 // # Known differences from the Python implementation
 //

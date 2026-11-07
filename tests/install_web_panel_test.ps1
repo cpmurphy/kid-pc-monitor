@@ -7,14 +7,13 @@ Loads the installer's functions (dot-sourcing does not run it) and checks the
 release asset name and SHA256SUMS parsing, downloading a release (from a local
 stand-in for GitHub), copying an old auth file, the task command, and - with
 -PanelExe, a real kid-pc-web-panel.exe - installing it into a temporary folder
-and storing the shared secret through it. With -Python, also checks that
-Python's secrets_store reads that secret.
+and storing the shared secret through it.
 
-    powershell -ExecutionPolicy Bypass -File tests\install_web_panel_test.ps1 [-PanelExe go\kid-pc-web-panel.exe] [-Python venv\Scripts\python.exe]
+    powershell -ExecutionPolicy Bypass -File tests\install_web_panel_test.ps1 [-PanelExe go\kid-pc-web-panel.exe]
 
 Keep this file ASCII-only, like the installer.
 #>
-param([string]$PanelExe, [string]$Python)
+param([string]$PanelExe)
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -149,11 +148,6 @@ try {
         Check 'secret file written' (Test-Path -LiteralPath (Join-Path $env:KID_PC_MONITOR_SECRETS_DIR 'panel-agent-shared-secret.enc')) $true
         $reuse = '' | & $installed set-secret
         Check 'second run reuses it' (($reuse | Out-String) -match 'Reusing existing shared secret') $true
-        if ($Python) {
-            $env:PYTHONPATH = Join-Path $repo 'src'
-            $read = "from kid_pc_monitor import secrets_store; print(secrets_store.load_secret('panel-agent-shared-secret'))" | & $Python - 2>&1
-            Check 'Python reads the secret the Go panel stored' (($read | Out-String).Trim()) 'kid-pc-secret-1'
-        }
 
         Write-Host "stop a running panel, then remove its exe straight away"
         $savedLocalAppData = $env:LOCALAPPDATA

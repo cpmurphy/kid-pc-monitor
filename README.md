@@ -1,8 +1,8 @@
 # Kid PC Monitor
 
-DIY parental control system for tech-savvy parents. If you know what 'pip install' means, this could be for you!
+DIY parental control system for tech-savvy parents. The kid's PC runs one Windows program. The parent runs a web panel on Windows, Linux, or macOS.
 
-![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Go](https://img.shields.io/badge/go-1.26+-00ADD8.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Kids PC](https://img.shields.io/badge/kids_PC-Windows-lightgrey.svg)
 ![Web panel](https://img.shields.io/badge/web_panel-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)
@@ -20,19 +20,24 @@ DIY parental control system for tech-savvy parents. If you know what 'pip instal
 - **👤 User-specific restrictions** - Monitor only specific Windows accounts
 - **📊 Real-time status** - See current limits and time remaining
 
-Note: this is a fork from rookie7799's implementation.  I'd like to thank
-them for all the work providing the starting point.  As it is a fork, they have no
-responsibility for any problems with this version.
+This project began as a Python fork of rookie7799's implementation. The
+programs here are the Go port of that code. Python is no longer in the tree
+and is not a way to build or run it. The installers still replace an existing
+Python agent or panel in place, keeping the same tasks, settings, database
+and shared secret. Thank you to rookie7799 for the starting point. As a fork,
+they have no responsibility for any problems with this version.
 
 
 ## ⚠️ Technical Skills Required
 
 This is NOT a one-click solution. You'll need to:
-- Install Python on the parent machine (the kid's PC doesn't need it)
 - Use a terminal / command prompt
 - Understand IP addresses
 - Open firewall ports where needed
 - Set up a Windows scheduled task (the installer does this)
+
+Release installs download a program. Building from a checkout of this
+repository needs [Go](https://go.dev/dl/) 1.26 or later.
 
 If these terms are unfamiliar or you don't want to spend the time, consider commercial alternatives like:
 - Qustodio
@@ -51,22 +56,11 @@ You need:
 
 ### Before You Start
 
-**The kid's PC needs nothing installed first** — no Python, no Git. The agent is
+**The kid's PC needs nothing installed first** — no Go, no Git. The agent is
 a single compiled program that the installer downloads.
 
-**On the parent computer:** [Python](https://www.python.org/downloads/) 3.11 or
-later and [Git](https://git-scm.com/install/), for the web panel. During the
-Python installation on Windows:
-
-- Check "Add Python to PATH"
-- Choose "Install for all users"
-
-Test them:
-
-```powershell
-python --version
-git --version
-```
+**On the parent computer:** the web-panel installer downloads
+`kid-pc-web-panel` the same way. Building from a checkout needs Go 1.26+.
 
 ### On the Kid’s PC
 
@@ -119,27 +113,24 @@ powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1
 </details>
 
 <details>
-<summary>Moving from the Python agent</summary>
+<summary>Replacing an older Python agent</summary>
 
-Just run `install_agent.ps1` as above. It replaces the Python agent's task in
-place, keeps its schedule, usage and shared secret, and removes the Python
-agent's files from `C:\ProgramData\KidPCMonitor`. The original Python agent
-(`pip install -r requirements.txt`, then `python scripts\install.py`) still
-works if you need it.
+Just run `install_agent.ps1` as above. It replaces that agent's task in
+place, keeps its schedule, usage and shared secret, and removes its files
+from `C:\ProgramData\KidPCMonitor`.
 </details>
  
 
 ### On the parent PC
 
- 1. Install Python from python.org
- 2. Open PowerShell
+Open PowerShell **as administrator** and run the web-panel installer from the
+[latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)
+(or `scripts\install_web_panel.ps1` in a checkout):
 
 ```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-pip install -r requirements.txt
-pip install -e .
-scripts\install_web_panel.py
+[Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+Invoke-WebRequest https://github.com/cpmurphy/kid-pc-monitor/releases/latest/download/install_web_panel.ps1 -OutFile $env:TEMP\install_web_panel.ps1 -UseBasicParsing
+powershell -ExecutionPolicy Bypass -File $env:TEMP\install_web_panel.ps1
 ```
 
 Then
@@ -148,7 +139,7 @@ Open this on your phone or laptop:
 
 http://`<IP address of parent's PC>`:5000
 
-**iPhone password autofill:** Safari only auto-fills saved passwords over trusted HTTPS. For one-tap login from your phone, see [Safari autofill in the FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password) and run `./scripts/setup_web_panel_https.sh` on the parent machine.
+**iPhone password autofill:** Safari only auto-fills saved passwords over trusted HTTPS. For one-tap login from your phone, see [Safari autofill in the FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password).
 
 #### How to Find Your PC's IP Address
 
@@ -179,16 +170,9 @@ it without `-Uninstall` and choose option 2, `Remove scheduled task`.)
 
 ### On the Parent’s PC
 
-```powershell
-cd kid-pc-monitor
-python scripts\install_web_panel.py
-```
-
-Choose option 2, `Remove scheduled task`
-
-If you installed the Go web panel, run
-`powershell -ExecutionPolicy Bypass -File install_web_panel.ps1 -Uninstall` from an
-administrator PowerShell instead.
+From an administrator PowerShell, run `install_web_panel.ps1` again and choose
+`Remove scheduled task`, or pass `-Uninstall`. On Linux,
+`./scripts/install_web_panel_linux.sh uninstall`.
 
 ## 🔄 Updating (this fork)
 
@@ -214,11 +198,10 @@ running.
 If you installed from a checkout, `update.bat` in the repository folder still
 pulls and rebuilds (`update.bat auto` / `auto-off` for automatic updates).
 
-The **parent web panel** runs from the checkout directly, so there you only need
-`git pull` and a restart of the panel. On Linux, re-running
-`./scripts/install_web_panel_linux.sh install` does both the dependency update and the restart.
-For the Go web panel, re-run its installer (`install_web_panel.ps1`, or
-`install_web_panel_linux.sh install --go`) to get the latest release.
+The **parent web panel** updates the same way: re-run `install_web_panel.ps1`
+on Windows, or `./scripts/install_web_panel_linux.sh install` on Linux. A
+checkout with Go rebuilds the panel; otherwise the installer downloads the
+latest release and checks `SHA256SUMS`.
 
 ## 📸 Screenshots
 
@@ -243,7 +226,7 @@ To use this tool effectively, you'll want to have a separate parent/admin
 machine to run the web interface.
 
 - **Kid's PCs:** Windows 10/11 (the monitoring agent uses Windows APIs)
-- **Parent / admin machine:** Windows, Linux, or macOS with Python 3.11+ (runs the Flask web panel only) The web panel listens on TCP **5000** for your browser or phone.
+- **Parent / admin machine:** Windows, Linux, or macOS. The web panel is `kid-pc-web-panel` and listens on TCP **5000**. Building it from a checkout needs Go 1.26+; a release install downloads the program.
 
 ## Network Considerations
 
@@ -316,36 +299,44 @@ on the kid PC.
 
 Run the web panel on a separate PC (your own computer). More secure since kids can't access the admin interface.
 
+The web panel is one program, `kid-pc-web-panel`, for Windows, Linux and
+macOS. It is published with every release. If an older Python panel is
+already installed, the installer replaces its task and keeps the database,
+password and shared secret. Log in once more in the browser after that
+(the session cookie does not carry over).
+
 #### On your Windows PC
 
-(For MacOS/Linux, see below.)
+Download `install_web_panel.ps1` from the
+[latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)
+(or use `scripts\install_web_panel.ps1` in a checkout) and run it from an
+administrator PowerShell:
 
 ```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-pip install -r requirements.txt
-pip install -e .
-
-<# Run the web panel (any of these work): #>
-kid-pc-web-panel
-<# or: python -m kid_pc_monitor.web_panel #>
-<# or: python scripts\run_web_panel.py #>
-
-<# Open in browser: http://YOUR-PC-IP:5000 #>
+powershell -ExecutionPolicy Bypass -File install_web_panel.ps1
 ```
 
-#### Linux (recommended: one command)
+It downloads `kid-pc-web-panel.exe` for your PC (checked against the
+release's `SHA256SUMS`; with Go installed and a checkout it builds it
+instead), asks for the shared secret unless one is already stored, and
+offers firewall rules for TCP 5000 and 9998. The panel runs in the background
+and logs to `%LOCALAPPDATA%\kid-pc-monitor\web_panel.log`. Run it again to
+update; `-Uninstall` removes it.
 
-On a Linux box with systemd, the installer does everything: it creates a
-virtualenv (fetching Python 3.11+ with [uv](https://docs.astral.sh/uv/) if
-your distro's Python is older, after asking), installs the panel, asks for
-the shared secret, and starts it as a background service.
+#### Linux
+
+On a Linux box with systemd, the installer builds the panel when Go and this
+checkout are present, otherwise downloads the release and checks it, asks
+for the shared secret, and starts it as a background service.
 
 ```bash
 git clone https://github.com/cpmurphy/kid-pc-monitor.git
 cd kid-pc-monitor
 ./scripts/install_web_panel_linux.sh install
 ```
+
+`install --go` is the same command. `--binary PATH` installs a binary you
+already have; `--version v1.2.3` picks a release.
 
 After starting the service it checks two things and only suggests changes
 when they are actually needed:
@@ -359,90 +350,42 @@ when they are actually needed:
   there is no active firewall it tells you no changes are needed.
 
 Other commands: `status`, `uninstall`, and `cat-unit` (preview the unit file).
-Re-run `install` at any time, e.g. after `git pull`, to update dependencies
-and restart the panel.
+Re-run `install` to update and restart the panel.
 
-#### MacOS (or Linux without the service)
+#### macOS
+
+Download `kid-pc-web-panel-darwin-arm64` (Apple silicon) or
+`-darwin-amd64` (Intel) from the release, then:
 
 ```bash
-cd kid-pc-monitor
-python3 -m venv venv
-./venv/bin/python3 -m pip install -e .
-./venv/bin/kid-pc-web-panel
+chmod +x kid-pc-web-panel-darwin-arm64
+xattr -d com.apple.quarantine kid-pc-web-panel-darwin-arm64  # if your browser downloaded it
+./kid-pc-web-panel-darwin-arm64 set-secret
+./kid-pc-web-panel-darwin-arm64
 ```
 
-The launch scripts switch to `venv/` automatically when it exists.
-If you recreate the venv, rerun the `pip install` command above before starting the panel again.
+Allow incoming connections when macOS asks. To start it automatically, add
+it to **System Settings → General → Login Items**.
 
-#### Go web panel (optional: no Python needed)
-
-The web panel is also available as a single program, `kid-pc-web-panel`, for
-Windows, Linux and macOS. It is published with every release and does the same
-job as the Python panel, using the same database, password and shared secret,
-so you can switch either way and keep your history. After switching, log in
-once more in your browser.
-
-- **Windows:** download `install_web_panel.ps1` from the
-  [latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)
-  (or use the copy in `scripts\` of a checkout) and run it from an
-  administrator PowerShell:
-
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File install_web_panel.ps1
-  ```
-
-  It downloads `kid-pc-web-panel.exe` for your PC (checked against the
-  release's `SHA256SUMS`; with Go installed and a checkout it builds it
-  instead), asks for the shared secret unless one is already stored, replaces
-  the Python panel's `KidPCMonitorWebPanel` task, and offers firewall rules for
-  TCP 5000 and 9998. The panel runs in the background and logs to
-  `%LOCALAPPDATA%\kid-pc-monitor\web_panel.log`. Run it again to update;
-  `-Uninstall` removes it.
-- **Linux:** `./scripts/install_web_panel_linux.sh install --go` sets up the
-  same systemd service with the Go panel (built with Go if you have it,
-  otherwise downloaded and checked). `--binary PATH` installs a binary you
-  already have; `--version v1.2.3` picks a release. Run `install` without
-  `--go` to go back to the Python panel.
-- **macOS:** download `kid-pc-web-panel-darwin-arm64` (Apple silicon) or
-  `-darwin-amd64` (Intel) from the release, then:
-
-  ```bash
-  chmod +x kid-pc-web-panel-darwin-arm64
-  xattr -d com.apple.quarantine kid-pc-web-panel-darwin-arm64  # if your browser downloaded it
-  ./kid-pc-web-panel-darwin-arm64 set-secret
-  ./kid-pc-web-panel-darwin-arm64
-  ```
-
-  Allow incoming connections when macOS asks. To start it automatically, add
-  it to **System Settings → General → Login Items**.
-
-Passwords from installs older than May 2026 lived inside the package folder;
-both installers copy that file to the config folder for the Go panel (or run
-it with `-legacy-auth PATH`).
+Passwords from installs older than May 2026 lived inside the old package
+folder. The Windows and Linux installers copy that file into the config
+folder (or run the panel with `-legacy-auth PATH`).
 
 ## Option B: Single PC Setup
 
 Run everything on the kid's PC and access the admin panel from your
 phone. Convenient if you don't have a separate PC always running.
 
-1. **On the kid's PC (as administrator):**
-```powershell
-git clone https://github.com/cpmurphy/kid-pc-monitor.git
-cd kid-pc-monitor
-pip install -r requirements.txt
-
-<# Install both services #>
-powershell -ExecutionPolicy Bypass -File scripts\install_agent.ps1  <# Installs the agent #>
-python scripts\install_web_panel.py                                 <# Installs web panel #>
-```
+1. **On the kid's PC (as administrator):** install the agent with
+   `install_agent.ps1`, then the web panel with `install_web_panel.ps1`
+   (both are on the [latest release](https://github.com/cpmurphy/kid-pc-monitor/releases/latest)).
 
 2. **On your phone:**
    - Open browser and go to `http://KIDS-PC-IP:5000`
    - Bookmark it for easy access
    - For iOS Safari password autofill hints, see [FAQ](docs/FAQ.md#safari-on-iphone-wont-autofill-my-saved-password)
 
-Both services run invisibly in the background (the agent as `kid-pc-agent.exe`,
-the web panel with `pythonw.exe`).
+Both services run in the background (`kid-pc-agent.exe` and `kid-pc-web-panel.exe`).
 
 **Note:** With this setup, a tech-savvy child could potentially discover the web panel at `localhost:5000`. Option A is more secure.
 
@@ -479,29 +422,17 @@ the child can't bypass it by typing their Windows password. The **Lock
 Computer Now** button enables a manual lock that remains active until
 you clear all limits.
 
-## ⚙️ Configuration
-
-### Custom PC Names
-Edit `CUSTOM_PC_NAMES` in `src/kid_pc_monitor/remote_client.py` (used by the web panel):
-```python
-CUSTOM_PC_NAMES = {
-    '192.168.1.105': 'Tommy\'s Laptop',
-    '192.168.1.112': 'Sarah\'s Desktop',
-}
-```
-
-
 ## 🔧 Troubleshooting
 
 See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 
 ### "PC shows as Unknown"
-- Add custom names in configuration
+- The panel shows the hostname the agent reports
 - Check Windows Firewall settings
 - Ensure PCs are on same network
 
 ### Agent does not appear in the web panel
-- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
+- Ensure the web panel is running (`kid-pc-web-panel`).
 - Ensure the parent/web-panel host firewall allows inbound **5000/tcp** (UI + discovery) and **9998/tcp** (agent reverse control) from kid PCs.
 - On the kid PC, read `%LOCALAPPDATA%\KidPCMonitor\pc_control.log` for reverse TCP and discovery messages.
 - If auto-discovery fails, set `KID_PC_MONITOR_PANEL_URL=http://<parent-pc-ip>:5000` for the scheduled agent task.
@@ -509,7 +440,7 @@ See [docs/FAQ.md](docs/FAQ.md) for questions and answers.
 ### "Can't connect from phone"
 - Check the web panel host firewall allows inbound **5000/tcp** and **9998/tcp**.
 - Use the web panel machine's IP address, not localhost.
-- Ensure the web panel is running (`kid-pc-web-panel` or `python -m kid_pc_monitor.web_panel`).
+- Ensure the web panel is running (`kid-pc-web-panel`).
 
 ### "Lock status not updating"
 - Restart the agent: in an administrator PowerShell, `Stop-ScheduledTask KidPCMonitor; Start-ScheduledTask KidPCMonitor` (it runs only while the child is signed in).
@@ -530,15 +461,15 @@ Parents and developers welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
-The agent is written in Go (`go/`, see [go/README.md](go/README.md)); the
-original Python agent in `src/kid_pc_monitor/` remains the reference it is
-tested against. **Publishing a release:** push a version tag (`git tag v1.2.0`
-then `git push origin v1.2.0`). `.github/workflows/release.yml` runs the full
-CI, then attaches `kid-pc-agent-windows-amd64.exe`, `-arm64.exe`,
-`install_agent.ps1` and `SHA256SUMS` to that tag's release.
+The programs are Go (`go/`, see [go/README.md](go/README.md)). Behavior that
+has to stay compatible with existing installs is pinned by the frozen vectors
+in `testdata/`. **Publishing a release:** push a version tag (`git tag v1.2.0`
+then `git push origin v1.2.0`). `.github/workflows/release.yml` runs CI, then
+attaches the agent and web-panel binaries, `install_agent.ps1`,
+`install_web_panel.ps1` and `SHA256SUMS` to that tag's release.
 
 ### Recent Improvements
-- ✅ **Go agent** — The kid's PC runs a single compiled program; no Python needed. Released builds, checksum-verified installs, locked-down install folder, enforcement from the first second of logon
+- ✅ **Single programs** — The kid's PC and the parent panel are compiled Go programs. Released builds, checksum-verified installs, locked-down agent folder, enforcement from the first second of logon
 - ✅ **Mutual authentication** — HMAC-signed agent protocol (v3); shared secret stored encrypted at rest
 - ✅ **Web panel security** — Optional password login; CSRF protection on state-changing actions
 - ✅ **Linux/macOS parent support** — Run the web panel on non-Windows machines; systemd user-service installer

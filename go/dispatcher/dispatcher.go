@@ -2,10 +2,10 @@
 // Control: it turns "set daily_limit 90" into the right calls and the response
 // content the panel expects.
 //
-// It is a port of src/kid_pc_monitor/request_dispatcher.py.
-// testdata/dispatcher/vectors.json is generated from the Python implementation
-// by driving it against a recording fake; vectors_test.go replays the same
-// requests against a Go fake and checks both the response and the calls made.
+// It is a port of the original Python request_dispatcher.py.
+// testdata/dispatcher/vectors.json is the checked-in contract from that port;
+// vectors_test.go replays each request against a recording fake and checks
+// both the response and the calls made.
 //
 // # Validation
 //

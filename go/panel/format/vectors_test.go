@@ -10,8 +10,8 @@ import (
 	"kidpcmonitor/panel/pyval"
 )
 
-// The golden vectors are generated from the Python implementation by
-// tests/panelformat_vectors_gen.py. Every case here must agree with it,
+// The golden vectors are the checked-in contract, originally generated from
+// the Python implementation. Every case here must agree with them,
 // including the int/float kind of every number.
 
 type obj = map[string]any

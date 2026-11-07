@@ -11,8 +11,8 @@ import (
 	"testing"
 )
 
-// The golden vectors are generated from the Python implementation by
-// tests/protocol_vectors_gen.py. Every case here must agree with it.
+// The golden vectors are the checked-in contract, originally generated from
+// the Python implementation. Every case here must agree with them.
 
 type obj = map[string]any
 

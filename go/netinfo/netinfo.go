@@ -1,5 +1,5 @@
 // Package netinfo finds this machine's primary IPv4 address without
-// contacting external hosts, a port of src/kid_pc_monitor/network.py as the
+// contacting external hosts, a port of the original Python network.py as the
 // Windows agent uses it: ask the kernel which source address it would route
 // from (a UDP "connect" to TEST-NET-1 sends no packets), then fall back to the
 // addresses the host name resolves to. The Linux /proc and macOS route

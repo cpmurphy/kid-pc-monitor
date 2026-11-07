@@ -4,9 +4,10 @@
 //
 //	kid-pc-web-panel [serve] [-background] [-log-file PATH] [-legacy-auth PATH]
 //	kid-pc-web-panel set-secret   store the panel <-> agent shared secret
+//	kid-pc-web-panel check-firewall [--interactive] PORT...
 //	kid-pc-web-panel version
 //
-// It reads the same environment and files as the Python panel:
+// It reads the same environment and files as the original Python panel:
 // KID_PC_MONITOR_HOST (0.0.0.0), KID_PC_MONITOR_PORT (5000),
 // KID_PC_MONITOR_REVERSE_PORT (9998), KID_PC_MONITOR_SSL_CERT and
 // KID_PC_MONITOR_SSL_KEY (else config_dir/tls/cert.pem and key.pem),
@@ -40,6 +41,7 @@ import (
 
 	"golang.org/x/term"
 
+	"kidpcmonitor/firewall"
 	"kidpcmonitor/panel/auth"
 	"kidpcmonitor/panel/reverse"
 	"kidpcmonitor/panel/store"
@@ -78,10 +80,12 @@ func main() {
 		replace := fs.Bool("replace", false, "prompt for a new secret even when one is stored")
 		_ = fs.Parse(args)
 		err = setSecret(os.Stdin, os.Stdout, *replace)
+	case "check-firewall":
+		err = checkFirewall(args)
 	case "version":
 		fmt.Println(version)
 	default:
-		err = fmt.Errorf("unknown command %q (use serve, set-secret or version)", cmd)
+		err = fmt.Errorf("unknown command %q (use serve, set-secret, check-firewall or version)", cmd)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "kid-pc-web-panel:", err)
@@ -289,6 +293,32 @@ func accessLog(log *slog.Logger, h http.Handler) http.Handler {
 		h.ServeHTTP(rec, r)
 		log.Info(fmt.Sprintf("%s %s %s", r.Method, r.URL.RequestURI(), strconv.Itoa(rec.status)), "client", r.RemoteAddr)
 	})
+}
+
+// checkFirewall is the Linux installer's firewall report. On any OS it only
+// inspects; --interactive offers to apply ufw or firewalld changes when stdin
+// is a terminal.
+func checkFirewall(args []string) error {
+	fs := flag.NewFlagSet("check-firewall", flag.ExitOnError)
+	interactive := fs.Bool("interactive", false, "offer to run suggested ufw or firewalld commands")
+	_ = fs.Parse(args)
+	if fs.NArg() < 1 {
+		return errors.New("check-firewall needs at least one TCP port")
+	}
+	ports := make([]int, fs.NArg())
+	for i, arg := range fs.Args() {
+		port, err := strconv.Atoi(arg)
+		if err != nil {
+			return fmt.Errorf("port %q: %w", arg, err)
+		}
+		ports[i] = port
+	}
+	report := firewall.Check(ports, nil, nil, nil)
+	fmt.Println(firewall.Format(report, ports))
+	if *interactive && term.IsTerminal(int(os.Stdin.Fd())) {
+		return firewall.Offer(report, os.Stdin, os.Stdout, os.Stderr)
+	}
+	return nil
 }
 
 // setSecret is shared_secret.prompt_and_store_shared_secret: reuse a stored

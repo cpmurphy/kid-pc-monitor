@@ -1,8 +1,8 @@
 // Package policy decides when the kid PC must be locked.
 //
-// It is a port of src/kid_pc_monitor/lock_policy.py: pure functions with no
+// It is a port of the original Python lock_policy.py: pure functions with no
 // clock, filesystem or Windows dependency. testdata/policy/vectors.json is
-// generated from the Python implementation and vectors_test.go checks that
+// the checked-in contract from that port and vectors_test.go checks that
 // this package agrees on every case.
 //
 // # Wall-clock times

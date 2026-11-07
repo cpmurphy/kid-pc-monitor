@@ -1,5 +1,5 @@
 {
- "_about": "Golden web-panel HTTP vectors generated from kid_pc_monitor.web_panel by tests/panelweb_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden web-panel HTTP vectors, originally generated from the Python panel. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator. Static file responses are included by SHA-256, so a CSS or JS edit updates that entry in the same commit.",
  "tz": "-05:00",
  "now": "2026-06-05T15:00:00-05:00",
  "seed": [

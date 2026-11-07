@@ -1,9 +1,8 @@
 // Package protocol implements the Kid PC Monitor agent wire protocol (v3).
 //
-// It is a port of src/kid_pc_monitor/agent_protocol.py and agent_auth.py.
-// The Python implementation is the reference: testdata/protocol/vectors.json
-// is generated from it (tests/protocol_vectors_gen.py) and vectors_test.go
-// checks that this package agrees on every case.
+// It is a port of the original Python agent_protocol.py and agent_auth.py.
+// testdata/protocol/vectors.json is the checked-in contract from that port
+// and vectors_test.go checks that this package agrees on every case.
 //
 // The protocol is a length-prefixed body written in a small subset of KDL,
 // where every frame carries an HMAC-SHA256 "auth" block. See

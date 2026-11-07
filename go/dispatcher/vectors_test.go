@@ -15,8 +15,8 @@ import (
 	"kidpcmonitor/protocol"
 )
 
-// The golden vectors are generated from the Python implementation by
-// tests/dispatcher_vectors_gen.py: each case is one request against a fake
+// The golden vectors are the checked-in contract, originally generated from
+// the Python implementation: each case is one request against a fake
 // control, with the response and the calls the dispatcher made.
 
 type obj = map[string]any
@@ -130,7 +130,7 @@ func expandLines(spec any) []string {
 	return out
 }
 
-// fake is the Go twin of FakeControl in tests/dispatcher_vectors_gen.py.
+// fake records the calls a dispatcher makes, for comparison with the vectors.
 type fake struct {
 	st        obj
 	calls     [][]any

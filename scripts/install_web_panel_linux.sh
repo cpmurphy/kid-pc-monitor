@@ -2,44 +2,32 @@
 # Install the Kid PC Monitor web panel as a systemd --user service (Linux only).
 # Requires: systemd, bash. Uses the repo layout: this file lives in scripts/.
 #
-# `install` does everything: it finds or creates a virtualenv with Python 3.11+
-# (using uv to download Python when the system has none), installs the package,
-# asks for the shared secret, starts the service, and then checks whether
-# lingering or firewall changes are actually needed before suggesting them.
-#
-# `install --go` sets up the Go panel instead (no Python needed to run it): a
-# kid-pc-web-panel binary from --binary, a local `go build`, or the GitHub
-# release (checked against its SHA256SUMS), in ~/.local/share/kid-pc-monitor/bin.
-# It uses the same unit name, config files and secret, so either mode can
-# replace the other; re-run `install` without --go to go back to Python.
+# `install` puts kid-pc-web-panel in ~/.local/share/kid-pc-monitor/bin (from
+# --binary, a local `go build`, or the GitHub release checked against
+# SHA256SUMS), asks for the shared secret, starts the service, and then checks
+# whether lingering or firewall changes are actually needed before suggesting
+# them. `install --go` is the same command; it remains so older instructions
+# still work.
 
 set -euo pipefail
 
 UNIT_NAME="kid-pc-monitor-web-panel.service"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# Old checkouts kept web_panel_auth.json inside the Python package directory.
 SRC_DIR="${REPO_ROOT}/src"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 UNIT_PATH="${UNIT_DIR}/${UNIT_NAME}"
 PANEL_PORT=5000
 REVERSE_PORT=9998
-# Keep in sync with requires-python in pyproject.toml.
-MIN_PYTHON="3.11"
-UV_INSTALL_URL="https://astral.sh/uv/install.sh"
 
-# Set by ensure_venv.
-VENV_DIR=""
-VENV_PY=""
-
-# Go panel (install --go).
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/kid-pc-monitor"
 GO_BIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/kid-pc-monitor/bin"
 GO_BIN="${GO_BIN_DIR}/kid-pc-web-panel"
 REPOSITORY="${KID_PC_MONITOR_REPOSITORY:-cpmurphy/kid-pc-monitor}"
 GITHUB_API="${KID_PC_MONITOR_GITHUB_API:-https://api.github.com}"
 GITHUB_WEB="${KID_PC_MONITOR_GITHUB_WEB:-https://github.com}"
-# Set by parse_install_args.
-USE_GO=0
+# Set by parse_install_args. Install is always the Go panel; --go is accepted.
 GO_BINARY_ARG=""
 GO_VERSION_ARG=""
 
@@ -48,22 +36,20 @@ usage() {
 Usage: install_web_panel_linux.sh <command>
 
 Commands:
-  install     Set up the virtualenv, install the panel, enable and start the service.
-              Safe to re-run (e.g. after git pull) to update dependencies and restart.
-  install --go [--binary PATH] [--version TAG]
-              Install the Go panel (kid-pc-web-panel) instead: PATH if given, else a
-              local `go build` when Go is installed, else the GitHub release (latest,
-              or TAG) checked against SHA256SUMS. Same service, files and secret.
+  install [--go] [--binary PATH] [--version TAG]
+              Install kid-pc-web-panel, enable and start the service.
+              PATH if given, else a local `go build` when Go and this checkout
+              are available, else the GitHub release (latest, or TAG) checked
+              against SHA256SUMS. --go is accepted and changes nothing.
+              Safe to re-run (e.g. after git pull) to update and restart.
   uninstall   Stop, disable, and remove the user unit.
   status      Show systemctl --user status.
   cat-unit [--go]
               Print the unit file that would be used (no writes).
 
 Environment (optional):
-  PYTHON      Python 3.11+ used to create the virtualenv when the repo has none
-              (default: the newest python3 on PATH, else uv-managed Python)
   KID_PC_MONITOR_REPOSITORY
-              GitHub repository for --go downloads (default: cpmurphy/kid-pc-monitor)
+              GitHub repository for release downloads (default: cpmurphy/kid-pc-monitor)
 EOF
 }
 
@@ -84,17 +70,6 @@ require_systemctl_user() {
         "systemctl --user failed. Is systemd user session available? Try: loginctl enable-linger \"$USER\" (may require sudo) or log in once with a desktop session."
 }
 
-# Run a command and exit this script on any non-zero status.
-# An explicit exit is required: set -e does not fire when the caller uses
-# `if` or `||`, and a failed Python command must not continue the install.
-run_python() {
-    local status=0
-    "$@" || status=$?
-    if [[ "$status" -ne 0 ]]; then
-        exit "$status"
-    fi
-}
-
 # Ask a yes/no question on the terminal; $2 is the default (y or n).
 # Without a terminal the default is "no" so unattended runs never escalate.
 confirm() {
@@ -106,139 +81,7 @@ confirm() {
     [[ "$answer" == [Yy]* ]]
 }
 
-python_is_supported() {
-    "$1" -c "import sys; sys.exit(0 if sys.version_info >= (${MIN_PYTHON/./, }) else 1)" \
-        >/dev/null 2>&1
-}
-
-# A venv works when its Python runs and still matches pyvenv.cfg; importing
-# the package runs that check and exits non-zero after a Python upgrade.
-venv_is_healthy() {
-    python_is_supported "$1" && env PYTHONPATH="${SRC_DIR}" "$1" -c 'import kid_pc_monitor' >/dev/null 2>&1
-}
-
-existing_venv_dir() {
-    local dir
-    for dir in "${REPO_ROOT}/venv" "${REPO_ROOT}/.venv"; do
-        if [[ -e "${dir}/pyvenv.cfg" || -e "${dir}/bin/python3" ]]; then
-            echo "$dir"
-            return
-        fi
-    done
-}
-
-# Print a system Python new enough to build the venv, or fail.
-pick_base_python() {
-    if [[ -n "${PYTHON:-}" ]]; then
-        echo "$PYTHON"
-        return
-    fi
-    local candidate path
-    for candidate in python3 python3.14 python3.13 python3.12 python3.11; do
-        path="$(command -v "$candidate" 2>/dev/null)" || continue
-        if python_is_supported "$path"; then
-            echo "$path"
-            return
-        fi
-    done
-    return 1
-}
-
-# Print the path to uv, offering to install it into ~/.local/bin if missing.
-find_or_install_uv() {
-    local candidate
-    for candidate in "$(command -v uv 2>/dev/null || true)" "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv"; do
-        if [[ -n "$candidate" && -x "$candidate" ]]; then
-            echo "$candidate"
-            return
-        fi
-    done
-    {
-        echo ""
-        echo "No usable Python ${MIN_PYTHON}+ was found on this system."
-        echo "uv (https://docs.astral.sh/uv/) can download a private copy of Python for"
-        echo "the panel without touching the system Python. It installs to ~/.local/bin."
-    } >&2
-    if ! confirm "Install uv now?" y; then
-        die "Install Python ${MIN_PYTHON}+ (e.g. sudo apt install python3 python3-venv) or uv, then re-run."
-    fi
-    if command -v curl >/dev/null 2>&1; then
-        curl -LsSf "$UV_INSTALL_URL" | env UV_NO_MODIFY_PATH=1 sh >&2
-    elif command -v wget >/dev/null 2>&1; then
-        wget -qO- "$UV_INSTALL_URL" | env UV_NO_MODIFY_PATH=1 sh >&2
-    else
-        die "Neither curl nor wget is available to download uv."
-    fi
-    [[ -x "$HOME/.local/bin/uv" ]] || die "uv install did not produce ~/.local/bin/uv."
-    echo "$HOME/.local/bin/uv"
-}
-
-create_venv() {
-    local dir="$1" base uv
-    if [[ -n "${PYTHON:-}" ]] && ! python_is_supported "$PYTHON"; then
-        die "PYTHON ($PYTHON) is not a runnable Python ${MIN_PYTHON}+."
-    fi
-    if base="$(pick_base_python)"; then
-        echo "Creating virtualenv ${dir} with ${base}"
-        if "$base" -m venv --clear "$dir"; then
-            return
-        fi
-        echo "'${base} -m venv' failed (on Debian/Ubuntu the python3-venv package may be missing)."
-    fi
-    uv="$(find_or_install_uv)"
-    echo "Creating virtualenv ${dir} with uv (downloads Python ${MIN_PYTHON}+ if needed)"
-    "$uv" venv --clear --seed --python ">=${MIN_PYTHON}" "$dir"
-}
-
-# Reuse a working repo venv, recreate a broken one, or create venv/.
-ensure_venv() {
-    local dir
-    dir="$(existing_venv_dir)"
-    if [[ -n "$dir" ]] && venv_is_healthy "${dir}/bin/python3"; then
-        echo "Using virtualenv: $dir"
-    elif [[ -n "$dir" ]]; then
-        echo "The virtualenv at ${dir} no longer works (its Python was upgraded or removed); recreating it."
-        create_venv "$dir"
-    else
-        dir="${REPO_ROOT}/venv"
-        create_venv "$dir"
-    fi
-    VENV_DIR="$dir"
-    VENV_PY="${dir}/bin/python3"
-}
-
-install_package() {
-    echo "Installing kid-pc-monitor and its dependencies into ${VENV_DIR} ..."
-    if ! "$VENV_PY" -m pip --version >/dev/null 2>&1; then
-        run_python "$VENV_PY" -m ensurepip --upgrade
-    fi
-    run_python "$VENV_PY" -m pip install --quiet --disable-pip-version-check -e "$REPO_ROOT"
-    run_python env PYTHONPATH="${SRC_DIR}" "$VENV_PY" -c 'import kid_pc_monitor.web_panel'
-}
-
-# Print a systemd user unit to stdout (paths must not contain shell metacharacters).
-render_unit() {
-    local venv_dir="$1"
-    cat <<EOF
-[Unit]
-Description=Kid PC Monitor web panel (parent UI on port ${PANEL_PORT})
-After=network.target
-
-[Service]
-Type=simple
-WorkingDirectory=${REPO_ROOT}
-Environment=PYTHONUNBUFFERED=1
-Environment=PYTHONPATH=${SRC_DIR}
-ExecStart=${venv_dir}/bin/kid-pc-web-panel
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-EOF
-}
-
-# The same unit for the Go panel: no virtualenv, no PYTHONPATH.
+# The unit for the Go panel.
 render_go_unit() {
     local binary="$1"
     cat <<EOF
@@ -260,25 +103,17 @@ EOF
 
 write_unit() {
     mkdir -p "$UNIT_DIR"
-    if [[ "$USE_GO" -eq 1 ]]; then
-        render_go_unit "$GO_BIN" >"$UNIT_PATH"
-    else
-        render_unit "$VENV_DIR" >"$UNIT_PATH"
-    fi
+    render_go_unit "$GO_BIN" >"$UNIT_PATH"
     echo "Wrote: $UNIT_PATH"
 }
 
-# ---------------------------------------------------------------------------
-# Go panel
-# ---------------------------------------------------------------------------
 parse_install_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --go) USE_GO=1 ;;
+            --go) ;;
             --binary)
                 [[ $# -ge 2 ]] || die "--binary needs a path."
                 GO_BINARY_ARG="$2"
-                USE_GO=1
                 shift
                 ;;
             --version)
@@ -290,9 +125,6 @@ parse_install_args() {
         esac
         shift
     done
-    if [[ -n "$GO_VERSION_ARG" && "$USE_GO" -ne 1 ]]; then
-        die "--version only applies with --go."
-    fi
 }
 
 # The release asset suffix for this machine.
@@ -391,8 +223,8 @@ install_go_panel() {
 }
 
 # Installs before the May 2026 package layout kept web_panel_auth.json in the
-# package directory; the Go panel reads only the config directory, so copy
-# it there (the Python panel prefers that copy too).
+# Python package directory. The panel reads only the config directory, so copy
+# a leftover file once.
 migrate_legacy_auth() {
     local canonical="${CONFIG_DIR}/web_panel_auth.json"
     local legacy="${SRC_DIR}/kid_pc_monitor/web_panel_auth.json"
@@ -404,8 +236,7 @@ migrate_legacy_auth() {
     fi
 }
 
-# Like prompt_shared_secret, but with the Go panel. Cancelling (or having no
-# terminal) leaves the secret unset, as with the Python prompt.
+# Cancelling (or having no terminal) leaves the secret unset.
 go_shared_secret() {
     "$GO_BIN" set-secret || echo "Shared secret not changed. Set it later with: ${GO_BIN} set-secret"
 }
@@ -419,24 +250,6 @@ go_panel_url() {
         ip="$(hostname -I 2>/dev/null | awk '{ print $1 }')" || ip=""
     fi
     echo "${scheme}://${ip:-<this-host-ip>}:${PANEL_PORT}"
-}
-
-# The firewall helper is Python; use a system Python 3.11+ when there is one.
-go_check_firewall() {
-    local base
-    if base="$(pick_base_python)"; then
-        env PYTHONPATH="${SRC_DIR}" "$base" -m kid_pc_monitor.linux_firewall --interactive \
-            "$PANEL_PORT" "$REVERSE_PORT" \
-            || echo "  (Firewall changes were not applied; see the commands above.)"
-    else
-        echo "Firewall: make sure inbound TCP ${PANEL_PORT} and ${REVERSE_PORT} are allowed from your LAN."
-    fi
-}
-
-# Prompt for and store the panel <-> agent shared secret via the Python helper,
-# so the guidance and storage match the other installers.
-prompt_shared_secret() {
-    run_python env PYTHONPATH="${SRC_DIR}" "$VENV_PY" -c 'from kid_pc_monitor.shared_secret import prompt_and_store_shared_secret; prompt_and_store_shared_secret()'
 }
 
 # Wait briefly for the service to listen so a crash shows up now, not later.
@@ -458,15 +271,6 @@ wait_for_panel() {
     return 1
 }
 
-panel_url() {
-    env PYTHONPATH="${SRC_DIR}" "$VENV_PY" -c '
-from kid_pc_monitor.network import get_local_ip
-from kid_pc_monitor.paths import resolve_tls_cert_paths
-scheme = "https" if resolve_tls_cert_paths() else "http"
-print(f"{scheme}://{get_local_ip()}:'"${PANEL_PORT}"'")
-' 2>/dev/null || echo "http://<this-host-ip>:${PANEL_PORT}"
-}
-
 # User services stop at logout and only start at login unless lingering is on.
 check_linger() {
     local user linger
@@ -485,8 +289,7 @@ check_linger() {
 }
 
 check_firewall() {
-    env PYTHONPATH="${SRC_DIR}" "$VENV_PY" -m kid_pc_monitor.linux_firewall --interactive \
-        "$PANEL_PORT" "$REVERSE_PORT" \
+    "$GO_BIN" check-firewall --interactive "$PANEL_PORT" "$REVERSE_PORT" \
         || echo "  (Firewall changes were not applied; see the commands above.)"
 }
 
@@ -494,15 +297,9 @@ cmd_install() {
     parse_install_args "$@"
     require_linux
     require_systemctl_user
-    if [[ "$USE_GO" -eq 1 ]]; then
-        install_go_panel
-        migrate_legacy_auth
-        go_shared_secret
-    else
-        ensure_venv
-        install_package
-        prompt_shared_secret
-    fi
+    install_go_panel
+    migrate_legacy_auth
+    go_shared_secret
     write_unit
     systemctl --user daemon-reload
     systemctl --user enable "$UNIT_NAME"
@@ -510,20 +307,12 @@ cmd_install() {
     echo ""
     if wait_for_panel; then
         echo "Service is enabled and running. Check: systemctl --user status $UNIT_NAME"
-        if [[ "$USE_GO" -eq 1 ]]; then
-            echo "Open: $(go_panel_url)"
-        else
-            echo "Open: $(panel_url)"
-        fi
+        echo "Open: $(go_panel_url)"
     fi
     echo ""
     check_linger
     echo ""
-    if [[ "$USE_GO" -eq 1 ]]; then
-        go_check_firewall
-    else
-        check_firewall
-    fi
+    check_firewall
     echo ""
     echo "iPhone password autofill: see docs/FAQ.md for instructions to run with trusted HTTPS."
 }
@@ -543,14 +332,8 @@ cmd_status() {
 
 cmd_cat_unit() {
     require_linux
-    local dir
     echo "# Preview (not written to disk):"
-    if [[ "${1:-}" == "--go" ]]; then
-        render_go_unit "$GO_BIN"
-        return
-    fi
-    dir="$(existing_venv_dir)"
-    render_unit "${dir:-${REPO_ROOT}/venv}"
+    render_go_unit "$GO_BIN"
 }
 
 main() {

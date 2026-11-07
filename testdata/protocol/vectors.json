@@ -1,5 +1,5 @@
 {
- "_about": "Golden protocol vectors generated from kid_pc_monitor.agent_protocol by tests/protocol_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden protocol vectors, originally generated from the Python agent_protocol implementation. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "constants": {
   "protocol_version": 3,
   "max_frame_bytes": 65536,

@@ -16,10 +16,10 @@ import (
 	"kidpcmonitor/panel/pyval"
 )
 
-// The golden vectors are generated from the Python stores by
-// tests/panelstore_vectors_gen.py. Every scenario is replayed here on a
-// fresh panel.db, and after every step both the query results and the table
-// contents must agree with Python's.
+// The golden vectors are the checked-in contract, originally generated from
+// the Python stores. Every scenario is replayed here on a fresh panel.db,
+// and after every step both the query results and the table contents must
+// agree with that contract.
 
 type obj = map[string]any
 
