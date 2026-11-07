@@ -1,5 +1,5 @@
 {
- "_about": "Golden web-panel formatting vectors generated from kid_pc_monitor.panel_format, remote_client and scan_store by tests/panelformat_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden web-panel formatting vectors, originally generated from the Python panel. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "format_minutes_duration": [
   {
    "in": null,

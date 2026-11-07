@@ -1,5 +1,5 @@
 // Package secrets reads and writes the secrets the installers store, a port
-// of src/kid_pc_monitor/secrets_store.py and shared_secret.load_shared_secret.
+// of the original Python secrets_store.py and shared_secret.load_shared_secret.
 // Standard library only.
 //
 // Each secret is a Fernet token (AES-128-CBC + HMAC-SHA256) in <name>.enc. The

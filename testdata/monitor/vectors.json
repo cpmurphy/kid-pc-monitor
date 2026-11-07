@@ -1,5 +1,5 @@
 {
- "_about": "Golden monitoring-loop vectors generated from kid_pc_monitor.pc_time_control by tests/monitor_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden monitoring-loop vectors, originally generated from the Python pc_time_control implementation. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "log_prefix_only": [
   "State file problem:",
   "Error loading state:",

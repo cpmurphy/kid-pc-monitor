@@ -4,7 +4,8 @@ Install the Kid PC Monitor web panel (the Go kid-pc-web-panel.exe) on the
 parent's Windows PC. No Python needed.
 
 .DESCRIPTION
-A PowerShell counterpart of scripts/install_web_panel.py for the Go panel.
+Installs the Go web panel. It replaces a panel installed by the original
+Python installer (same task name, database, password and secret).
 Run it from an elevated Windows PowerShell 5.1 (or PowerShell 7) prompt,
 either from a checkout or on its own (it is attached to every GitHub release):
 
@@ -24,8 +25,8 @@ With no switches it shows a menu (install / remove). Installing:
     starts it; the panel logs to %LOCALAPPDATA%\kid-pc-monitor\web_panel.log;
   - offers inbound firewall rules for TCP 5000 (UI) and 9998 (agents).
 
-The panel keeps the Python panel's panel.db, password and secret, so either
-can replace the other. Keep this file ASCII-only: Windows PowerShell 5.1 reads
+The panel reads the original Python panel's panel.db, password and secret.
+Keep this file ASCII-only: Windows PowerShell 5.1 reads
 BOM-less scripts as ANSI.
 
 .PARAMETER PanelExe

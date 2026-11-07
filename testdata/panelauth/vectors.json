@@ -1,5 +1,5 @@
 {
- "_about": "Golden web-panel auth vectors generated from werkzeug.security and kid_pc_monitor.web_panel by tests/panelauth_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden web-panel auth vectors, originally generated from the Python panel and werkzeug password hashes. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "constants": {
   "auth_file": "web_panel_auth.json",
   "min_secret_key_length": 16

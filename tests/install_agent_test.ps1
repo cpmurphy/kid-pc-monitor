@@ -7,14 +7,13 @@ Loads the installer's functions (dot-sourcing does not run it) and checks
 time/number validation, the settings files it writes, Fernet secrets, the
 task XML, the file install and ACL (in a temporary folder, never the real
 ProgramData), and downloading a release (from a local stand-in for GitHub).
-With -Python, also checks that Python's secrets_store and AgentStateStore read
-what the installer wrote, and serves the fake release.
+The release download is served by a local TCP listener, so the test needs no
+Python.
 
-    powershell -ExecutionPolicy Bypass -File tests\install_agent_test.ps1 [-Python venv\Scripts\python.exe]
+    powershell -ExecutionPolicy Bypass -File tests\install_agent_test.ps1
 
 Keep this file ASCII-only, like the installer.
 #>
-param([string]$Python)
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
@@ -42,11 +41,71 @@ function Throws([scriptblock]$Block) {
     try { & $Block | Out-Null; return $false } catch { return $true }
 }
 
-function Invoke-Python([string]$Code) {
-    $env:PYTHONPATH = Join-Path $repo 'src'
-    $output = $Code | & $Python - 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "python failed: $output" }
-    return ($output | Out-String).Trim()
+function Start-StaticServer([string]$Root, [int]$Port) {
+    $state = [hashtable]::Synchronized(@{ Listener = $null })
+    $ready = New-Object System.Threading.ManualResetEvent $false
+    $rs = [runspacefactory]::CreateRunspace()
+    $rs.Open()
+    $ps = [powershell]::Create()
+    $ps.Runspace = $rs
+    $script = {
+        param($Root, $Port, $Ready, $State)
+        $listener = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback), $Port
+        $State.Listener = $listener
+        $listener.Start()
+        [void]$Ready.Set()
+        try {
+            while ($true) {
+                $client = $listener.AcceptTcpClient()
+                try {
+                    $stream = $client.GetStream()
+                    $reader = New-Object System.IO.StreamReader ($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+                    $request = $reader.ReadLine()
+                    while ($true) {
+                        $line = $reader.ReadLine()
+                        if ([string]::IsNullOrEmpty($line)) { break }
+                    }
+                    $pathPart = '/'
+                    if ($request -match '^GET\s+(\S+)') { $pathPart = $Matches[1] }
+                    $pathPart = ($pathPart -split '\?')[0]
+                    $rel = [Uri]::UnescapeDataString($pathPart.TrimStart('/')).Replace('/', [IO.Path]::DirectorySeparatorChar)
+                    $file = Join-Path $Root $rel
+                    if (-not $rel) {
+                        $bytes = [Text.Encoding]::ASCII.GetBytes('ok')
+                        $header = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`n`r`n")
+                        $stream.Write($header, 0, $header.Length)
+                        $stream.Write($bytes, 0, $bytes.Length)
+                    } elseif (Test-Path -LiteralPath $file -PathType Leaf) {
+                        $bytes = [IO.File]::ReadAllBytes($file)
+                        $header = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Length: $($bytes.Length)`r`nConnection: close`r`n`r`n")
+                        $stream.Write($header, 0, $header.Length)
+                        $stream.Write($bytes, 0, $bytes.Length)
+                    } else {
+                        $header = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 404 Not Found`r`nContent-Length: 0`r`nConnection: close`r`n`r`n")
+                        $stream.Write($header, 0, $header.Length)
+                    }
+                    $stream.Flush()
+                } catch {
+                } finally {
+                    $client.Close()
+                }
+            }
+        } catch {
+        } finally {
+            $listener.Stop()
+        }
+    }
+    [void]$ps.AddScript($script).AddArgument($Root).AddArgument($Port).AddArgument($ready).AddArgument($state)
+    $handle = $ps.BeginInvoke()
+    if (-not $ready.WaitOne(5000)) { throw 'static server did not start' }
+    return @{ Runspace = $rs; PowerShell = $ps; Handle = $handle; State = $state }
+}
+
+function Stop-StaticServer($Server) {
+    if (-not $Server) { return }
+    try { if ($Server.State.Listener) { $Server.State.Listener.Stop() } } catch {}
+    try { $Server.PowerShell.Stop() } catch {}
+    try { $Server.Runspace.Close() } catch {}
 }
 
 try {
@@ -136,31 +195,7 @@ try {
     $mySid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     Check 'only SYSTEM, Administrators and the child' ($ids -join ',') ((@('S-1-5-18', 'S-1-5-32-544', $mySid) | Sort-Object) -join ',')
 
-    if ($Python) {
-        Write-Host "Python reads what the installer wrote"
-        $code = @"
-import json, sys
-from pathlib import Path
-from kid_pc_monitor import secrets_store
-from kid_pc_monitor.agent_state import AgentStateStore, program_data_target_user
-w = Path(r'$work')
-pd = w / 'programdata' / 'KidPCMonitor'
-print(secrets_store.load_secret('panel-agent-shared-secret').encode('unicode_escape').decode())
-print(program_data_target_user(pd))
-s = AgentStateStore(w / 'profile' / 'KidPCMonitor', current_user='kid', program_data_dir=pd)
-d, _ = s.load()
-print(d.wake_time, d.bed_time, d.allowance, len(s.problems))
-f = AgentStateStore(w / 'fresh', current_user='kid', program_data_dir=pd)
-d, _ = f.load()
-print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
-"@
-        $lines = (Invoke-Python $code) -split "`r?`n"
-        Check 'secret decrypts in Python' $lines[0] 'PS-made secret \xfcn\xef \u2713'
-        Check 'target user' $lines[1] 'kid'
-        Check 'profile settings load cleanly' $lines[2] '06:45:00 20:15:00 90 0'
-        Check 'ProgramData bootstrap loads cleanly' $lines[3] '07:00:00 21:00:00 None 0'
-
-        Write-Host "release download (local stand-in for GitHub)"
+    Write-Host "release download (local stand-in for GitHub)"
         $root = Join-Path $work 'release-server'
         $assetName = Get-AgentAssetName (Get-AgentArch)
         $dl = Join-Path $root 'web\owner\repo\releases\download\v9.9.9'
@@ -179,7 +214,7 @@ print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
 
         $probe = New-Object Net.Sockets.TcpListener([Net.IPAddress]::Loopback, 0)
         $probe.Start(); $port = $probe.LocalEndpoint.Port; $probe.Stop()
-        $server = Start-Process -FilePath $Python -ArgumentList '-m', 'http.server', $port, '--bind', '127.0.0.1', '--directory', $root -PassThru -WindowStyle Hidden
+        $server = Start-StaticServer $root $port
         try {
             $script:GitHubApi = "http://127.0.0.1:$port/api"
             $script:GitHubWeb = "http://127.0.0.1:$port/web"
@@ -222,9 +257,8 @@ print(d.wake_time, d.bed_time, d.allowance, len(f.problems))
             Check 'second update succeeds' (Invoke-Update) $true
             Check 'up-to-date agent left alone' ((Get-Item (Join-Path $InstallDir $AgentExeName)).LastWriteTimeUtc) $exeTime
         } finally {
-            Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+            Stop-StaticServer $server
         }
-    }
 } finally {
     # The test made $InstallDir read-only for this account; as its owner we can
     # still restore inherited permissions and delete everything.

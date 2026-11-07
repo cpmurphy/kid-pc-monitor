@@ -1,5 +1,5 @@
 {
- "_about": "Golden web-panel store vectors generated from kid_pc_monitor.scan_store, snapshot_store and agent_sync_store by tests/panelstore_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden web-panel store vectors, originally generated from the Python panel stores. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "constants": {
   "stale_tracked_hours": 12,
   "retention_days": 7,

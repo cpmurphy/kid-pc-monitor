@@ -3,9 +3,9 @@
 // action mapping and connection-error text (remote_client.py), and the
 // dashboard status badge (scan_store.dashboard_status_key).
 //
-// The Python implementation is the reference: testdata/panelformat/vectors.json
-// is generated from it (tests/panelformat_vectors_gen.py) and vectors_test.go
-// checks that this package agrees on every case.
+// testdata/panelformat/vectors.json is the checked-in contract from the
+// original Python panel and vectors_test.go checks that this package agrees
+// on every case.
 //
 // Values are dynamically typed as in Python; see package pyval.
 package format

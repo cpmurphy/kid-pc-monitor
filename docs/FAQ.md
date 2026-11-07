@@ -14,20 +14,15 @@ No! This tool:
 If they have administrator access, yes. This tool is based on trust and communication, not enforcement. For younger kids who don't have admin rights, it's quite effective.
 
 ### Does it work on Mac/Linux?
-- **Kid PC (monitoring agent):** Windows only today (`pc_control.py` uses Windows-specific lock and session APIs).
-- **Parent web panel:** Runs on **Windows, Linux, or macOS**. Without Python, use the Go panel (`kid-pc-web-panel`, published with each release; see the README's "Go web panel" section). Install Python, `pip install -r requirements.txt` (on non-Windows, `pywin32` is skipped automatically), then run `web_panel.py` from `src/`. Agents discover the panel over TCP **5000** and connect reverse control on TCP **9998**.
+- **Kid PC (monitoring agent):** Windows only. `kid-pc-agent` uses Windows lock and session APIs.
+- **Parent web panel:** `kid-pc-web-panel` runs on **Windows, Linux, or macOS**. Release builds are on the GitHub release; a checkout builds with Go 1.26+. Agents discover the panel over TCP **5000** and connect reverse control on TCP **9998**.
 
 ## Setup Issues
-
-### "Python is not recognized as a command"
-- Download Python from python.org
-- During installation, check "Add Python to PATH"
-- Restart your computer
 
 ### "Can't connect from my phone"
 1. Check both devices are on same WiFi (or that routing exists between subnets if you use VLANs)
 2. **Firewall:** Allow inbound **5000/tcp** and **9998/tcp** on the machine running the web panel.
-3. Use the IP address shown when starting `web_panel.py`, not `localhost`, from the other device
+3. Use the parent PC's LAN address (the installer prints it), not `localhost`, from the other device
 
 ### Safari on iPhone won't autofill my saved password
 
@@ -79,14 +74,14 @@ mkcert -key-file "$env:LOCALAPPDATA\kid-pc-monitor\tls\key.pem" `
 
 Trust the mkcert root CA on your iPhone as above.
 
-**Advanced:** run Caddy or nginx in front of the panel with TLS termination; keep Flask on HTTP locally (`http://127.0.0.1:5000` behind the proxy).
+**Advanced:** run Caddy or nginx in front of the panel with TLS termination; keep the panel on HTTP locally (`http://127.0.0.1:5000` behind the proxy).
 
 **Note:** A self-signed certificate that is not trusted on the phone still will not enable autofill — you need a CA installed on iOS (mkcert is the simplest option for home LAN use).
 
 ### "PC shows as Unknown"
 This is normal. You can:
-1. Add custom names in config.py
-2. The PC will still work, just with generic name
+1. The panel shows the hostname the agent reports
+2. The PC will still work if the name is generic
 
 ### Agent does not appear in the panel, but the kid PC is online
 

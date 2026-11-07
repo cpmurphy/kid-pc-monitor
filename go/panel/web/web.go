@@ -3,15 +3,14 @@
 // password login, and the JSON endpoints the pages' scripts call.
 //
 // It serves the same routes, templates (rewritten for html/template), static
-// files, cookies-aside headers and JSON as the Flask app. The Python
-// implementation is the reference: testdata/panelweb/vectors.json is
-// generated from it by driving Flask's test client
-// (tests/panelweb_vectors_gen.py), and vectors_test.go replays every request
-// against this package, comparing status, headers and normalized bodies.
+// files, cookies-aside headers and JSON as the original Flask app.
+// testdata/panelweb/vectors.json is the checked-in contract from that app,
+// and vectors_test.go replays every request against this package, comparing
+// status, headers and normalized bodies.
 //
-// static/ is a generated copy of src/kid_pc_monitor/static (go:embed cannot
-// reach outside the module); the generator refreshes it and its --check, run
-// by the Python tests, fails when the copy is stale.
+// static/ is the panel's CSS and JavaScript (embedded; Go cannot embed files
+// outside the module). A change there updates the SHA-256 in the panelweb
+// vectors in the same commit.
 //
 // # Known differences from the Python implementation
 //

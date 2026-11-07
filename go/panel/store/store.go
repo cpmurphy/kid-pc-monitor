@@ -3,11 +3,10 @@
 // (snapshot_store.py) and reverse-agent heartbeats (agent_sync_store.py),
 // over the schema in panel_db.py.
 //
-// It reads and writes the same panel.db as the Python panel, with the same
-// schema, SQL, timestamp strings and JSON payloads, so either panel can take
-// over the other's database. The Python implementation is the reference:
-// testdata/panelstore/vectors.json is generated from it
-// (tests/panelstore_vectors_gen.py) and vectors_test.go replays every
+// It reads and writes the same panel.db as the original Python panel, with
+// the same schema, SQL, timestamp strings and JSON payloads, so this panel
+// can take over a database that panel wrote. testdata/panelstore/vectors.json
+// is the checked-in contract from that port and vectors_test.go replays every
 // scenario, checking query results and table contents after each step.
 //
 // # Values and time

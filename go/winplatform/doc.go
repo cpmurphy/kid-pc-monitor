@@ -1,5 +1,5 @@
 // Package winplatform is the Windows implementation of monitor.Platform, a
-// port of src/kid_pc_monitor/platforms/windows.py. Standard library only: the
+// port of the original Python platforms/windows.py. Standard library only: the
 // Win32 calls go through syscall.NewLazyDLL.
 //
 //   - CheckSessionLocked asks WTSQuerySessionInformationW(WTSSessionInfoEx) for

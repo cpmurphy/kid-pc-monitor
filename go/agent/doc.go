@@ -1,5 +1,5 @@
 // Package agent is the kid agent's process plumbing: the reverse connection to
-// the parent panel (src/kid_pc_monitor/agent_sync_client.py), Python-format
+// the parent panel (the original Python agent_sync_client.py), Python-format
 // size-rotated logging (pc_control.py), and the data directory and user name
 // the Python agent uses. cmd/kid-pc-agent wires it to monitor and winplatform.
 //

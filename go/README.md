@@ -1,16 +1,16 @@
-# Go agent
+# Go module
 
-A complete Go port of the Kid PC Monitor kid-side agent: one Windows
-executable, `kid-pc-agent.exe`, that does everything the Python agent does
-(enforcement, the reverse connection to the parent panel, logging) and needs no
-Python on the kid's PC. The agent uses only the standard library; the
-in-progress web panel port under `panel/` adds `modernc.org/sqlite` (pure Go) and
-`golang.org/x/crypto`, which the agent never imports (CI checks this).
+This directory is the Kid PC Monitor module (`kidpcmonitor`): the Windows
+agent `kid-pc-agent` and the parent web panel `kid-pc-web-panel`. Both were
+ported from the original Python programs. The agent uses only the standard
+library. The panel adds `modernc.org/sqlite` (pure Go) and `golang.org/x/crypto`,
+which the agent never imports (CI checks this). `golang.org/x/term` reads the
+shared-secret prompt.
 
-It is a drop-in replacement: it reads and writes the same `daily_settings.json`,
-`state.json`, `pc_control.log` and encrypted shared secret, speaks the same v3
-protocol to the same web panel, and runs from the same `KidPCMonitor` scheduled
-task. The web panel itself stays in Python.
+The agent reads and writes the same `daily_settings.json`, `state.json`,
+`pc_control.log` and encrypted shared secret as an older Python agent, speaks
+the same v3 protocol, and runs from the same `KidPCMonitor` scheduled task.
+The panel reads the same `panel.db`, password file and secret.
 
 ## Install
 
@@ -40,11 +40,10 @@ tag publishes amd64 and arm64 builds (`.github/workflows/release.yml`).
 Go 1.26 or later. Everything except `winplatform`, `cmd/kid-pc-agent` and
 `cmd/wincheck` also builds and tests on Linux and macOS.
 
-## Web panel (in progress)
+## Web panel
 
-`cmd/kid-pc-web-panel` replaces `python -m kid_pc_monitor.web_panel` on the
-parent's machine, reading the same `panel.db`, `web_panel_auth.json`, TLS
-files and shared secret:
+`cmd/kid-pc-web-panel` is the parent web panel. It reads the same `panel.db`,
+`web_panel_auth.json`, TLS files and shared secret as the original Python panel:
 
 ```bash
 cd go
@@ -55,11 +54,11 @@ go build -o kid-pc-web-panel ./cmd/kid-pc-web-panel
 
 Release builds are published for Windows, Linux and macOS (amd64 and arm64).
 `scripts/install_web_panel.ps1` (Windows) and
-`scripts/install_web_panel_linux.sh install --go` set it up as a background
-task or service; `serve -background` hides the console Windows creates for a
-scheduled task and logs to `config_dir/web_panel.log`.
-Logins from the Python panel do not carry over (different session cookie), so
-log in once after switching.
+`scripts/install_web_panel_linux.sh install` set it up as a background
+task or service (`install --go` is the same command). `serve -background`
+hides the console Windows creates for a scheduled task and logs to
+`config_dir/web_panel.log`. A session cookie from the original Python panel
+does not carry over, so log in once after replacing that install.
 
 ## Packages
 
@@ -76,36 +75,34 @@ log in once after switching.
 | `state/` | `agent_state.py` | Settings and runtime state files: strict validation, corrupt-file quarantine and `.bak` restore, wake-time rollover, legacy migration, ProgramData bootstrap. |
 | `secrets/` | `secrets_store.py` | Reads the installer's Fernet-encrypted secrets, including the shared secret. |
 | `netinfo/` | `network.py` | Primary IPv4 without contacting external hosts. |
-| `panel/format/` | `panel_format.py`, `remote_client.py`, `scan_store.py` | Web panel (in progress): display formatting, agent settings → PC info, panel action → request fields, connection-error text, dashboard status. |
-| `panel/store/` | `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | Web panel (in progress): `panel.db` (tracked PCs, usage snapshots, reverse heartbeats), same schema and rows as Python. |
-| `panel/auth/` | `web_panel.py` (auth), `werkzeug.security` | Web panel (in progress): `web_panel_auth.json`, werkzeug scrypt/pbkdf2 hashes, signed session cookie with CSRF token and flashes, login redirect check. |
-| `panel/reverse/` | `panel_reverse_server.py` | Web panel (in progress): the reverse listener on 9998 — identify, per-agent session with queued actions and idle status refresh, session replacement, logs. |
-| `panel/web/` | `web_panel.py`, `agent_poller.py`, `templates/` | Web panel (in progress): every route, the templates rewritten for `html/template`, embedded static files (a generated copy), reverse-status recording, the registry pruner. |
-| `panel/pyval/` | | The Python value semantics the panel port needs: truthiness, `int()`, `repr`, float `repr`, `datetime.fromisoformat`. |
+| `panel/format/` | `panel_format.py`, `remote_client.py`, `scan_store.py` | Display formatting, agent settings → PC info, panel action → request fields, connection-error text, dashboard status. |
+| `panel/store/` | `panel_db.py`, `scan_store.py`, `snapshot_store.py`, `agent_sync_store.py` | `panel.db` (tracked PCs, usage snapshots, reverse heartbeats), same schema and rows as the original Python panel. |
+| `panel/auth/` | `web_panel.py` (auth), `werkzeug.security` | `web_panel_auth.json`, werkzeug scrypt/pbkdf2 hashes, signed session cookie with CSRF token and flashes, login redirect check. |
+| `panel/reverse/` | `panel_reverse_server.py` | The reverse listener on 9998 — identify, per-agent session with queued actions and idle status refresh, session replacement, logs. |
+| `panel/web/` | `web_panel.py`, `agent_poller.py`, `templates/` | Every route, templates for `html/template`, embedded static files, reverse-status recording, the registry pruner. |
+| `panel/pyval/` | | Value semantics for JSON and `panel.db` written by the original Python panel: truthiness, `int()`, `repr`, float `repr`, `datetime.fromisoformat`. |
 | `cmd/wincheck/` | | Manual check of `winplatform` on a real host (status, lock, message, shutdown / cancel). |
-| `cmd/xcheck/` | | Test fixture for `scripts/cross_check_go.py`: a toy agent, a toy panel and state-file helpers. |
+| `firewall/` | `linux_firewall.py` | Whether a Linux host firewall blocks the panel ports. `kid-pc-web-panel check-firewall` prints the installer's advice. |
 
 How a request flows: `agent.ReverseClient` reads a frame from the panel,
 `protocol.HandleRequest` authenticates it and calls `dispatcher.Handler`, which
 drives `monitor.Control`; the monitor talks to Windows through
 `winplatform.Platform` and persists through `state.Store`.
 
-## The Python code is the reference
+## Golden vectors
 
-Each ported module is held to the Python implementation by golden vectors that
-Python generates (`../testdata/*/vectors.json`, do not hand-edit) and Go must
-reproduce exactly:
+Each ported package is held to frozen vectors in `../testdata/*/vectors.json`.
+They were generated from the original Python implementation and are now the
+checked-in contract: change a file in the same commit as the Go behavior.
+There is no generator.
 
 ```bash
-python tests/<name>_vectors_gen.py   # protocol, policy, state, dispatcher, monitor, panelformat, panelstore, panelauth, panelweb: regenerate after an intentional Python change
-cd go && go test ./...               # every vector must pass in Go
-python scripts/cross_check_go.py     # live Go<->Python sessions, state-file interop, reverse-server parity, and (on Windows) the real agent against the Python panel
+cd go && go test ./...    # every vector must pass
 ```
 
-`tests/test_*_vectors.py` fail when a vectors file is stale, so a Python change
-cannot silently leave Go behind. The secret store is tested against tokens made
-by the Python code, and `tests/install_agent_test.ps1` checks that Python reads
-what the PowerShell installer writes.
+The secret store is tested against tokens produced by the original Python
+code. `tests/install_agent_test.ps1` checks the PowerShell installer, including
+that it still removes leftover Python agent files.
 
 ## Differences from the Python agent
 

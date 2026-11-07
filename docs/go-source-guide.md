@@ -10,11 +10,12 @@ It does not repeat the package-level docs. Every package has a doc comment
 [`go/README.md`](../go/README.md) has the package table and build commands.
 Read this guide first for orientation, then read those.
 
-> **One rule to keep in mind:** the Python code under `src/kid_pc_monitor/` is
-> the *reference implementation*. Most Go packages are ports, held to Python
-> by golden test vectors. A lot of code that looks odd in Go (Python-style
-> `repr`, round-half-to-even, `int()` coercion rules) is there to match Python
-> byte for byte. See [Golden vectors](#7-how-the-go-code-is-tested-golden-vectors).
+> **One rule to keep in mind:** this code was ported from a Python program
+> that is no longer in the tree. File formats, the wire protocol, and a lot
+> of code that looks odd in Go (Python-style `repr`, round-half-to-even,
+> `int()` coercion) stay that way so existing installs and the frozen golden
+> vectors keep working. `panel/pyval` is what lets the panel read databases
+> the original program wrote. See [Golden vectors](#7-how-the-go-code-is-tested-golden-vectors).
 
 ---
 
@@ -79,7 +80,6 @@ Everything lives in a single Go module named `kidpcmonitor`
 | [`cmd/kid-pc-agent`](../go/cmd/kid-pc-agent) | Windows only | Kid-side agent: enforcement loop + reverse client. |
 | [`cmd/kid-pc-web-panel`](../go/cmd/kid-pc-web-panel) | Windows, Linux, macOS | Parent panel: HTTP UI on 5000 + reverse listener on 9998. |
 | [`cmd/wincheck`](../go/cmd/wincheck) | Windows only | Manual test tool for `winplatform` on a real host. |
-| [`cmd/xcheck`](../go/cmd/xcheck) | anywhere | Test fixture driven by `scripts/cross_check_go.py` (toy agent / toy panel). |
 
 There is an important constraint between the two halves. **The agent must
 build from the standard library only.** Only the panel may use third-party
@@ -301,24 +301,20 @@ the request/response conversation never interleaves.
 ## 7. How the Go code is tested: golden vectors
 
 Most Go packages have a `vectors_test.go` that loads
-`testdata/<name>/vectors.json`. The Python test suite generates these files
-by running the *Python* implementation, and the Go test must reproduce every
-case exactly.
+`testdata/<name>/vectors.json`. Those files were generated from the original
+Python implementation and are now the checked-in contract. `go test` replays
+every case. There is no generator: if you change behavior on purpose, edit
+the JSON in the same commit.
 
 ```mermaid
 flowchart LR
-    PY["Python reference<br/>src/kid_pc_monitor/*.py"] -->|"tests/*_vectors_gen.py"| V[("testdata/*/vectors.json<br/>(generated, never hand-edit)")]
-    V -->|"go test ./..."| GO["Go package<br/>vectors_test.go"]
-    V -->|"tests/test_*_vectors.py<br/>fails if stale"| PY
-    X["scripts/cross_check_go.py<br/>+ cmd/xcheck"] -->|"live TCP sessions,<br/>shared state files"| PY & GO
+    V[("testdata/*/vectors.json")] -->|"go test ./..."| GO["Go package vectors_test.go"]
 ```
 
 What this means for you:
 
-* When a test fails after you change Go code, the vectors are almost always
-  right and the Go is wrong.
-* When you change *behaviour*, change the Python first, regenerate the
-  vectors, then update Go (see `AGENTS.md`).
+* When a test fails after you change Go code, the vectors still describe the
+  previous behavior. Update them only when that change is intentional.
 * Tests that need time or randomness inject them. You will see fields like
   `Clock func() time.Time`, `Now func() time.Time` and
   `LoadSecret func() (string, error)` on many structs. A nil field means "use
@@ -621,8 +617,9 @@ Matching Python exactly creates a lot of small surprises:
 7. `winplatform`: only if you are working on Windows-specific behaviour.
 8. Panel: `cmd/kid-pc-web-panel/main.go` → `panel/reverse` (session.go is the
    core) → `panel/web/web.go` → `render.go` → `panel/store`.
-9. Any package's `vectors_test.go`, to see how it is held to the Python code.
+9. Any package's `vectors_test.go`, to see the frozen cases it must still pass.
 
 When in doubt, the package's `doc.go` has a **"Differences from the Python
-implementation"** section. If behaviour surprises you, check there before
-assuming it's a bug.
+implementation"** section. Those notes record where this code left the
+original program. If behaviour surprises you, check there before assuming
+it's a bug.

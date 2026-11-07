@@ -1,5 +1,5 @@
 {
- "_about": "Golden request-dispatcher vectors generated from kid_pc_monitor.request_dispatcher by tests/dispatcher_vectors_gen.py. Do not edit by hand.",
+ "_about": "Golden request-dispatcher vectors, originally generated from the Python request_dispatcher implementation. This file is the checked-in contract: change it in the same commit as the Go behavior. There is no generator.",
  "default_state": {
   "hostname": "kid-pc",
   "current_user": "kid",

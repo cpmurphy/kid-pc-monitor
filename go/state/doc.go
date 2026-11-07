@@ -2,10 +2,10 @@
 // state: daily_settings.json (bed time, wake time, allowance) and state.json
 // (usage so far today, manual lock, extensions).
 //
-// It is a port of src/kid_pc_monitor/agent_state.py. testdata/state/vectors.json
-// is generated from the Python implementation and vectors_test.go checks that
-// this package agrees on every case, so a Go agent can take over the files a
-// Python agent wrote and vice versa.
+// It is a port of the original Python agent_state.py. testdata/state/vectors.json
+// is the checked-in contract from that port and vectors_test.go checks that
+// this package agrees on every case, so a Go agent can take over the files an
+// older Python agent wrote.
 //
 // # Files are never silently discarded
 //

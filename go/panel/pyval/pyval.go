@@ -1,6 +1,6 @@
-// Package pyval reproduces the small pieces of Python value semantics the web
-// panel relies on, so the Go panel behaves exactly like the Python reference
-// (src/kid_pc_monitor/web_panel.py and friends) on the same data.
+// Package pyval reproduces the value semantics of the original Python panel,
+// so this panel reads databases and JSON that panel wrote (60 and 60.0 are
+// different, and truthiness, int(), repr and fromisoformat follow that code).
 //
 // # Values
 //

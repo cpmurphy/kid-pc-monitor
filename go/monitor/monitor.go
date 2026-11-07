@@ -1,12 +1,12 @@
 // Package monitor is the kid agent's monitoring loop: daily usage accounting,
 // low-time warnings, lock enforcement and the parent actions that change them.
-// It is a port of src/kid_pc_monitor/pc_time_control.py and implements
+// It is a port of the original Python pc_time_control.py and implements
 // dispatcher.Control.
 //
-// testdata/monitor/vectors.json is generated from the Python implementation by
-// tests/monitor_vectors_gen.py: scripted scenarios against a fake clock and
-// platform, recording every platform call, log line, state-file write and the
-// in-memory state after each step. vectors_test.go replays them.
+// testdata/monitor/vectors.json is the checked-in contract from that port:
+// scripted scenarios against a fake clock and platform, recording every
+// platform call, log line, state-file write and the in-memory state after
+// each step. vectors_test.go replays them.
 //
 // # Concurrency
 //

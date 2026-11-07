@@ -8,8 +8,8 @@ import (
 	"kidpcmonitor/panel/pyval"
 )
 
-// The golden vectors are generated from werkzeug and web_panel.py by
-// tests/panelauth_vectors_gen.py. Every case here must agree with them.
+// The golden vectors are the checked-in contract, originally generated from
+// werkzeug and the Python web panel. Every case here must agree with them.
 
 type obj = map[string]any
 
