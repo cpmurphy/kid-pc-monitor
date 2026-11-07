@@ -1,9 +1,0 @@
-/* Daily settings page */
-
-input[type="time"] {
-    font-variant-numeric: tabular-nums;
-}
-
-.setting-footer {
-    margin-top: 8px;
-}
