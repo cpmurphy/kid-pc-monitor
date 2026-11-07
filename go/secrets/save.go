@@ -19,7 +19,11 @@ import (
 // returning the path written. The installers write the machine-wide
 // directory when they can, so the agent and panel find the same secret.
 func Save(name, value string) (string, error) {
-	token, err := fernetEncrypt(fernetKey(), []byte(value), time.Now())
+	key, err := fernetKey()
+	if err != nil {
+		return "", err
+	}
+	token, err := fernetEncrypt(key, []byte(value), time.Now())
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +58,10 @@ func SaveSharedSecret(value string) (string, error) { return Save(SharedSecretNa
 // FindPath is the first directory's file holding a decryptable copy of the
 // secret, or "" (secrets_store.find_secret_path).
 func FindPath(name string) string {
-	key := fernetKey()
+	key, err := fernetKey()
+	if err != nil {
+		return ""
+	}
 	for _, dir := range Dirs() {
 		path := filepath.Join(dir, name+".enc")
 		token, err := os.ReadFile(path)
