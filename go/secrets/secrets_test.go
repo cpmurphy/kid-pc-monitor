@@ -28,11 +28,11 @@ const (
 
 func TestKeyDerivationMatchesPython(t *testing.T) {
 	t.Setenv(keyEnv, "")
-	if got := base64.URLEncoding.EncodeToString(fernetKey()); got != defaultKey {
+	if got := base64.URLEncoding.EncodeToString(mustKey(t)); got != defaultKey {
 		t.Errorf("bootstrap key = %s, want %s", got, defaultKey)
 	}
 	t.Setenv(keyEnv, "  custom-key\n")
-	if got := base64.URLEncoding.EncodeToString(fernetKey()); got != customKey {
+	if got := base64.URLEncoding.EncodeToString(mustKey(t)); got != customKey {
 		t.Errorf("custom key = %s, want %s", got, customKey)
 	}
 }
@@ -106,14 +106,13 @@ func TestDefaultDirs(t *testing.T) {
 	}
 }
 
-// Multi-block output (64 bytes > one SHA-256 block), checked against
-// hashlib.pbkdf2_hmac("sha256", b"passwd", b"salt", 1, 64).
-func TestPBKDF2(t *testing.T) {
-	got := pbkdf2SHA256([]byte("passwd"), []byte("salt"), 1, 64)
-	want := "VawEblbjCJ_sFpHCJUS2BflBhSFt3gRl5oudV8INrLxJypzM8Xm2RZkWZLOdd-8xfHG4RbHjC9UJESBB06GXgw=="
-	if base64.URLEncoding.EncodeToString(got) != want {
-		t.Fatalf("got %s", base64.URLEncoding.EncodeToString(got))
+func mustKey(t *testing.T) []byte {
+	t.Helper()
+	k, err := fernetKey()
+	if err != nil {
+		t.Fatal(err)
 	}
+	return k
 }
 
 func TestSaveRoundTripsAndPrefersFirstDir(t *testing.T) {

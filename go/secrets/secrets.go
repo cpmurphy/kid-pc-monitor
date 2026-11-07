@@ -21,10 +21,11 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/pbkdf2"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -58,7 +59,10 @@ func LoadSharedSecret() (string, error) {
 // Load decrypts the named secret from the first directory whose copy
 // decrypts. It returns ErrNotFound when there is none.
 func Load(name string) (string, error) {
-	key := fernetKey()
+	key, err := fernetKey()
+	if err != nil {
+		return "", err
+	}
 	for _, dir := range Dirs() {
 		token, err := os.ReadFile(filepath.Join(dir, name+".enc"))
 		if err != nil {
@@ -112,7 +116,7 @@ var (
 
 // fernetKey derives the 32-byte Fernet key (signing half, then encryption
 // half). The derivation is slow by design, so results are cached.
-func fernetKey() []byte {
+func fernetKey() ([]byte, error) {
 	material := strings.TrimSpace(os.Getenv(keyEnv))
 	if material == "" {
 		material = bootstrapKey
@@ -120,11 +124,17 @@ func fernetKey() []byte {
 	keyMu.Lock()
 	defer keyMu.Unlock()
 	if k, ok := keyCache[material]; ok {
-		return k
+		return k, nil
 	}
-	k := pbkdf2SHA256([]byte(material), []byte(kdfSalt), kdfRounds, 32)
+	// pbkdf2.Key fails only in FIPS 140-only mode (GODEBUG=fips140=only),
+	// which requires a 16-byte salt; kdfSalt is 15 bytes and cannot change
+	// without breaking every secret the installers have already written.
+	k, err := pbkdf2.Key(sha256.New, material, []byte(kdfSalt), kdfRounds, 32)
+	if err != nil {
+		return nil, fmt.Errorf("derive secrets key: %w", err)
+	}
 	keyCache[material] = k
-	return k
+	return k, nil
 }
 
 // fernetDecrypt verifies and decrypts a Fernet token (no TTL, as Python's
@@ -161,30 +171,4 @@ func fernetDecrypt(key, token []byte) ([]byte, error) {
 		}
 	}
 	return plain[:len(plain)-pad], nil
-}
-
-// pbkdf2SHA256 is PBKDF2 (RFC 8018) with HMAC-SHA256. crypto/pbkdf2 needs Go
-// 1.24; this module targets 1.22.
-func pbkdf2SHA256(password, salt []byte, rounds, keyLen int) []byte {
-	prf := hmac.New(sha256.New, password)
-	out := make([]byte, 0, keyLen)
-	var counter [4]byte
-	for block := uint32(1); len(out) < keyLen; block++ {
-		prf.Reset()
-		prf.Write(salt)
-		binary.BigEndian.PutUint32(counter[:], block)
-		prf.Write(counter[:])
-		u := prf.Sum(nil)
-		t := append([]byte(nil), u...)
-		for i := 1; i < rounds; i++ {
-			prf.Reset()
-			prf.Write(u)
-			u = prf.Sum(u[:0])
-			for j := range t {
-				t[j] ^= u[j]
-			}
-		}
-		out = append(out, t...)
-	}
-	return out[:keyLen]
 }
