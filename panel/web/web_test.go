@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"kidpcmonitor/panel/auth"
 	"kidpcmonitor/panel/store"
@@ -99,5 +100,45 @@ func TestDamagedAuthFileLocksThePanel(t *testing.T) {
 	}
 	if rec := do(app, "POST", "/set-password"); rec.Code != http.StatusBadRequest {
 		t.Errorf("POST /set-password = %d", rec.Code)
+	}
+}
+
+func TestSnapshotFromEarlierDayIsNotLabelledToday(t *testing.T) {
+	dir := t.TempDir()
+	s, err := store.Open(filepath.Join(dir, store.DBFilename))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	loc := time.FixedZone("", -6*3600)
+	s.Loc = loc
+	app, err := New(Config{Store: s, Auth: auth.Files{Dir: dir}, Reverse: fakeReverse{obj{}}, ReversePort: 9998})
+	if err != nil {
+		t.Fatal(err)
+	}
+	info := map[string]any{
+		"hostname": "KID-PC", "current_user": "kid", "ip": "192.168.1.10", "reachable": true,
+		"daily_limit": 1, "accumulated_seconds": 61, "cumulative_extension_seconds": 3600,
+		"effective_limit_minutes": 61.0, "time_remaining": "0 minutes",
+		"access_status": "Locked — daily limit reached",
+	}
+	recorded := time.Date(2026, 11, 4, 18, 13, 27, 0, loc)
+	s.Now = func() time.Time { return recorded }
+	if err := s.RecordPollInspect("192.168.1.10", info, time.Time{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SaveSnapshot(info); err != nil {
+		t.Fatal(err)
+	}
+	s.Now = func() time.Time { return time.Date(2026, 11, 8, 10, 0, 0, 0, loc) }
+
+	for _, path := range []string{"/control/192.168.1.10", "/control/192.168.1.10/stats"} {
+		body := normalizeHTML(do(app, http.MethodGet, path).Body.String())
+		if !strings.Contains(body, `<h2 class="action-title">Nov 4</h2>`) {
+			t.Errorf("%s: heading is not the snapshot day:\n%s", path, body)
+		}
+		if strings.Contains(body, "Extra today") || !strings.Contains(body, "<dt>Extra that day</dt>") {
+			t.Errorf("%s: extension label still says today:\n%s", path, body)
+		}
 	}
 }
