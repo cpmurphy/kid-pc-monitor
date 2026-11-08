@@ -58,6 +58,16 @@ func (v *view) Recorded(recordedAt any) string {
 	return format.FormatSnapshotRecordedAt(s, v.c.app.now())
 }
 
+// RecordedDay names the day a snapshot was recorded on ("Today",
+// "Yesterday", "Nov 4"), or "" when there is no usable timestamp.
+func (v *view) RecordedDay(recordedAt any) string {
+	s, _ := recordedAt.(string)
+	if !pyval.Truthy(recordedAt) {
+		return ""
+	}
+	return format.SnapshotDayLabel(s, v.c.app.now())
+}
+
 type flashMsg struct {
 	Category string
 	Message  string

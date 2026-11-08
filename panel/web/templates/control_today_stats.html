@@ -2,9 +2,11 @@
 {{$remaining := remaining (get $pc "time_remaining")}}
 {{$used := or (getd $pc "accumulated_seconds" 0) 0}}
 {{$limit := get $pc "effective_limit_minutes"}}
+{{$day := "Today"}}{{if get $pc "is_snapshot"}}{{with .RecordedDay (get $pc "snapshot_recorded_at")}}{{$day = .}}{{else}}{{$day = "Last recorded"}}{{end}}{{end}}
+{{$isToday := eq $day "Today"}}
 <section class="action-group">
     <div class="card-head">
-        <h2 class="action-title">Today</h2>
+        <h2 class="action-title">{{$day}}</h2>
         {{if pyeq (get $pc "access_status") "Unlocked"}}
         <span class="pill pill-success">{{show $pc "access_status"}}</span>
         {{else if pyeq (get $pc "access_status") "Screen locked"}}
@@ -47,7 +49,7 @@
             </dd>
         </div>
         <div>
-            <dt>Extra today</dt>
+            <dt>{{if $isToday}}Extra today{{else}}Extra that day{{end}}</dt>
             <dd>
             {{if gt0 (getd $pc "cumulative_extension_seconds" 0)}}
                 +{{fsec (get $pc "cumulative_extension_seconds")}}

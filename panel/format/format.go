@@ -143,9 +143,46 @@ func FormatSnapshotRecordedAt(recordedAt string, now time.Time) string {
 	if recordedAt == "" {
 		return ""
 	}
+	local, ref, ok := snapshotLocal(recordedAt, now)
+	if !ok {
+		return recordedAt
+	}
+	timeStr := compactClock(local)
+	switch dayOffset(local, ref) {
+	case 0:
+		return timeStr
+	case 1:
+		return timeStr + " yesterday"
+	}
+	return fmt.Sprintf("%s %s %d", timeStr, local.Format("Jan"), local.Day())
+}
+
+// SnapshotDayLabel names the calendar day a snapshot was recorded on, for
+// headings: "Today", "Yesterday" or "Nov 4". It uses the same zone rules as
+// FormatSnapshotRecordedAt. Empty or unparseable text gives "".
+func SnapshotDayLabel(recordedAt string, now time.Time) string {
+	if recordedAt == "" {
+		return ""
+	}
+	local, ref, ok := snapshotLocal(recordedAt, now)
+	if !ok {
+		return ""
+	}
+	switch dayOffset(local, ref) {
+	case 0:
+		return "Today"
+	case 1:
+		return "Yesterday"
+	}
+	return fmt.Sprintf("%s %d", local.Format("Jan"), local.Day())
+}
+
+// snapshotLocal parses recordedAt and returns it and now at now's fixed UTC
+// offset. A timestamp without an offset is taken to be in that offset.
+func snapshotLocal(recordedAt string, now time.Time) (local, ref time.Time, ok bool) {
 	dt, aware, err := pyval.FromISOFormat(recordedAt)
 	if err != nil {
-		return recordedAt
+		return time.Time{}, time.Time{}, false
 	}
 	_, offset := now.Zone()
 	display := time.FixedZone("", offset)
@@ -153,19 +190,22 @@ func FormatSnapshotRecordedAt(recordedAt string, now time.Time) string {
 		dt = time.Date(dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second(),
 			dt.Nanosecond(), display)
 	}
-	local := dt.In(display)
-	ref := now.In(display)
-	timeStr := compactClock(local)
+	return dt.In(display), now.In(display), true
+}
+
+// dayOffset is 0 when local falls on ref's calendar date, 1 when it falls on
+// the day before, and -1 otherwise.
+func dayOffset(local, ref time.Time) int {
 	ly, lm, ld := local.Date()
 	ry, rm, rd := ref.Date()
 	if ly == ry && lm == rm && ld == rd {
-		return timeStr
+		return 0
 	}
 	yy, ym, yd := time.Date(ry, rm, rd-1, 0, 0, 0, 0, time.UTC).Date()
 	if ly == yy && lm == ym && ld == yd {
-		return timeStr + " yesterday"
+		return 1
 	}
-	return fmt.Sprintf("%s %s %d", timeStr, local.Format("Jan"), ld)
+	return -1
 }
 
 func compactClock(t time.Time) string {
